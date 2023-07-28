@@ -1,8 +1,10 @@
 function coefs=complexwt(signal,scales,wname,fb,points,Fs,cwtmatrix)
 
-%%%%%%%%%%%%%%%%%%Complex Morlet wavelet%%%%%%%%%%%%%%%%%%%
-%Based on cwt_channel.c, algorithm in c++ provided by Gergo
-%Matlab porting by Eugenio Parise, CDC CEU 2010
+%%%%%%%%%%%%%%%%%%Complex Morlet wavelet%%%%%%%%%%%%%%%%%%%%
+%Based on cwt_channel.c, algorithm in c++ provided by Gergo%
+%Matlab porting by Eugenio Parise, CDC CEU 2010            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 if strcmp(wname,'cwt')
     
     %define parameters and matrices
