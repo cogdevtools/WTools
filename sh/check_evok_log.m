@@ -17,15 +17,21 @@ if exist(tf_pop_cfgfile,'file')
     tf_cmor_cfg;
     
     %GET log value before averaging
-    if length(defaultanswer)>=12
-        varargout{1}=defaultanswer{1,11};
+    if length(defaultanswer)>=10
+        varargout{1}=defaultanswer{1,10};
     else
         varargout{1}=0;
     end
     
     %GET evok value after wavelet transform
-    varargout{2}=defaultanswer{1,end};
-    
+    if length(defaultanswer)>11
+        varargout{2}=defaultanswer{1,end-1};
+    else length(defaultanswer)>10
+        varargout{2}=defaultanswer{1,end};
+    else
+        varargout{2}=0
+    end
+
 end
 
 if exist(bs_pop_cfgfile,'file')
