@@ -1,4 +1,4 @@
-function tf_cmor(subjects,tmin,tmax,tres,frmin,frmax,fres,extraedges,ChannelsList,EpochsList,logtransform,varargin)
+function tf_cmor(subjects,tmin,tmax,tres,frmin,frmax,fres,extraedges,ChannelsList,EpochsList,normalizeWavelet,logtransform,varargin)
 
 %tf_cmor.m
 %Created by Eugenio Parise
@@ -18,9 +18,9 @@ function tf_cmor(subjects,tmin,tmax,tres,frmin,frmax,fres,extraedges,ChannelsLis
 %
 %Usage:
 %
-%tf_cmor('01',-300,1200,1,10,90,1,0,[],[],1);
-%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],1);
-%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],0,'evok');
+%tf_cmor('01',-300,1200,1,10,90,1,0,[],[],0,1);
+%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],0,1);
+%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],0, 0,'evok');
 
 if ~exist('inputgui.m','file')    
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
@@ -129,7 +129,7 @@ if ~nargin
     end
     
     %SET defaultanswer0
-    defaultanswer0={[],[],1,[],[],1,0,'[  ]','[  ]',0,0};
+    defaultanswer0={[],[],1,[],[],1,0,'[  ]','[  ]',0,0,0};
     
     mandatoryanswersN=length(defaultanswer0);
     
@@ -199,12 +199,19 @@ if ~nargin
         { 'style' 'text'       'string' '' } ...
         { 'style' 'text'       'string' '' } ...
         { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } };
+        { 'style' 'text'       'string' '' } ...
+        { 'style' 'text'       'string' 'Normalize wavelets' } ...
+        { 'style' 'checkbox'   'value' defaultanswer{1,12} } ...
+        { 'style' 'text'       'string' '' } ...
+        { 'style' 'text'       'string' '' } ...
+        { 'style' 'text'       'string' '' } ...
+        { 'style' 'text'       'string' '' } ... 
+        };
     
     geometry = { ...
         [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] ...
         [1.34 2 0.25 0.25 0.25 0.25] [1.34 2 0.25 0.25 0.25 0.25] [1 0.5 0.25 0.5 0.5 0.5] ...
-        [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] };
+        [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] };
     
     answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set wavelet transformation parameters');
     
@@ -222,7 +229,8 @@ if ~nargin
     ChannelsList=str2num(answer{1,8});
     EpochsList=str2num(answer{1,9});
     logtransform=answer{1,10};
-    evok=answer{1,11};
+    evok=answer{1,11}
+    normalizeWavelet=answer{1,12};
     if evok
         varargin='evok';
     end
@@ -253,9 +261,9 @@ if ~nargin
     
     %Save the user input parameters in the pop_cfg folder
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
-    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''[ %s ]'' ''[ %s ]'' %i %i};',...
+    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''[ %s ]'' ''[ %s ]'' %i %i %i };',...
         num2str(tmin),num2str(tmax),num2str(tres),num2str(frmin),num2str(frmax),num2str(fres),num2str(extraedges),...
-        num2str(ChannelsList),num2str(EpochsList),logtransform,evok);
+        num2str(ChannelsList),num2str(EpochsList),logtransform,evok,normalizeWavelet);
     fclose(fid);
     
     rehash;
@@ -449,10 +457,7 @@ for i = 1:subjN
         end
         
         %Calculate wavelets at each frequency
-        if i==1 && j==1 %do it only once
-            
-            M_PI = 3.14159265358979323846264338327950288;
-            
+        if i==1 && j==1 %do it only once      
             %Fa=linspace(frmin,frmax,(frmax-frmin+1));
             Fa=(frmin:fres:frmax);
             scales=Fa;
@@ -472,13 +477,16 @@ for i = 1:subjN
                 %use COMPLEX wavelet (sin and cos components) in a form that gives
                 %the RMS strength of the signal at each frequency.
                 time = -4/freq:1/Fs:4/freq;
-                waveletScale = (1/(Fs*sigmaT*sqrt(M_PI))).*exp(((time.^2)/(-2*(sigmaT^2))));
+                if normalizeWavelet 
+                    waveletScale = (1/sqrt(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
+                else
+                    waveletScale = (1/(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
+                end
                 waveletRe = waveletScale.*cos(2*M_PI*freq*time);
                 waveletIm = waveletScale.*sin(2*M_PI*freq*time);
                 
                 cwtmatrix{iFreq,1}=waveletRe(1,:);
                 cwtmatrix{iFreq,2}=waveletIm(1,:);
-                
             end
             
             fprintf('\n');
