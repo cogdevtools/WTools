@@ -472,18 +472,19 @@ for i = 1:subjN
                 fprintf('\nComputing complex Morlet wavelet at %i Hz', scales(iFreq));
                 
                 freq = scales(iFreq);
-                sigmaT = fb/(freq*M_PI);
+                sigmaT = fb/(freq*pi);
                 
                 %use COMPLEX wavelet (sin and cos components) in a form that gives
                 %the RMS strength of the signal at each frequency.
                 time = -4/freq:1/Fs:4/freq;
                 if normalizeWavelet 
+                    %generate wavelets with unit energy
                     waveletScale = (1/sqrt(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
                 else
                     waveletScale = (1/(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
                 end
-                waveletRe = waveletScale.*cos(2*M_PI*freq*time);
-                waveletIm = waveletScale.*sin(2*M_PI*freq*time);
+                waveletRe = waveletScale.*cos(2*pi*freq*time);
+                waveletIm = waveletScale.*sin(2*pi*freq*time);
                 
                 cwtmatrix{iFreq,1}=waveletRe(1,:);
                 cwtmatrix{iFreq,2}=waveletIm(1,:);
