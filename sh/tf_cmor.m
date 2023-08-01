@@ -129,16 +129,16 @@ if ~nargin
     end
     
     %SET defaultanswer0
-    defaultanswer0={[],[],1,[],[],1,0,'[  ]','[  ]',0,0,0};
+    defaultanswer0={[],[],1,[],[],1,0,'[  ]','[  ]',0,0,0,7};
     
     mandatoryanswersN=length(defaultanswer0);
     
     %Load previously called parameters if existing
     pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'tf_cmor_cfg.m');
     if exist(pop_cfgfile,'file')
+        defaultanswer={};
         tf_cmor_cfg;
         try
-            defaultanswer=defaultanswer;
             defaultanswer{1,mandatoryanswersN};
         catch
             fprintf('\n');
@@ -202,8 +202,8 @@ if ~nargin
         { 'style' 'text'       'string' '' } ...
         { 'style' 'text'       'string' 'Normalize wavelets' } ...
         { 'style' 'checkbox'   'value' defaultanswer{1,12} } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
+        { 'style' 'text'       'string' 'Wavelet cycles (value in [2,15])' } ...
+        { 'style' 'edit'       'string' defaultanswer{1,13} } ...
         { 'style' 'text'       'string' '' } ...
         { 'style' 'text'       'string' '' } ... 
         };
@@ -211,7 +211,7 @@ if ~nargin
     geometry = { ...
         [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] ...
         [1.34 2 0.25 0.25 0.25 0.25] [1.34 2 0.25 0.25 0.25 0.25] [1 0.5 0.25 0.5 0.5 0.5] ...
-        [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] };
+        [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 1 0.25 0.25 0.25] };
     
     answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set wavelet transformation parameters');
     
@@ -231,6 +231,11 @@ if ~nargin
     logtransform=answer{1,10};
     evok=answer{1,11}
     normalizeWavelet=answer{1,12};
+    cycles=str2num(answer{1,13});
+    if isempty(cycles) || ~(isfinite(cycles) && cycles==floor(cycles)) || cycles < 2 || cycles > 15
+        fprintf(2,'\nWavelet cycles must be an positive integer in [2,15], got: %s\n', answer{1,13});
+        return
+    end
     if evok
         varargin='evok';
     end
@@ -261,9 +266,9 @@ if ~nargin
     
     %Save the user input parameters in the pop_cfg folder
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
-    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''[ %s ]'' ''[ %s ]'' %i %i %i };',...
+    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''[ %s ]'' ''[ %s ]'' %i %i %i ''%s''};',...
         num2str(tmin),num2str(tmax),num2str(tres),num2str(frmin),num2str(frmax),num2str(fres),num2str(extraedges),...
-        num2str(ChannelsList),num2str(EpochsList),logtransform,evok,normalizeWavelet);
+        num2str(ChannelsList),num2str(EpochsList),logtransform,evok,normalizeWavelet,num2str(cycles));
     fclose(fid);
     
     rehash;
@@ -462,7 +467,7 @@ for i = 1:subjN
             Fa=(frmin:fres:frmax);
             scales=Fa;
             Fs=EEG.srate/tres;
-            fb=3.5;
+            n=cycles;
             
             cwtmatrix=cell(length(Fa),2);
             
@@ -472,7 +477,7 @@ for i = 1:subjN
                 fprintf('\nComputing complex Morlet wavelet at %i Hz', scales(iFreq));
                 
                 freq = scales(iFreq);
-                sigmaT = fb/(freq*pi);
+                sigmaT = n/(2*freq*pi);
                 
                 %use COMPLEX wavelet (sin and cos components) in a form that gives
                 %the RMS strength of the signal at each frequency.
