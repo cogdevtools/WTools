@@ -26,7 +26,7 @@ if exist(tf_pop_cfgfile,'file')
     %GET evok value after wavelet transform
     if length(defaultanswer)>11
         varargout{2}=defaultanswer{1,end-1};
-    else length(defaultanswer)>10
+    elseif length(defaultanswer)>10
         varargout{2}=defaultanswer{1,end};
     else
         varargout{2}=0
