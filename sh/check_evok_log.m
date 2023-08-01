@@ -13,23 +13,21 @@ bs_pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'baseline_chop_cfg.m');
 varargout={ 0 0 0 0 };
 
 if exist(tf_pop_cfgfile,'file')
-    
+    defaultanswer={};
     tf_cmor_cfg;
     
     %GET log value before averaging
-    if length(defaultanswer)>=10
+    if length(defaultanswer)>9
         varargout{1}=defaultanswer{1,10};
     else
-        varargout{1}=0;
+        varargout{1}=0;;
     end
     
     %GET evok value after wavelet transform
-    if length(defaultanswer)>11
-        varargout{2}=defaultanswer{1,end-1};
-    elseif length(defaultanswer)>10
-        varargout{2}=defaultanswer{1,end};
+    if length(defaultanswer)>10
+        varargout{2}=defaultanswer{1,11};
     else
-        varargout{2}=0
+        varargout{2}=0;
     end
 
 end
