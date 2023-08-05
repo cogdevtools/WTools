@@ -229,7 +229,7 @@ if ~nargin
         errDlg       = @(msg)uiwait(errordlg(msg, 'Error'));
 
         tmin=str2num(answer{1,1});
-        if ~isIntGT(tmin, 0)
+        if ~isIntGTE(tmin, 0)
             errDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
             continue;
         end
@@ -508,13 +508,13 @@ for i = 1:subjN
         if isempty(ChannelsList)
             ChannelsList = [1:maxChns];
         else if any(ChannelsList > maxChns) 
-            fprintf(2, "\nBad channels list. At least one channel > %d: [%s]\n", maxChns, num2str(ChannelsList))
+            fprintf(2, '\nBad channels list. At least one channel > %d: [%s]\n', maxChns, num2str(ChannelsList))
             return
         end
 
         maxEpochs = size(EEG.data,3);
         if any(EpochsList > maxEpochs)
-            fprintf(2, "\nBad epoch list. At least one epoch > %d: [%s]\n", maxEpochs, num2str(EpochsList))
+            fprintf(2, '\nBad epoch list. At least one epoch > %d: [%s]\n', maxEpochs, num2str(EpochsList))
             return
         end
         
