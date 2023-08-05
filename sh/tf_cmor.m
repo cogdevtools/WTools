@@ -229,7 +229,7 @@ if ~nargin
         errDlg       = @(msg)uiwait(errordlg(msg, 'Error'));
 
         tmin=str2num(answer{1,1});
-        if ~isIntGTE(tmin, 0)
+        if ~isInt(tmin)
             errDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
             continue;
         end
