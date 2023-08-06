@@ -152,33 +152,54 @@ if ~nargin
     end
     
     answer = defaultanswer;
+
+    %Load first subject to gather param domains
+    if exist('PROJECTPATH','var')
+        CommonPath = strcat (PROJECTPATH,'/');
+    else
+        CommonPath = strcat ('../');
+    end
+    currectSubj = char(strcat(filename,subjects(1),'_',conditions(1),'.set'));
+    InPath = char(strcat(CommonPath,subjects(1),'/'));
+    EEG = pop_loadset( 'filename', currectSubj, 'filepath', InPath);
+
+    timeRange = [EEG.xmin*1000 EEG.xmax*1000];
+    maxFreq =  EEG.srate/2;
+    maxChans = size(EEG.data,1);
+    maxEpochs = size(EEG.data,3);
+
+    isInt        = @(x)(isfinite(x) && x==floor(x));
+    isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
+    isIntIn      = @(x,lb,ub)(length(x) == 1 && isInt(x) && (x >= lb) && (x <= ub));
+    warnDlg       = @(msg)uiwait(errordlg(msg, 'Review parameter'));
+    
     while true
         parameters    = { ...
-            { 'style' 'text'       'string' 'Time (ms): From     ' } ...
+            { 'style' 'text'       'string' sprintf('Time (ms) [%d,%d]: From', timeRange(1),timeRange(2)) } ...
             { 'style' 'edit'       'string' answer{1,1} } ...
             { 'style' 'text'       'string' 'To' } ...
             { 'style' 'edit'       'string' answer{1,2} } ...
             { 'style' 'text'       'string' 'By (default = 1)' } ...
             { 'style' 'edit'       'string' answer{1,3} } ...
-            { 'style' 'text'       'string' 'Frequency (Hz): From' } ...
+            { 'style' 'text'       'string' sprintf('Frequency (Hz) [%d,%d]: From', 1, maxFreq) } ...
             { 'style' 'edit'       'string' answer{1,4} } ...
             { 'style' 'text'       'string' 'To' } ...
             { 'style' 'edit'       'string' answer{1,5} } ...
             { 'style' 'text'       'string' 'By (default = 1)' } ...
             { 'style' 'edit'       'string' answer{1,6} } ...
-            { 'style' 'text'       'string' 'Edges Padding (ms; default = 0)' } ...
+            { 'style' 'text'       'string' 'Edges Padding (ms), default = 0:' } ...
             { 'style' 'edit'       'string' answer{1,7} } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
-            { 'style' 'text'       'string' 'Channels to process ([  ] = all)' } ...
+            { 'style' 'text'       'string' sprintf('Channels to process: array elem in [%d,%d], [] = all', 1, maxChans) } ...
             { 'style' 'edit'       'string' answer{1,8} } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
-            { 'style' 'text'       'string' 'Epochs to process ([  ] = all)' } ...
+            { 'style' 'text'       'string' sprintf('Epochs to process: array elem in [%d,%d], [] = all', 1, maxEpochs) } ...
             { 'style' 'edit'       'string' answer{1,9} } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
@@ -204,7 +225,7 @@ if ~nargin
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' 'Normalize wavelets' } ...
             { 'style' 'checkbox'   'value' answer{1,12} } ...
-            { 'style' 'text'       'string' 'Wavelet cycles (value in [2,15])' } ...
+            { 'style' 'text'       'string' 'Wavelet cycles: value in [2,15])' } ...
             { 'style' 'edit'       'string' answer{1,13} } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ... 
@@ -226,51 +247,51 @@ if ~nargin
         isIntGT      = @(x,lb)(length(x) == 1 && isInt(x) && x > lb);
         isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
         isIntBetween = @(x,lb,ub)(isIntGTE(x,lb) && x <= ub);
-        errDlg       = @(msg)uiwait(errordlg(msg, 'Error'));
+        warnDlg       = @(msg)uiwait(warndlg(msg, 'Review parameter'));
 
         tmin=str2num(answer{1,1});
-        if ~isInt(tmin)
-            errDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
+        if ~isIntIn(tmin, timeRange(1), timeRange(2)-1)
+            warnDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
             continue;
         end
         tmax=str2num(answer{1,2});
-        if ~isIntGT(tmax, tmin)
-            errDlg(sprintf('Bad max time value, got: %s', answer{1,2}));
+        if ~isIntIn(tmax, tmin+1, timeRange(2))
+            warnDlg(sprintf('Bad max time value, got: %s', answer{1,2}));
             continue;
         end
         tres=str2num(answer{1,3});
-        if ~isIntGT(tres, 0) || tres > (tmax - tmin) / 2
-            errDlg(sprintf('Bad time resolution value, got: %s', answer{1,3}));
+        if ~isIntIn(tres, 1, max(1,(tmax-tmin+1)/2))
+            warnDlg(sprintf('Bad time resolution value, got: %s', answer{1,3}));
             continue;
         end
         frmin=str2num(answer{1,4});
-        if ~isIntGT(frmin, 0) 
-            errDlg(sprintf('Bad min frequency value, got: %s', answer{1,4}));
+        if ~isIntIn(frmin, 1, max(1, maxFreq-1)) 
+            warnDlg(sprintf('Bad min frequency value, got: %s', answer{1,4}));
             continue;
         end
         frmax=str2num(answer{1,5});
-        if ~isIntGT(frmax, frmin) 
-            errDlg(sprintf('Bad max frequency value, got: %s', answer{1,5}));
+        if ~isIntIn(frmax, frmin, maxFreq) 
+            warnDlg(sprintf('Bad max frequency value, got: %s', answer{1,5}));
             continue;
         end
         fres=str2num(answer{1,6});
-        if ~isIntGT(fres, 0) || fres > (frmax - frmin) / 2
-            errDlg(sprintf('Bad frequency resolution value, got: %s', answer{1,6}));
+        if ~isIntIn(fres, 1, max(1,(frmax-frmin+1)/2)) 
+            warnDlg(sprintf('Bad frequency resolution value, got: %s', answer{1,6}));
             continue;
         end
         extraedges=str2num(answer{1,7});
         if ~isIntGTE(extraedges, 0) 
-            errDlg(sprintf('Bad extra edges value, got: %s', answer{1,7}));
+            warnDlg(sprintf('Bad extra edges value, got: %s', answer{1,7}));
             continue;
         end
-        ChannelsList=str2num(answer{1,8});
-        if ~isempty(ChannelsList) && (~all(arrayfun(isInt, ChannelsList)) || any(ChannelsList < 1)) 
-            errDlg(sprintf('Bad channels list, got: %s\', answer{1,8}));
+        ChannelsList=unique(str2num(answer{1,8}));
+        if ~isempty(ChannelsList) && (~all(arrayfun(isInt, ChannelsList)) || any(ChannelsList < 1) || any(ChannelsList > maxChans)) 
+            warnDlg(sprintf('Bad channels list, got: %s\', answer{1,8}));
             continue;
         end
-        EpochsList=str2num(answer{1,9});
-        if ~isempty(EpochsList) && (~all(arrayfun(isInt, EpochsList)) || any(EpochsList < 1)) 
-            errDlg(sprintf('Bad epochs list, got: %s\', answer{1,9}));
+        EpochsList=unique(str2num(answer{1,9}));
+        if ~isempty(EpochsList) && (~all(arrayfun(isInt, EpochsList)) || any(EpochsList < 1) || any(EpochsList > maxEpochs)) 
+            warnDlg(sprintf('Bad epochs list, got: %s\', answer{1,9}));
             continue;
         end
         logtransform=answer{1,10};
@@ -278,37 +299,18 @@ if ~nargin
         normalizeWavelet=answer{1,12};
         cycles=str2num(answer{1,13});
         if ~isIntBetween(cycles, 2, 15)
-            errDlg(sprintf('Bad wavelet cycles value, got: %s', answer{1,13}))
+            warnDlg(sprintf('Bad wavelet cycles value, got: %s', answer{1,13}))
             continue;
+        end
+        if evok && ~isempty(EpochsList) && any(EpochsList > 1)
+            warnDlg('Option "Compute Evoked Oscillations" requires epochs to process [] or [1]');
+            continue    
         end
         break
     end 
 
     if evok
         varargin='evok';
-    end
-    %Load first subject to adjust time limits
-    if exist('PROJECTPATH','var')
-        CommonPath = strcat (PROJECTPATH,'/');
-    else
-        CommonPath = strcat ('../');
-    end
-    currectSubj = char (strcat (filename,subjects(1),'_',conditions(1),'.set'));
-    InPath = char (strcat (CommonPath,subjects(1),'/'));
-    EEG = pop_loadset( 'filename', currectSubj, 'filepath', InPath);
-    
-    %Adjust time limits according to the data
-    if tmin < fix(single(EEG.xmin*1000))
-        fprintf(2,'\n%i ms is out of boundaries!!!',tmin);
-        tmin = fix(single(EEG.xmin*1000));
-        fprintf(2,'\nValue adjusted to lower time limit (%i ms)\n',tmin);
-        fprintf('\n');
-    end
-    if tmax > fix(single(EEG.xmax*1000))
-        fprintf(2,'\n%i ms is out of boundaries!!!',tmax);
-        tmax = fix(single(EEG.xmax*1000));
-        fprintf(2,'\nValue adjusted to upper time limit (%i ms)\n',tmax);
-        fprintf('\n');
     end
     
     %Save the user input parameters in the pop_cfg folder
@@ -317,25 +319,17 @@ if ~nargin
         num2str(tmin),num2str(tmax),num2str(tres),num2str(frmin),num2str(frmax),num2str(fres),num2str(extraedges),...
         num2str(ChannelsList),num2str(EpochsList),logtransform,evok,normalizeWavelet,num2str(cycles));
     fclose(fid);
-    
+
     rehash;
-    
+
+    if isempty(ChannelsList)
+        ChannelsList = [1:maxChans];
+    end
 end
 
-%Check the input is correct
-if tmin > tmax
-    fprintf(2,'\nThe time window is  not valid!!!\n');
-    fprintf('\n');
-    return
-end
-if frmin > frmax
-    fprintf(2,'\nThe frequency band is not valid!!!\n');
-    fprintf('\n');
-    return
-end
 
 subjN=length(subjects);
-condN = size(conditions,2);
+condN=size(conditions,2);
 
 %Generate Wavelet folder and conditions subfolders
 if exist('PROJECTPATH','var')
@@ -366,7 +360,7 @@ end
 
 for i = 1:subjN
     for j = 1:condN
-        
+        fprintf('--- Processing subject/condition: %d/%d\n', i, j);
         currectSubj = char (strcat (filename,subjects(i),'_',conditions(j),'.set'));
         InPath = char (strcat (CommonPath,subjects(i),'/'));
         OutPath = char (strcat (CommonPath,'Wavelets/',conditions(j),'/',subjects(i),'_',conditions(j)));
@@ -503,21 +497,7 @@ for i = 1:subjN
             end
             
         end
-        
-        maxChns = size(EEG.data,1);
-        if isempty(ChannelsList)
-            ChannelsList = [1:maxChns];
-        else if any(ChannelsList > maxChns) 
-            fprintf(2, '\nBad channels list. At least one channel > %d: [%s]\n', maxChns, num2str(ChannelsList))
-            return
-        end
 
-        maxEpochs = size(EEG.data,3);
-        if any(EpochsList > maxEpochs)
-            fprintf(2, '\nBad epoch list. At least one epoch > %d: [%s]\n', maxEpochs, num2str(EpochsList))
-            return
-        end
-        
         %Calculate wavelets at each frequency
         if i==1 && j==1 %do it only once      
             %Fa=linspace(frmin,frmax,(frmax-frmin+1));
