@@ -163,7 +163,7 @@ if ~nargin
     InPath = char(strcat(CommonPath,subjects(1),'/'));
     EEG = pop_loadset( 'filename', currectSubj, 'filepath', InPath);
 
-    timeRange = [EEG.xmin*1000 EEG.xmax*1000];
+    timeRange = int64([EEG.xmin*1000 EEG.xmax*1000]);
     maxFreq =  EEG.srate/2;
     maxChans = size(EEG.data,1);
     maxEpochs = size(EEG.data,3);
@@ -171,7 +171,7 @@ if ~nargin
     isInt        = @(x)(isfinite(x) && x==floor(x));
     isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
     isIntIn      = @(x,lb,ub)(length(x) == 1 && isInt(x) && (x >= lb) && (x <= ub));
-    warnDlg       = @(msg)uiwait(errordlg(msg, 'Review parameter'));
+    warnDlg      = @(msg)uiwait(errordlg(msg, 'Review parameter'));
     
     while true
         parameters    = { ...
