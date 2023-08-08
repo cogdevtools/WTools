@@ -166,7 +166,6 @@ if ~nargin
     timeRange = int64([EEG.xmin*1000 EEG.xmax*1000]);
     maxFreq =  EEG.srate/2;
     maxChans = size(EEG.data,1);
-    maxEpochs = size(EEG.data,3);
 
     isInt        = @(x)(isfinite(x) && x==floor(x));
     isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
@@ -199,7 +198,7 @@ if ~nargin
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
-            { 'style' 'text'       'string' sprintf('Epochs to process: array elem in [%d,%d], [] = all', 1, maxEpochs) } ...
+            { 'style' 'text'       'string' 'Epochs to process: array elem >= 1, [] = all' } ...
             { 'style' 'edit'       'string' answer{1,9} } ...
             { 'style' 'text'       'string' '' } ...
             { 'style' 'text'       'string' '' } ...
@@ -290,7 +289,7 @@ if ~nargin
             continue;
         end
         EpochsList=unique(str2num(answer{1,9}));
-        if ~isempty(EpochsList) && (~all(arrayfun(isInt, EpochsList)) || any(EpochsList < 1) || any(EpochsList > maxEpochs)) 
+        if ~isempty(EpochsList) && (~all(arrayfun(isInt, EpochsList)) || any(EpochsList < 1)) 
             warnDlg(sprintf('Bad epochs list, got: %s\', answer{1,9}));
             continue;
         end
@@ -302,8 +301,8 @@ if ~nargin
             warnDlg(sprintf('Bad wavelet cycles value, got: %s', answer{1,13}))
             continue;
         end
-        if evok && ~isempty(EpochsList) && any(EpochsList > 1)
-            warnDlg('Option "Compute Evoked Oscillations" requires epochs to process [] or [1]');
+        if evok && ~isempty(EpochsList)
+            warnDlg('Option "Compute Evoked Oscillations" requires epochs to process []');
             continue    
         end
         break
@@ -377,6 +376,10 @@ for i = 1:subjN
         [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
         EEG = eeg_checkset( EEG );
         
+        %Adjust ecpochs list
+        nEpochs =  size(EEG.data, 3);
+        adjEpochsList = EpochsList(find(EpochsList <= nEpochs));
+
         %ROUND times to 0 in case they are in floating point format
         EEG.times = round(EEG.times);
         
@@ -542,7 +545,7 @@ for i = 1:subjN
             
         end
         
-        average(EEG,OutPath,Fa,tmin,tmax,tres,'cwt',cycles/2,ChannelsList,[0  0  0  1  0  0],0,EpochsList,cwtmatrix,extraedges,logtransform,varargin);
+        average(EEG,OutPath,Fa,tmin,tmax,tres,'cwt',cycles/2,ChannelsList,[0  0  0  1  0  0],0,adjEpochsList,cwtmatrix,extraedges,logtransform,varargin);
         
         EEG = eeg_checkset( EEG );
         
