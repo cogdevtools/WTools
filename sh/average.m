@@ -1,7 +1,7 @@
 function files=average(EEG,str,Fa,tim1,tim2,dt,wname,fb,chantoanal,res,normmeth,EpochsList,cwtmatrix,extraedges,logtransform,varargin)
 % Function call to perform time-frequency analysis
 %
-% Written by Morten Mørup (originally called tfanalysis.m)
+% Written by Morten Mï¿½rup (originally called tfanalysis.m)
 %
 % Modified by Eugenio Parise (CDC CEU 2010 - 2011) to perform time-frequency analysis
 % using Gergo's original algorithm, to perform on individual epochs if needed,
@@ -44,7 +44,7 @@ function files=average(EEG,str,Fa,tim1,tim2,dt,wname,fb,chantoanal,res,normmeth,
 %   Output:
 %   files       path and name of files generated
 %
-% Copyright (C) Morten Mørup and Technical University of Denmark,
+% Copyright (C) Morten Mï¿½rup and Technical University of Denmark,
 % September 2006
 %
 % This program is free software; you can redistribute it and/or modify
@@ -135,9 +135,9 @@ else
         actualepoch=epochstotransform(i);
         if i==1
             fprintf('\n');
-            disp(['Operating on epoch nr: ' num2str(actualepoch) '/' num2str(lc)])
+            disp(['Operating on epoch nr: ' num2str(actualepoch) ' (' num2str(i) '/' num2str(lc) ')'])
         else
-            disp(['Operating on epoch nr: ' num2str(actualepoch) '/' num2str(lc) ' estimated time remaining ' num2str((lc-i)*(cputime-t)/60) ' minutes']);
+            disp(['Operating on epoch nr: ' num2str(actualepoch) ' (' num2str(i) '/' num2str(lc) ') estimated time remaining ' num2str((lc-i)*(cputime-t)/60) ' minutes']);
         end
         t=cputime;
         if strcmp(wname,'Gabor (stft)')

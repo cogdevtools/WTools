@@ -32,7 +32,7 @@ pathResult=strfind(complexwtPath,strcat(filesep,'sh',filesep,'complexwt.m'));
 
 if isempty(pathResult)
     
-    string=strcat(filesep,'WTools_2016',filesep,'sh',filesep);
+    string=strcat(filesep,'WTools',filesep,'sh',filesep);
     fprintf(2,'\nWTools path is not set correctly!!!\n');
     fprintf(2,'It should point to the folder %s.\n',string);
     fprintf(2,'Please fix it.\n');

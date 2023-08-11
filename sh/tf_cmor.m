@@ -1,4 +1,4 @@
-function tf_cmor(subjects,tmin,tmax,tres,frmin,frmax,fres,extraedges,ChannelsList,EpochsList,logtransform,varargin)
+function tf_cmor(subjects,tmin,tmax,tres,frmin,frmax,fres,extraedges,ChannelsList,EpochsList,normalizeWavelet,cycles,logtransform,varargin)
 
 %tf_cmor.m
 %Created by Eugenio Parise
@@ -18,9 +18,9 @@ function tf_cmor(subjects,tmin,tmax,tres,frmin,frmax,fres,extraedges,ChannelsLis
 %
 %Usage:
 %
-%tf_cmor('01',-300,1200,1,10,90,1,0,[],[],1);
-%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],1);
-%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],0,'evok');
+%tf_cmor('01',-300,1200,1,10,90,1,0,[],[],0,7,1);
+%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],0,7,1);
+%tf_cmor([],-300,1200,1,10,90,1,2000,[],[],0,7,0,'evok');
 
 if ~exist('inputgui.m','file')    
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
@@ -129,16 +129,16 @@ if ~nargin
     end
     
     %SET defaultanswer0
-    defaultanswer0={[],[],1,[],[],1,0,'[  ]','[  ]',0,0};
+    defaultanswer0={[],[],1,[],[],1,0,'[  ]','[  ]',0,0,0,7};
     
     mandatoryanswersN=length(defaultanswer0);
     
     %Load previously called parameters if existing
     pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'tf_cmor_cfg.m');
     if exist(pop_cfgfile,'file')
+        defaultanswer={};
         tf_cmor_cfg;
         try
-            defaultanswer=defaultanswer;
             defaultanswer{1,mandatoryanswersN};
         catch
             fprintf('\n');
@@ -151,131 +151,184 @@ if ~nargin
         defaultanswer=defaultanswer0;
     end
     
-    parameters    = { ...
-        { 'style' 'text'       'string' 'Time (ms): From     ' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,1} } ...
-        { 'style' 'text'       'string' 'To' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,2} } ...
-        { 'style' 'text'       'string' 'By (default = 1)' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,3} } ...
-        { 'style' 'text'       'string' 'Frequency (Hz): From' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,4} } ...
-        { 'style' 'text'       'string' 'To' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,5} } ...
-        { 'style' 'text'       'string' 'By (default = 1)' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,6} } ...
-        { 'style' 'text'       'string' 'Edges Padding (ms; default = 0)' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,7} } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' 'Channels to process ([  ] = all)' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,8} } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' 'Epochs to process ([  ] = all)' } ...
-        { 'style' 'edit'       'string' defaultanswer{1,9} } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' 'Log10-Transform' 'enable' enable_Log } ...
-        { 'style' 'checkbox'   'value' defaultanswer{1,10} 'enable' enable_Log } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' 'Compute Evoked Oscillations' } ...
-        { 'style' 'checkbox'   'value' defaultanswer{1,11} } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } };
-    
-    geometry = { ...
-        [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] ...
-        [1.34 2 0.25 0.25 0.25 0.25] [1.34 2 0.25 0.25 0.25 0.25] [1 0.5 0.25 0.5 0.5 0.5] ...
-        [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] };
-    
-    answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set wavelet transformation parameters');
-    
-    if isempty(answer)
-        return %quit on cancel button
-    end
-    
-    tmin=str2num(answer{1,1});
-    tmax=str2num(answer{1,2});
-    tres=str2num(answer{1,3});
-    frmin=str2num(answer{1,4});
-    frmax=str2num(answer{1,5});
-    fres=str2num(answer{1,6});
-    extraedges=str2num(answer{1,7});
-    ChannelsList=str2num(answer{1,8});
-    EpochsList=str2num(answer{1,9});
-    logtransform=answer{1,10};
-    evok=answer{1,11};
-    if evok
-        varargin='evok';
-    end
-    
-    %Load first subject to adjust time limits
+    answer = defaultanswer;
+
+    %Load first subject to gather param domains
     if exist('PROJECTPATH','var')
         CommonPath = strcat (PROJECTPATH,'/');
     else
         CommonPath = strcat ('../');
     end
-    currectSubj = char (strcat (filename,subjects(1),'_',conditions(1),'.set'));
-    InPath = char (strcat (CommonPath,subjects(1),'/'));
+    currectSubj = char(strcat(filename,subjects(1),'_',conditions(1),'.set'));
+    InPath = char(strcat(CommonPath,subjects(1),'/'));
     EEG = pop_loadset( 'filename', currectSubj, 'filepath', InPath);
+
+    timeRange = int64([EEG.xmin*1000 EEG.xmax*1000]);
+    maxFreq =  EEG.srate/2;
+    maxChans = size(EEG.data,1);
+
+    isInt        = @(x)(isfinite(x) && x==floor(x));
+    isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
+    isIntIn      = @(x,lb,ub)(length(x) == 1 && isInt(x) && (x >= lb) && (x <= ub));
+    warnDlg      = @(msg)uiwait(errordlg(msg, 'Review parameter'));
     
-    %Adjust time limits according to the data
-    if tmin < fix(single(EEG.xmin*1000))
-        fprintf(2,'\n%i ms is out of boundaries!!!',tmin);
-        tmin = fix(single(EEG.xmin*1000));
-        fprintf(2,'\nValue adjusted to lower time limit (%i ms)\n',tmin);
-        fprintf('\n');
-    end
-    if tmax > fix(single(EEG.xmax*1000))
-        fprintf(2,'\n%i ms is out of boundaries!!!',tmax);
-        tmax = fix(single(EEG.xmax*1000));
-        fprintf(2,'\nValue adjusted to upper time limit (%i ms)\n',tmax);
-        fprintf('\n');
+    while true
+        parameters    = { ...
+            { 'style' 'text'       'string' sprintf('Time (ms) [%d,%d]: From', timeRange(1),timeRange(2)) } ...
+            { 'style' 'edit'       'string' answer{1,1} } ...
+            { 'style' 'text'       'string' 'To' } ...
+            { 'style' 'edit'       'string' answer{1,2} } ...
+            { 'style' 'text'       'string' 'By (default = 1)' } ...
+            { 'style' 'edit'       'string' answer{1,3} } ...
+            { 'style' 'text'       'string' sprintf('Frequency (Hz) [%d,%d]: From', 1, maxFreq) } ...
+            { 'style' 'edit'       'string' answer{1,4} } ...
+            { 'style' 'text'       'string' 'To' } ...
+            { 'style' 'edit'       'string' answer{1,5} } ...
+            { 'style' 'text'       'string' 'By (default = 1)' } ...
+            { 'style' 'edit'       'string' answer{1,6} } ...
+            { 'style' 'text'       'string' 'Edges Padding (ms), default = 0:' } ...
+            { 'style' 'edit'       'string' answer{1,7} } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' sprintf('Channels to process: array elem in [%d,%d], [] = all', 1, maxChans) } ...
+            { 'style' 'edit'       'string' answer{1,8} } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' 'Epochs to process: array elem >= 1, [] = all' } ...
+            { 'style' 'edit'       'string' answer{1,9} } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' 'Log10-Transform' 'enable' enable_Log } ...
+            { 'style' 'checkbox'   'value' answer{1,10} 'enable' enable_Log } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' 'Compute Evoked Oscillations' } ...
+            { 'style' 'checkbox'   'value' answer{1,11} } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' 'Normalize wavelets' } ...
+            { 'style' 'checkbox'   'value' answer{1,12} } ...
+            { 'style' 'text'       'string' 'Wavelet cycles: value in [2,15])' } ...
+            { 'style' 'edit'       'string' answer{1,13} } ...
+            { 'style' 'text'       'string' '' } ...
+            { 'style' 'text'       'string' '' } ... 
+            };
+        
+        geometry = { ...
+            [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] ...
+            [1.34 2 0.25 0.25 0.25 0.25] [1.34 2 0.25 0.25 0.25 0.25] [1 0.5 0.25 0.5 0.5 0.5] ...
+            [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 1 0.25 0.25 0.25] };
+        
+        
+        answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set wavelet transformation parameters');
+        
+        if isempty(answer)
+            return %quit on cancel button
+        end
+        
+        isInt        = @(x)(isfinite(x) && x==floor(x));
+        isIntGT      = @(x,lb)(length(x) == 1 && isInt(x) && x > lb);
+        isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
+        isIntBetween = @(x,lb,ub)(isIntGTE(x,lb) && x <= ub);
+        warnDlg       = @(msg)uiwait(warndlg(msg, 'Review parameter'));
+
+        tmin=str2num(answer{1,1});
+        if ~isIntIn(tmin, timeRange(1), timeRange(2)-1)
+            warnDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
+            continue;
+        end
+        tmax=str2num(answer{1,2});
+        if ~isIntIn(tmax, tmin+1, timeRange(2))
+            warnDlg(sprintf('Bad max time value, got: %s', answer{1,2}));
+            continue;
+        end
+        tres=str2num(answer{1,3});
+        if ~isIntIn(tres, 1, max(1,(tmax-tmin+1)/2))
+            warnDlg(sprintf('Bad time resolution value, got: %s', answer{1,3}));
+            continue;
+        end
+        frmin=str2num(answer{1,4});
+        if ~isIntIn(frmin, 1, max(1, maxFreq-1)) 
+            warnDlg(sprintf('Bad min frequency value, got: %s', answer{1,4}));
+            continue;
+        end
+        frmax=str2num(answer{1,5});
+        if ~isIntIn(frmax, frmin, maxFreq) 
+            warnDlg(sprintf('Bad max frequency value, got: %s', answer{1,5}));
+            continue;
+        end
+        fres=str2num(answer{1,6});
+        if ~isIntIn(fres, 1, max(1,(frmax-frmin+1)/2)) 
+            warnDlg(sprintf('Bad frequency resolution value, got: %s', answer{1,6}));
+            continue;
+        end
+        extraedges=str2num(answer{1,7});
+        if ~isIntGTE(extraedges, 0) 
+            warnDlg(sprintf('Bad extra edges value, got: %s', answer{1,7}));
+            continue;
+        end
+        ChannelsList=unique(str2num(answer{1,8}));
+        if ~isempty(ChannelsList) && (~all(arrayfun(isInt, ChannelsList)) || any(ChannelsList < 1) || any(ChannelsList > maxChans)) 
+            warnDlg(sprintf('Bad channels list, got: %s\', answer{1,8}));
+            continue;
+        end
+        EpochsList=unique(str2num(answer{1,9}));
+        if ~isempty(EpochsList) && (~all(arrayfun(isInt, EpochsList)) || any(EpochsList < 1)) 
+            warnDlg(sprintf('Bad epochs list, got: %s\', answer{1,9}));
+            continue;
+        end
+        logtransform=answer{1,10};
+        evok=answer{1,11};
+        normalizeWavelet=answer{1,12};
+        cycles=str2num(answer{1,13});
+        if ~isIntBetween(cycles, 2, 15)
+            warnDlg(sprintf('Bad wavelet cycles value, got: %s', answer{1,13}))
+            continue;
+        end
+        if evok && ~isempty(EpochsList)
+            warnDlg('Option "Compute Evoked Oscillations" requires epochs to process []');
+            continue    
+        end
+        break
+    end 
+
+    if evok
+        varargin='evok';
     end
     
     %Save the user input parameters in the pop_cfg folder
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
-    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''[ %s ]'' ''[ %s ]'' %i %i};',...
+    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''%s'' ''[ %s ]'' ''[ %s ]'' %i %i %i ''%s''};',...
         num2str(tmin),num2str(tmax),num2str(tres),num2str(frmin),num2str(frmax),num2str(fres),num2str(extraedges),...
-        num2str(ChannelsList),num2str(EpochsList),logtransform,evok);
+        num2str(ChannelsList),num2str(EpochsList),logtransform,evok,normalizeWavelet,num2str(cycles));
     fclose(fid);
-    
+
     rehash;
-    
+
+    if isempty(ChannelsList)
+        ChannelsList = [1:maxChans];
+    end
 end
 
-%Check the input is correct
-if tmin > tmax
-    fprintf(2,'\nThe time window is  not valid!!!\n');
-    fprintf('\n');
-    return
-end
-if frmin > frmax
-    fprintf(2,'\nThe frequency band is not valid!!!\n');
-    fprintf('\n');
-    return
-end
 
 subjN=length(subjects);
-condN = size(conditions,2);
+condN=size(conditions,2);
 
 %Generate Wavelet folder and conditions subfolders
 if exist('PROJECTPATH','var')
@@ -306,7 +359,7 @@ end
 
 for i = 1:subjN
     for j = 1:condN
-        
+        fprintf('--- Processing subject/condition: %d/%d\n', i, j);
         currectSubj = char (strcat (filename,subjects(i),'_',conditions(j),'.set'));
         InPath = char (strcat (CommonPath,subjects(i),'/'));
         OutPath = char (strcat (CommonPath,'Wavelets/',conditions(j),'/',subjects(i),'_',conditions(j)));
@@ -323,6 +376,10 @@ for i = 1:subjN
         [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
         EEG = eeg_checkset( EEG );
         
+        %Adjust ecpochs list
+        nEpochs =  size(EEG.data, 3);
+        adjEpochsList = EpochsList(find(EpochsList <= nEpochs));
+
         %ROUND times to 0 in case they are in floating point format
         EEG.times = round(EEG.times);
         
@@ -443,22 +500,13 @@ for i = 1:subjN
             end
             
         end
-        
-        if isempty(ChannelsList)
-            ChannelsList = [1:size(EEG.data,1)];
-        end
-        
+
         %Calculate wavelets at each frequency
-        if i==1 && j==1 %do it only once
-            
-            M_PI = 3.14159265358979323846264338327950288;
-            
+        if i==1 && j==1 %do it only once      
             %Fa=linspace(frmin,frmax,(frmax-frmin+1));
             Fa=(frmin:fres:frmax);
             scales=Fa;
             Fs=EEG.srate/tres;
-            fb=3.5;
-            
             cwtmatrix=cell(length(Fa),2);
             
             %Calculate CWT at each frequency.
@@ -467,18 +515,22 @@ for i = 1:subjN
                 fprintf('\nComputing complex Morlet wavelet at %i Hz', scales(iFreq));
                 
                 freq = scales(iFreq);
-                sigmaT = fb/(freq*M_PI);
+                sigmaT = cycles/(2*freq*pi);
                 
                 %use COMPLEX wavelet (sin and cos components) in a form that gives
                 %the RMS strength of the signal at each frequency.
                 time = -4/freq:1/Fs:4/freq;
-                waveletScale = (1/(Fs*sigmaT*sqrt(M_PI))).*exp(((time.^2)/(-2*(sigmaT^2))));
-                waveletRe = waveletScale.*cos(2*M_PI*freq*time);
-                waveletIm = waveletScale.*sin(2*M_PI*freq*time);
+                if normalizeWavelet 
+                    %generate wavelets with unit energy
+                    waveletScale = (1/sqrt(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
+                else
+                    waveletScale = (1/(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
+                end
+                waveletRe = waveletScale.*cos(2*pi*freq*time);
+                waveletIm = waveletScale.*sin(2*pi*freq*time);
                 
                 cwtmatrix{iFreq,1}=waveletRe(1,:);
                 cwtmatrix{iFreq,2}=waveletIm(1,:);
-                
             end
             
             fprintf('\n');
@@ -493,7 +545,7 @@ for i = 1:subjN
             
         end
         
-        average(EEG,OutPath,Fa,tmin,tmax,tres,'cwt',fb,ChannelsList,[0  0  0  1  0  0],0,EpochsList,cwtmatrix,extraedges,logtransform,varargin);
+        average(EEG,OutPath,Fa,tmin,tmax,tres,'cwt',cycles/2,ChannelsList,[0  0  0  1  0  0],0,adjEpochsList,cwtmatrix,extraedges,logtransform,varargin);
         
         EEG = eeg_checkset( EEG );
         
