@@ -387,3 +387,9 @@ end
 guidata(hObject, handles);
 
 
+function HelpPushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to HelpPushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
+guidata(hObject, handles);
