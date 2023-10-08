@@ -192,7 +192,7 @@ if flatepochN
     fprintf('\n');
 end
 
-disp(['Saving file (this might take a while)']);
+disp(['Saving time frequency analisys: this might take a while...']);
 fprintf('\n');
 tim=EEG.times(tim1:dt:tim2);
 wavetyp=[wname '-' num2str(fb)];
@@ -274,4 +274,5 @@ else
         save([str '-Induced'], 'WT', 'chanlocs','Fs','Fa','wavetyp', 'tim','nepoch');
         files{end+1}=[str '-Induced'];
     end
+    disp(['Time frequecy analysis saved!']);
 end
