@@ -147,13 +147,13 @@ if ~nargin
     end
 
     %CHECK if the data have been log-transformed
-    [enable_uV logFlag]=check_evok_log(sla, PROJECTPATH);
+    [enable_uV logFlag]=check_evok_log(PROJECTPATH);
     
     %SET defaultanswer0
     %SET color limits and GUI
     if logFlag
         defaultanswer0={'[    ]','[    ]','[-10.0    10.0]'};
-        Scale='Scale (±x% change)';
+        Scale='Scale (ï¿½x% change)';
     else
         defaultanswer0={'[    ]','[    ]','[-0.5    0.5]'};
         Scale='Scale (mV)';

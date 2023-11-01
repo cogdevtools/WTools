@@ -128,7 +128,7 @@ if ~nargin
     end
     
     %CHECK if the data have been log-transformed
-    [enable_uV logFlag]=check_evok_log(sla, PROJECTPATH);
+    [enable_uV logFlag]=check_evok_log(PROJECTPATH);
     
     %SET defaultaswer0
     defaultanswer0={[],[],[],[]};

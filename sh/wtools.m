@@ -26,6 +26,7 @@ function varargout = wtools(varargin)
 
 % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
 
+WTLog.ctxReset()
 %CHECK WTools path is set correctly
 complexwtPath=which('complexwt.m');
 pathResult=strfind(complexwtPath,strcat(filesep,'sh',filesep,'complexwt.m'));
@@ -72,21 +73,7 @@ function wtools_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for wtools
 handles.output = hObject;
-
-% INACTIVATE the local icadefs.m in the sh folder on PCs
-if ispc
-    sla='\';
-    wtoolspath = which('wtools.m');
-    slashes = findstr(wtoolspath,sla);
-    wtoolspath = strcat(wtoolspath(1:slashes(end)));
-    if exist(strcat(wtoolspath,'icadefs.m'),'file') == 2
-        currentFolder = pwd;
-        cd (wtoolspath);
-        movefile('icadefs.m', 'NotActive_icadefs.m');
-        cd (currentFolder);
-    end
-end
-
+WTUtils.wtOpen()
 % Update handles structure
 guidata(hObject, handles);
 
@@ -105,24 +92,6 @@ function varargout = wtools_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-
-function ProjectEdit_Callback(hObject, eventdata, handles)
-% hObject    handle to ProjectEdit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of ProjectEdit as text
-%        str2double(get(hObject,'String')) returns contents of ProjectEdit as a double
-%
-%checks to see if input is empty. if so, default ProjectEdit to None
-if exist('PROJECTPATH','var')
-    set(handles.ProjectEdit_CreateFcn,'String',c);
-else
-    set(handles.ProjectEdit_CreateFcn,'String','None')
-end
-guidata(hObject, handles);
-
-
 % --- Executes during object creation, after setting all properties.
 function ProjectEdit_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to ProjectEdit (see GCBO)
@@ -134,23 +103,6 @@ function ProjectEdit_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-function SSnEdit_Callback(hObject, eventdata, handles)
-% hObject    handle to SSnEdit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of SSnEdit as text
-%        str2double(get(hObject,'String')) returns contents of SSnEdit as a double
-%
-%checks to see if input is empty. if so, default ProjectEdit to None
-if exist('PROJECTPATH','var')
-    set(handles.SSnEdit_CreateFcn,'String',nn);
-else
-    set(handles.SSnEdit_CreateFcn,'String','None')
-end
-guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -170,32 +122,20 @@ function NewPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to NewPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-newproject();
-if ispc
-    sla='\';
-else
-    sla='/';
-end
+WTLog.ctxOn('NewProject')
 try
-    PROJECTPATH=evalin('base','PROJECTPATH');
-catch
+    if newproject()
+        rootDir = WTProject.getRootDir();
+        set(handles.ProjectEdit, 'String', WTProject.getProjectName());
+        set(handles.SSnEdit,'String', '0');
+        cd(rootDir)
+    end
+catch me
+    set(handles.ProjectEdit, 'String', 'None');
+    set(handles.SSnEdit,'String', 'None');
+    WTLog.mexcpt(me)
 end
-if exist('PROJECTPATH','var')
-    c = PROJECTPATH(max(findstr(PROJECTPATH,sla))+1:end);
-    nn = '0';
-    set(handles.ProjectEdit,'String',c);
-    set(handles.SSnEdit,'String',nn);
-    %assignin('base','PROJECTPATH',PROJECTPATH);
-    clear global ans;
-elseif exist('handles.ProjectEdit','var')
-    %'Cancel' has been pressed on the ui
-    c = 'None';
-    nn = 'None';
-    set(handles.ProjectEdit,'String',c);
-    set(handles.SSnEdit,'String',nn);
-else
-    return
-end
+WTLog.ctxReset();
 guidata(hObject, handles);
 
 % --- Executes on button press in OpenPushButton.
@@ -203,39 +143,25 @@ function OpenPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to OpenPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-openproject();
-if ispc
-    sla='\';
-else
-    sla='/';
-end
+WTLog.ctxOn('OpenProject')
 try
-    PROJECTPATH=evalin('base','PROJECTPATH');
-catch
-end
-if exist('PROJECTPATH','var')
-    c = PROJECTPATH(max(findstr(PROJECTPATH,sla))+1:end);
-    set(handles.ProjectEdit,'String',c);
-    %assignin('base','PROJECTPATH',PROJECTPATH);
-    PROJECTPATH=evalin('base','PROJECTPATH');
-    addpath(strcat(PROJECTPATH,'/pop_cfg'));
-    if exist('subjgrand.m', 'file')
-        subjgrand;
-        nn = num2str(length(subjects));
-    else
-        nn = '0';
+    if openproject()
+        rootDir = WTProject.getRootDir();
+        set(handles.ProjectEdit, 'String', WTProject.getProjectName());
+        [found, subjg] = WTProject.readSubjectsGrand();
+        if found 
+            set(handles.SSnEdit,'String', num2str(length(subjg.subjects)))
+        else
+            set(handles.SSnEdit,'String', '0');
+        end
+        cd(rootDir)
     end
-    set(handles.SSnEdit,'String',nn);
-    clear global ans;
-elseif exist('handles.ProjectEdit','var')
-    %'Cancel' has been pressed on the ui
-    c = 'None';
-    nn = 'None';
-    set(handles.ProjectEdit,'String',c);
-    set(handles.SSnEdit,'String',nn);
-else
-    return
+catch me
+    set(handles.ProjectEdit, 'String', 'None');
+    set(handles.SSnEdit,'String', 'None');
+    WTLog.mexcpt(me)
 end
+WTLog.ctxReset();
 guidata(hObject, handles);
 
 % --- Executes on button press in ImportEEGPushButton.
@@ -243,7 +169,13 @@ function ImportEEGPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to ImportEEGPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-import2eegl();
+WTLog.ctxOn('Import')
+try
+    import2eegl();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset();  
 guidata(hObject, handles);
 
 % --- Executes on button press in SSManagerPushButton.
@@ -270,18 +202,18 @@ function WTPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to WTPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tf_cmor();
-if exist('subjects','var')
-    nn = num2str(length(subjects));
-    set(handles.SSnEdit,'String',nn);
-    clear global ans;
-elseif exist('handles.SSnEdit','var')
-    %'Cancel' has been pressed on the ui
-    nn = 'None';
-    set(handles.SSnEdit,'String',nn);
-else
-    return
+WTLog.ctxOn('Time/Freq analysis')
+try
+    tf_cmor();
+    if exist('subjects','var')
+        set(handles.SSnEdit, 'String', num2str(length(subjects)));
+    else
+        set(handles.SSnEdit, 'String', 'None');
+    end
+catch me
+    WTLog.mexcpt(me)
 end
+WTLog.ctxReset();  
 guidata(hObject, handles);
 
 % --- Executes on button press in Chop_BasePushButton.
@@ -289,7 +221,13 @@ function Chop_BasePushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to Chop_BasePushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-baseline_chop();
+WTLog.ctxOn('BaselineChop')
+try
+    baseline_chop();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in DifferencePushButton.
@@ -297,7 +235,13 @@ function DifferencePushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to DifferencePushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-difference();
+WTLog.ctxOn('Difference')
+try
+    difference();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in GrandPushButton.
@@ -324,7 +268,13 @@ function XavrPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to XavrPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-xavr();
+WTLog.ctxOn('XAvr')
+try
+    xavr();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in ChavrPushButton.
@@ -332,7 +282,13 @@ function ChavrPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to ChavrPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-chavr();
+WTLog.ctxOn('ChAvr')
+try
+    chavr();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in XavrSEPushButton.
@@ -340,7 +296,13 @@ function XavrSEPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to XavrSEPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-xavrse();
+WTLog.ctxOn('XAvrSe')
+try
+    xavrse();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in ChavrSEPushButton.
@@ -348,7 +310,13 @@ function ChavrSEPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to ChavrSEPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-chavrse();
+WTLog.ctxOn('ChAvrSe')
+try
+    chavrse();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in SmavrPushButton.
@@ -356,7 +324,13 @@ function SmavrPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to SmavrPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-smavr();
+WTLog.ctxOn('SmAvr')
+try
+    smavr();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in Smavr3dPushButton.
@@ -364,7 +338,13 @@ function Smavr3dPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to Smavr3dPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-smavr3d();
+WTLog.ctxOn('SmAvr3D')
+try
+    smavr3d();
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
 
 % --- Executes on button press in AvrretrievePushButton.
@@ -391,5 +371,34 @@ function HelpPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to HelpPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
+WTLog.ctxOn('Help')
+try
+    web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
+catch me
+    WTLog.mexcpt(me)
+end
+WTLog.ctxReset()
 guidata(hObject, handles);
+
+function LogLevelPopupMenu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ProjectEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+level = WTLog.getLogLevel();
+set(hObject, 'Value', level);
+guidata(hObject, handles);
+
+
+function LogLevelPopupMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to LogLevelPopupMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+WTLog.setLogLevel(hObject.Value);
+guidata(hObject, handles);
+
+% --- Executes during object deletion, before destroying properties.
+function WToolsMain_DeleteFcn(hObject, eventdata, handles)
+% hObject    handle to WToolsMain (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+WTUtils.wtClose()

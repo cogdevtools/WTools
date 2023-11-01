@@ -1,4 +1,4 @@
-function [enable_uV, varargout] = check_evok_log(sla, PROJECTPATH)
+function [enable_uV, varargout] = check_evok_log(PROJECTPATH)
 
 %check_evok_log.m
 %Created by Eugenio Parise
@@ -6,8 +6,8 @@ function [enable_uV, varargout] = check_evok_log(sla, PROJECTPATH)
 
 %Load previously called parameters from tf_cmor and baseline_chop (to set uV)
 enable_uV='on';
-tf_pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'tf_cmor_cfg.m');
-bs_pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'baseline_chop_cfg.m');
+tf_pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','tf_cmor_cfg.m');
+bs_pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','baseline_chop_cfg.m');
 
 %Initialize varargout
 varargout={ 0 0 0 0 };

@@ -87,26 +87,25 @@ t=0;
 N=length([tim1:dt:tim2]);
 flatepochN=0;
 
-if ispc
-    sla='\';
-else
-    sla='/';
-end
-
 if isempty(res)
     WT=zeros([length(chantoanal),length(Fa),N,size(X,3)]);
 else
     WT=zeros([length(chantoanal),length(Fa),N]);
 end
+
+WTLog.info('Transforming & averaging...')
+WTLog.ctxOn('Transform & Average')
+WTLog.setHeaderOn(false);
+
 lc=length(chantoanal);
 if isempty(res)
     k=0;
-    for j=chantoanal
+    for j=chantoanals
         k=k+1;
         if k==1
-            disp(['Operating on channel nr: ' num2str(k) '/' num2str(lc)])
+            WTLog.dbg(['Operating on channel nr: ' num2str(k) '/' num2str(lc)])
         else
-            disp(['Operating on channel nr: ' num2str(k) '/' num2str(lc) ' estimated time remaining ' num2str((lc-k)*(cputime-t)/60) ' minutes']);
+            WTLog.dbg(['Operating on channel nr: ' num2str(k) '/' num2str(lc) ' estimated time remaining ' num2str((lc-k)*(cputime-t)/60) ' minutes']);
         end
         t=cputime;
         if strcmp(wname,'Gabor (stft)')
@@ -117,7 +116,6 @@ if isempty(res)
         
     end
 else
-    
     %Introduced by Eugenio Parise to process individual epochs
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if isempty(EpochsList)
@@ -130,14 +128,12 @@ else
         lc=size(EpochsList,2);
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
     for i=1:epochsN
         actualepoch=epochstotransform(i);
         if i==1
-            fprintf('\n');
-            disp(['Operating on epoch nr: ' num2str(actualepoch) ' (' num2str(i) '/' num2str(lc) ')'])
+            WTLog.dbg(['Operating on epoch nr: ' num2str(actualepoch) ' (' num2str(i) '/' num2str(lc) ')'])
         else
-            disp(['Operating on epoch nr: ' num2str(actualepoch) ' (' num2str(i) '/' num2str(lc) ') estimated time remaining ' num2str((lc-i)*(cputime-t)/60) ' minutes']);
+            WTLog.dbg(['Operating on epoch nr: ' num2str(actualepoch) ' (' num2str(i) '/' num2str(lc) ') estimated time remaining ' num2str((lc-i)*(cputime-t)/60) ' minutes']);
         end
         t=cputime;
         if strcmp(wname,'Gabor (stft)')
@@ -186,14 +182,14 @@ else
     end
 end
 
+WTLog.setHeaderOn(true);
+WTLog.ctxOff()
+
 if flatepochN
-    fprintf(2, '#%i flat ephoch(s) detected!!!\n',flatepochN);
-    fprintf(2, 'The average and final result won''t be affected.');
-    fprintf('\n');
+    WTLog.warn('%i flat ephoch(s) detected (the average and final result won''t be affected).',flatepochN);
 end
 
-disp(['Saving time frequency analisys: this might take a while...']);
-fprintf('\n');
+WTLog.info('Saving time/frequency analisys: this might take a while...');
 tim=EEG.times(tim1:dt:tim2);
 wavetyp=[wname '-' num2str(fb)];
 chanlocs=chanlocs(chantoanal);
@@ -274,5 +270,5 @@ else
         save([str '-Induced'], 'WT', 'chanlocs','Fs','Fa','wavetyp', 'tim','nepoch');
         files{end+1}=[str '-Induced'];
     end
-    disp(['Time frequecy analysis saved!']);
+    WTLog.info('Time/Frequency analysis saved!');
 end
