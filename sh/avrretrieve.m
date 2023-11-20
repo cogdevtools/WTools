@@ -112,7 +112,7 @@ if ~nargin
     end
     
     %CHECK Evok
-    [enable_uV logFlag last_tfcmor]=check_evok_log(sla, PROJECTPATH);
+    [enable_uV logFlag last_tfcmor]=check_evok_log(PROJECTPATH);
     
     %SET defaultanswer0
     defaultanswer0={'1',[],[],[],[],0,last_tfcmor};

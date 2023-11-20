@@ -101,7 +101,7 @@ if ~nargin
     baseline_chop_flag=1;
     
     %CHECK if the data have been already log-transformed and check Evok
-    [enable_uV logFlag last_tfcmor]=check_evok_log(sla, PROJECTPATH);
+    [enable_uV logFlag last_tfcmor]=check_evok_log(PROJECTPATH);
     
     %SET defaultanswer0
     defaultanswer0={[],[],[],[],0,0,last_tfcmor};

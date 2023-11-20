@@ -1,5 +1,3 @@
-function PROJECTPATH=openproject
-
 %openproject.m
 %Created by Eugenio Parise
 %CDC CEU 2011
@@ -20,45 +18,25 @@ function PROJECTPATH=openproject
 %function openproject()
 
 %global PROJECTPATH;
-PROJECTPATH=uigetdir('.', 'Select a Folder/Project/Study');
-if ispc
-    sla='\';
-else
-    sla='/';
-end
-if ~PROJECTPATH
-    %'Cancel' has been pressed on the ui
-    clear;
-    return
-end
-cfg=strcat(PROJECTPATH,'/pop_cfg');
-dirstart=max(findstr(PROJECTPATH,sla));
-dirname=PROJECTPATH(dirstart+1:end);
-if ismac
-    minfiles=3;
-elseif ispc
-    minfiles=2;
-end
-if ~exist(cfg,'dir')
-    fprintf(2,'\nThe folder %s does not contain a pop_cfg folder!!!\n', dirname);
-    fprintf(2,'Please, open a valid project folder.\n');
-    fprintf('\n');
-    clear;
-    return
-elseif length(dir(cfg))<=minfiles
-    fprintf(2,'\nThe pop_cfg folder in the  project folder %s is empty!!!\n', dirname);
-    fprintf(2,'Please, put all necessary configuration files in the cfg folder.\n');
-    fprintf('\n');
-    clear;
-    return
-else
-    assignin('base','PROJECTPATH',PROJECTPATH);
-    clear dirstart;
-    fprintf('\nProject in folder %s open!!!\n', dirname);
-    fprintf('There are %i files in the pop_cfg folder.\n', length(dir(cfg))-minfiles);
-    fprintf('Check that these configuration files are up to date,\n');
-    fprintf('then you can use signal processing and plotting functions.\n');
-    fprintf('\n');
-    clear cfg dirname minfiles sla;
-    cd (PROJECTPATH);
+function success=openproject
+    success = false;
+
+    prjPath = WTUtils.uigetdir('.', 'Select the project directory...');
+    if isempty(prjPath)
+        return
+    end
+    
+    crntPrjPath = WTProject.getRootDir();
+    WTProject.setRootDir(prjPath);
+
+    if ~WTProject.openProject() 
+        WTLog.err('Failed to open project ''%s''', prjPath);
+        WTUtils.msggui('Error', 'Failed to open project! Check the log...');
+        WTProject.setRootDir(crntPrjPath);
+        return
+    end
+
+    WTLog.info('Project ''%s'' opened successfully', WTProject.getProjectName());
+    WTLog.warn('Check that the files in ''%s'' are up to date before to begin the processing!', WTProject.getCfgDir());
+    success = true;
 end

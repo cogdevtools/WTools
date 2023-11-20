@@ -92,7 +92,7 @@ end
 if ~nargin
     
     %CHECK if the data have been already log-transformed and check Evok
-    [enable_uV logFlag last_tfcmor last_bschop]=check_evok_log(sla, PROJECTPATH);
+    [enable_uV logFlag last_tfcmor last_bschop]=check_evok_log(PROJECTPATH);
     
     %SET defaultanswer0
     defaultanswer0={1,1,0,last_bschop};

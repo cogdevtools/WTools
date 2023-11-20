@@ -92,7 +92,7 @@ if ~nargin
     end
     
     %CHECK Evok
-    [enable_uV logFlag last_tfcmor]=check_evok_log(sla, PROJECTPATH);
+    [enable_uV logFlag last_tfcmor]=check_evok_log(PROJECTPATH);
     
     %SET defaultanswer0
     defaultanswer0={1,1,1,0,last_tfcmor};    
@@ -359,9 +359,7 @@ end
 condstosubtractN=length(condstosubtract);
 
 fprintf('\n');
-fprintf('Computing difference between conditions.\n');
-fprintf('Please wait...\n');
-fprintf('\n');
+fprintf('Computing difference between conditions...\n');
 
 if length(varargin)==1
     varargin=varargin{1};
@@ -408,8 +406,8 @@ for s=1:subjN
         correction=correction+1;
         
         %... inform the user
-        fprintf('Difference %s-%s successfully saved in subject %s folder!!!\n',C1,C2,char(subjects(s)));
-        fprintf('\n');
-        
+        fprintf('  Difference %s-%s saved in subject %s folder!!!\n',C1,C2,char(subjects(s)));        
     end
 end
+
+fprintf('Difference computed!\n');
