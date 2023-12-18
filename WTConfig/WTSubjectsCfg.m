@@ -1,0 +1,39 @@
+classdef WTSubjectsCfg < WTConfigStorage & matlab.mixin.Copyable
+
+    properties(Constant,Access=private)
+        FldSubjects = 'subjects'
+    end
+
+    properties
+        SubjectsList cell {WTValidations.mustBeALinearCellArrayOfNonEmptyString(SubjectsList)}  = {}
+    end
+
+    methods
+        function o = WTSubjectsCfg(ioProc)
+            o@WTConfigStorage(ioProc, 'subj.m');
+            o.default();
+        end
+
+        function default(o) 
+            o.SubjectsList = {};
+        end
+
+        function success = load(o) 
+            [success, subjs] = o.read(o.FldSubjects);
+            if ~success
+                return
+            end
+            try
+                o.SubjectsList = subjs;
+            catch me
+                WTLog().mexcpt(me);
+                success = false;
+            end 
+        end
+
+        function success = persist(o)
+            txt = WTFormatter.StringCellsField(o.FldSubjects, o.SubjectsList);
+            success = ~isempty(txt) && o.write(txt);
+        end
+    end
+end
