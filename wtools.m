@@ -35,12 +35,20 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 
-if nargin && ischar(varargin{1}) 
-    if ~strcmp(varargin{1}, 'no-splash')
-        gui_State.gui_Callback = str2func(varargin{1});
-    elseif nargin > 1 && ischar(varargin{2})
-        gui_State.gui_Callback = str2func(varargin{2});
+i = 1;
+while i <= nargin
+    if ischar(varargin{i})
+        switch varargin{i}
+            case 'no-splash'
+            case 'bg-color'
+                i = i+1;
+            case 'fg-color'
+                i = i+1;
+            otherwise
+                gui_State.gui_Callback = str2func(varargin{i});
+        end
     end
+    i = i+1;
 end
 if nargout
     [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
@@ -59,24 +67,44 @@ function wtools_OpeningFcn(hObject, eventdata, handles, varargin)
 wtLog = WTLog();
 forceClose = false;
 showSplash = true;
+bgColor = [];
+fgColor = [];
 
-try 
-    for i = 4:nargin
-        switch varargin{i-3}
+try
+    i = 1;
+    while i <= nargin-3
+        if ~ischar(varargin{i})
+            wtLog.warn('Unexpected command line option: %s', num2str(varargin{i}));
+            i = i+1;
+            continue;
+        end
+        switch varargin{i}
             case 'no-splash'
                 showSplash = false;
-                continue
-            otherwise
-                wtLog.warn('Unknown command line option: %s', num2str(varargin{i-3}));
+            case 'bg-color'
+                if i < nargin
+                    i = i+1;
+                    bgColor = varargin{i};
+                end
+            case 'fg-color'
+                if i < nargin
+                    i = i+1;
+                    fgColor = varargin{i};
+                end
         end
+        i = i+1;
     end
-    if showSplash && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))      
-        wtSplash()
-    end
+
     if ~WTUtils.eeglabDep()
         forceClose = true;
+    elseif ~any(strcmp(fieldnames(handles),'wtoolsOpen'))
+        if showSplash       
+            wtSplash()
+        end
+        if ~isempty(bgColor) && ~isempty(fgColor)
+            wtChangeGUIColors(hObject, bgColor, fgColor)
+        end
     end
-    wtChangeGUIColors(hObject, [0.1 0.8 0.4], [0 0.9 .1])
 catch me
     WTLog().mexcpt(me);
     forceClose = true;
