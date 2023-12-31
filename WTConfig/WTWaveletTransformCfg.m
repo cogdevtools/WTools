@@ -11,9 +11,9 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable
         FreqMin(1,1) uint32 {WTValidations.mustBeGT(FreqMin,0)} = 1
         FreqMax(1,1) uint32 {WTValidations.mustBeGT(FreqMax,0)} = 1
         FreqRes(1,1) uint32 {WTValidations.mustBeGT(FreqRes,0)} = 1
-        EdgePadding(1,1) uint16
-        ChannelsList(1,:) uint16
-        EpochsList(1,:) uint16
+        EdgePadding(1,1) uint32
+        ChannelsList(1,:) uint32
+        EpochsList(1,:) uint32
         LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         NormalizedWavelets(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0

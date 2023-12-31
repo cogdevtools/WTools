@@ -20,72 +20,77 @@
 % wtPerformCWT([],-300,1200,1,10,90,1,2000,[],[],0,7,1);
 % wtPerformCWT([],-300,1200,1,10,90,1,2000,[],[],0,7,0,'evok');
 
-function wtPerformCWT(interactive)
+function success = wtPerformCWT()
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
 
     if ~wtProject.checkIsOpen()
         return
     end
-    if nargin == 0 
-        interactive = true;
-    end
 
-    prefixData = wtProject.Config.Prefix;
-    subjsGrandData = wtProject.Config.SubjectsGrand;
-    condsGrandData = wtProject.Config.ConditionsGrand;
-    waveletTransformData = wtProject.Config.WaveletTransform;
+    interactive = wtProject.Interactive;
+    ioProc = wtProject.Config.IOProc;
+    prefixParams = wtProject.Config.Prefix;
+    subjsGrandParams = wtProject.Config.SubjectsGrand;
+    condsGrandParams = wtProject.Config.ConditionsGrand;
+    waveletTransformParams = wtProject.Config.WaveletTransform;
     subjects = wtProject.Config.Subjects.SubjectsList;
     conditions = wtProject.Config.Conditions.ConditionsList;
-    ProjectRootDir = wtProject.Config.getRootDir();
 
-    if logical(interactive)
-        if ~selectUpdateSubjects(subjsGrandData, subjects) || ...
-            ~selectUpdateConditions(condsGrandData, conditions)
+    if interactive
+        if ~selectUpdateSubjects(subjsGrandParams, subjects) || ...
+            ~selectUpdateConditions(condsGrandParams, conditions)
             return
         end
 
-        [timeRange, maxFreq, maxChans] = getTransformDomain(ProjectRootDir, prefixData.FilesPrefix, subjects{1}, conditions{1}); 
-        [~, ~, ~, ~, disableLog] = wtCheckEvokLog(); % Check if log was already run after averaging and if so disable the option here
+        [success, timeRange, maxFreq, maxChans] = getTransformDomain(ioProc, prefixParams.FilesPrefix, subjects{1}, conditions{1}); 
+        if ~success 
+            wtLog.err('Can''t determine CWT transform domain');
+            return
+        end
 
-        if ~setUpdateTransformPrms(waveletTransformData, timeRange, maxFreq, maxChans, ~disableLog)
+        [~, ~, ~, bsLogEnabled] = wtCheckEvokLog(); % Check if log was already run after averaging and if so disable the option here
+        if ~setUpdateTransformPrms(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
             return
         end
     end
 
-    timeMin = waveletTransformData.TimeMin;
-    timeMax = waveletTransformData.TimeMax;
-    ChannelsList = waveletTransformData.ChannelsList;
+    timeMin = waveletTransformParams.TimeMin;
+    timeMax = waveletTransformParams.TimeMax;
+    channelsList = waveletTransformParams.ChannelsList;
 
-    if isempty(ChannelsList)
-        ChannelsList = 1:maxChans;
+    if isempty(channelsList)
+        channelsList = 1:maxChans;
     end
 
+    subjects = subjsGrandParams.SubjectsList;
+    conditions = condsGrandParams.ConditionsList;
     subjectsCount = length(subjects);
-    conditionsCount = size(conditions,2);
+    conditionsCount = length(conditions);
     
     wtLog.info('Performing time/frequency analysis...');
-    ioProcessor = wtProject.Config.IOProc;
 
     for i = 1:subjectsCount
         for j = 1:conditionsCount
             wtLog.info('Processing subject/condition: %d/%d', i, j);
-            wtLog.ctxOn('Subj(%d)/Cond(%d)', i, j)
+            wtLog.pushStatus().ctxOn('Subj(%d)/Cond(%d)', i, j);
+            doItOnce = i == 1 && j == 1;
 
-            [success, EEG] = ioProcessor.readSubjectCondition(prefixData.FilesPrefix, subjects{i}, conditions{j});
+            [success, EEG] = ioProc.loadCondition(prefixParams.FilesPrefix, subjects{i}, conditions{j});
             if ~success
-                wtLog.ctxOff();
+                wtLog.popStatus();
                 return
             end 
 
             % Adjust ecpochs list
             nEpochs = size(EEG.data, 3);
-            adjEpochsList = waveletTransformData.EpochsList(waveletTransformData.EpochsList <= nEpochs);
+            adjEpochsList = waveletTransformParams.EpochsList(waveletTransformParams.EpochsList <= nEpochs);
     
             % ROUND times to 0 in case they are in floating point format
             EEG.times = round(EEG.times);
                 
-            if waveletTransformData.EvokedOscillations
+            if waveletTransformParams.EvokedOscillations
                 EEG.data = mean(EEG.data,3);
                 EEG.trials = 1;
                 EEG.epoch = EEG.epoch(1);
@@ -93,8 +98,8 @@ function wtPerformCWT(interactive)
             end
     
             % ENLARGE the edges before starting the wavelet transformation
-            if (waveletTransformData.EdgePadding / waveletTransformData.FreqMin) >= 1 % There is edges padding
-                timeToAdd = ceil(waveletTransformData.EdgePadding / 1); % This value will be used
+            if (waveletTransformParams.EdgePadding / waveletTransformParams.FreqMin) >= 1 % There is edges padding
+                timeToAdd = ceil(waveletTransformParams.EdgePadding / 1); % This value will be used
                 % to enlarge the edges and avoid distortions.
                 % It will be added to the left and to the right of the epoch.
                 try
@@ -131,7 +136,7 @@ function wtPerformCWT(interactive)
                 
                 % Adjust times limits according to the sampling and the new edges
                 % and find them as timepoints in EEG.times
-                if i == 1 && j == 1 % do it only once
+                if doItOnce 
                     extrapoints = mod(timeMin,timeRes);
                     timeMin = timeMin - timeToAdd;
                     if isempty(find(EEG.times == timeMin,1))
@@ -160,7 +165,7 @@ function wtPerformCWT(interactive)
                 
                 % Adjust times limits according to the sampling and the new edges
                 % and find them as timepoints in EEG.times
-                if i == 1 && j == 1 % do it only once
+                if doItOnce 
                     if ~find(EEG.times == timeMin)
                         timeMin = timeMin - mod(timeMin,timeRes);
                     end
@@ -174,41 +179,42 @@ function wtPerformCWT(interactive)
             end
     
             % Calculate wavelets at each frequency (once)
-            if i == 1 && j == 1
-                cwMatrix, Fa = generateMorletWavelets(waveletTransformData, EEG.srate);     
+            if doItOnce
+                [cwMatrix, Fa] = generateMorletWavelets(waveletTransformParams, EEG.srate);     
             end
             
-            [success, ~] = average(EEG, ioProcessor, waveletTransformData, subjects{i}, conditions{j}, Fa, timeMin, timeMax,'cwt', ...
-                ChannelsList, {IOProcessor.WaveletsAnalisys_avWT}, 0, adjEpochsList, cwMatrix);
+            [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMin, timeMax, 'cwt', ...
+                channelsList, {WTIOProcessor.WaveletsAnalisys_avWT}, 0, adjEpochsList, cwMatrix);
 
             if ~success
-                wtLog.ctxOff(); 
+                wtLog.popStatus(); 
                 return
             end
 
             WTUtils.eeglabRun('eeg_checkset', EEG);
+            wtLog.popStatus(); 
         end
     end
-    % Assign the variable subjects to the caller workspace
-    assignin('caller','subjects',subjects);
-    wtLog.ctxOff(); 
+
     wtLog.info('Time/Frequency analysis completed!');
+    success = true;
 end
 
 function success = selectUpdateSubjects(subjectsGrand, subjectsList) 
     success = false;
+    wtLog = WTLog();
     if isempty(subjectsList)
-        wtLog.warn('Empty subject list')
+        wtLog.warn('Empty subjects list');
         return
     end 
-    subjectsList = wtStrCellsSelectGUI(subjectsList, 'Select subjects to transform:');
+    subjectsList = WTUtils.stringsSelectDlg('Select subjects\nto transform:', subjectsList);
     if isempty(subjectsList)
-        wtLog.warn('No subjects selected')
+        wtLog.warn('No subjects selected');
         return
     end
     subjectsGrand.SubjectsList = subjectsList;
     if ~subjectsGrand.persist()
-        wtLog.err('Failed to save subjects grand params')
+        wtLog.err('Failed to save subjects grand params');
         return
     end
     success = true;
@@ -216,65 +222,71 @@ end
 
 function success = selectUpdateConditions(condsGrand, conditionsList) 
     success = false;
+    wtLog = WTLog();
     if isempty(conditionsList)
-        WTLog().warn('Empty conditions list')
+        wtLog.warn('Empty conditions list');
         return
     end
-    conditionsList = wtStrCellsSelectGUI(conditionsList, 'Select conditions to transform:');
+    conditionsList = WTUtils.stringsSelectDlg('Select conditions to\ntransform:', conditionsList);
     if isempty(conditionsList)
-        WTLog().warn('No conditions selected')
+        wtLog.warn('No conditions selected');
         return
     end
-    condsGrand.ConditionsList = conditions;
+    condsGrand.ConditionsList = conditionsList;
     condsGrand.ConditionsDiff = {};
     if ~condsGrand.persist() 
-        WTLog().err('Failed to save conditions grand params')
+        wtLog.err('Failed to save conditions grand params');
         return
     end
     success = true;
 end
 
-function [timeRange, maxFreq, maxChans] = getTransformDomain(dataFileDir, dataFilePx, subject, condition) 
-    fileName = strcat(dataFilePx, subject, '_', condition,'.set');
-    inPath = fullfile(dataFileDir, subject);
-    EEG = WTUtils.eeglabRun('pop_loadset', 'filename', fileName, 'filepath', inPath);
+function [success, timeRange, maxFreq, maxChans] = getTransformDomain(ioProc, dataFilePx, subject, condition) 
+    [success, EEG] = ioProc.loadCondition(dataFilePx, subject, condition, true);
+    if ~success 
+        timeRange = [];
+        maxFreq = 0;
+        maxChans = 0;
+        return 
+    end
     timeRange = int64([EEG.xmin*1000 EEG.xmax*1000]);
     maxFreq = EEG.srate/2;
     maxChans = size(EEG.data, 1);
 end
 
-function success = setUpdateTransformPrms(waveletTransformData, timeRange, maxFreq, maxChans) 
+function success = setUpdateTransformPrms(waveletTransformParams, timeRange, maxFreq, maxChans, enableLog) 
     success = false;
-    if ~wtCWTParamsGUI(waveletTransformData, timeRange, maxFreq, maxChans)
+    wtLog = WTLog();
+    if ~wtCWTParamsGUI(waveletTransformParams, timeRange, maxFreq, maxChans, enableLog)
         return
     end
-    if ~waveletTransformData.persist() 
-        WTLog().err('Failed to save complex Morlet transform params')
+    if ~waveletTransformParams.persist() 
+        wtLog.err('Failed to save complex Morlet transform params');
         return
     end
     success = true;
 end
 
-function [cwMatrix, scales] = generateMorletWavelets(waveletTransformData, samplingRate)
-    scales = (waveletTransformData.FreqMin : waveletTransformData.FreqRes : waveletTransformData.FreqMax);
-    Fs = samplingRate / waveletTransformData.TimeRes;
-    cwMatrix = cell(length(Fa),2);
-                
+function [cwMatrix, scales] = generateMorletWavelets(waveletTransformParams, samplingRate)
+    scales = (waveletTransformParams.FreqMin : waveletTransformParams.FreqRes : waveletTransformParams.FreqMax);
+    Fs = double(samplingRate) / double(waveletTransformParams.TimeRes);
+    cwMatrix = cell(length(scales),2);
+    wtLog = WTLog();
+
     % Calculate CWT at each frequency.
     wtLog.info('Computing Morlet complex wavelets...');
-    wtLog.ctxOn('Complex Wavelets');
-    wtLog.setHeaderOn(false);
+    wtLog.pushStatus().ctxOn('Complex Wavelets').setHeaderOn(false);
 
     for iFreq=1:(length(scales))
         wtLog.dbg('Generating wavelet at frequency = %i Hz', scales(iFreq));
         
-        freq = scales(iFreq);
-        sigmaT =  waveletTransformData.WaveletsCycles / (2*freq*pi);
+        freq = double(scales(iFreq));
+        sigmaT = double(waveletTransformParams.WaveletsCycles) / (2*freq*pi);
         
         % use COMPLEX wavelet (sin and cos components) in a form that gives
         % the RMS strength of the signal at each frequency.
         time = -4/freq : 1/Fs : 4/freq;
-        if waveletTransformData.NormalizedWavelets
+        if waveletTransformParams.NormalizedWavelets
             % generate wavelets with unit energy
             waveletScale = (1/sqrt(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
         else
@@ -286,11 +298,9 @@ function [cwMatrix, scales] = generateMorletWavelets(waveletTransformData, sampl
         cwMatrix{iFreq,2} = waveletIm(1,:);
     end
 
-    wtLog.setHeaderOn(true);
-    wtLog.ctxOff();
-    wtLog.info('Wavelets saved in cell array matrix');
+    wtLog.popStatus().info('Wavelets saved in cell array matrix');
     
-    if waveletTransformData.LogarithmicTransform 
+    if waveletTransformParams.LogarithmicTransform 
         wtLog.warn('Epochs will be log-transformed after wavelet transformation!');
     end
 end

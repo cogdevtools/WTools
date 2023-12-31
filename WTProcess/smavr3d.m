@@ -1,38 +1,38 @@
 function smavr3d(subj,tMintMax,FrMinFrMax,scale,varargin)
-%smavr3d.m
-%Created by Eugenio Parise
-%CDC CEU 2011
-%One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-%It plots 3D scalpmaps of wavelet transformed EEG channels (for each condition).
-%It uses headplot function from EEGLab, so EEGLab must be installed and
-%included in Matlab path.
-%It can plot a single timepoint, the average of a time window, as well as a
-%single frequency or an averaged frequency band.
+% smavr3d.m
+% Created by Eugenio Parise
+% CDC CEU 2011
+% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
+% It plots 3D scalpmaps of wavelet transformed EEG channels (for each condition).
+% It uses headplot function from EEGLab, so EEGLab must be installed and
+% included in Matlab path.
+% It can plot a single timepoint, the average of a time window, as well as a
+% single frequency or an averaged frequency band.
 %
-%It does not plot scalpmap series! Please, use smavr.m for this purpose.
+% It does not plot scalpmap series! Please, use smavr.m for this purpose.
 %
-%Add 'evok' as last argument to compute 3D scalp maps of evoked
-%oscillations (of course, if they have been previously computed).
-%DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-%Interactive user interface needs inputgui.m from EEGLab.
+% Add 'evok' as last argument to compute 3D scalp maps of evoked
+% oscillations (of course, if they have been previously computed).
+% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
+% Interactive user interface needs inputgui.m from EEGLab.
 %
-%Usage:
+% Usage:
 %
-%smavr3d(subj,tMintMax,FrMinFrMax,scale);
+% smavr3d(subj,tMintMax,FrMinFrMax,scale);
 %
-%smavr3d('01',800,15,[-0.2 0.2]); %to plot a single subject,
-%at 800 ms and at 15 Hz
+% smavr3d('01',800,15,[-0.2 0.2]); % to plot a single subject,
+% at 800 ms and at 15 Hz
 %
-%smavr3d('05',[240 680],5,[-0.2 0.2]); %to plot a single subject,
-%average between 240 and 680 ms at 5 Hz
+% smavr3d('05',[240 680],5,[-0.2 0.2]); % to plot a single subject,
+% average between 240 and 680 ms at 5 Hz
 %
-%smavr3d('grand',350,[10 60],[-0.2 0.2]); %to plot the grand average,
-%average between at 350 ms in the 10 to 60 Hz averaged band
+% smavr3d('grand',350,[10 60],[-0.2 0.2]); % to plot the grand average,
+% average between at 350 ms in the 10 to 60 Hz averaged band
 %
-%smavr3d('grand',[100 400],[10 60],[-0.2 0.2]); %to plot the grand average,
-%average between 100 and 400 ms in the 10 to 60 Hz averaged band
+% smavr3d('grand',[100 400],[10 60],[-0.2 0.2]); % to plot the grand average,
+% average between 100 and 400 ms in the 10 to 60 Hz averaged band
 %
-%smavr3d(); to run via GUI
+% smavr3d(); to run via GUI
 
 if ~exist('headplot.m','file')    
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
@@ -101,7 +101,7 @@ elseif ~strcmp(varargin,'evok')
     return    
 end
 
-%Make pop_cfg folder to store config files for gui working functions
+% Make pop_cfg folder to store config files for gui working functions
 if exist('PROJECTPATH','var')
     CommonPath = strcat (PROJECTPATH,'/');
     alreadyexistdir=strcat(CommonPath,'pop_cfg');
@@ -120,14 +120,14 @@ else
     pop_cfgfile = strcat('../pop_cfg/smavr3d_cfg.m');
 end
 
-%Call gui only if no arguments were entered
+% Call gui only if no arguments were entered
 if ~nargin
     [filenames, pathname, filterindex]=uigetfile({ '*-avWT.mat'; '*-evWT.mat' },...
         'Select files to plot','MultiSelect','on');    
     if ~pathname
-        return %quit on cancel button
+        return % quit on cancel button
     end    
-    %Find subject/grand folder from the path
+    % Find subject/grand folder from the path
     if ispc
         sla='\';
     else
@@ -146,11 +146,12 @@ if ~nargin
         return
     end
 
-    %CHECK if the data have been log-transformed
-    [enable_uV logFlag]=wtCheckEvokLog();
-    
-    %SET defaultanswer0
-    %SET color limits and GUI
+    % CHECK if the data have been log-transformed
+    [logFlag] = wtCheckEvokLog();
+    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+
+    % SET defaultanswer0
+    % SET color limits and GUI
     if logFlag
         defaultanswer0={'[    ]','[    ]','[-10.0    10.0]'};
         Scale='Scale (�x% change)';
@@ -161,15 +162,15 @@ if ~nargin
     
     answersN=length(defaultanswer0);
     
-    %Load previously called parameters if existing
+    % Load previously called parameters if existing
     if exist(pop_cfgfile,'file')
         smavr3d_cfg;
         try
             defaultanswer=defaultanswer;
             defaultanswer{1,answersN};
             
-            %Reset default scale if needed (e.g. the user changed from uV
-            %to log or vice versa) and if the scale is symmetric
+            % Reset default scale if needed (e.g. the user changed from uV
+            % to log or vice versa) and if the scale is symmetric
             scale=str2num(defaultanswer{1,3});
             if (abs(scale(1))==abs(scale(2))) && (logFlag && (scale(2)<3)) || (~logFlag && (scale(2)>=3))
                 defaultanswer{1,3}=defaultanswer0{1,3};
@@ -199,7 +200,7 @@ if ~nargin
     answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plotting parameters');
     
     if isempty(answer)
-        return %quit on cancel button
+        return % quit on cancel button
     end
     
     tMintMax=str2num(answer{1,1});
@@ -213,7 +214,7 @@ if ~nargin
         return
     end
     
-    %Find conditions to plot from the user selected files
+    % Find conditions to plot from the user selected files
     if ~iscell(filenames)
         filenames={filenames};
     end
@@ -221,7 +222,7 @@ if ~nargin
     condtoplot=cell(length(filenames),length(condgrands));
     condgrands=sort(condgrands);
     
-    %Clean filenames from measure and file extensions
+    % Clean filenames from measure and file extensions
     a=cell(length(filenames));
     for i=1:length(filenames)
         a{i}=strfind(filenames,measure);
@@ -249,13 +250,13 @@ if ~nargin
     
 end
 
-%CHECK if difference and/or grand average files are up to date
+% CHECK if difference and/or grand average files are up to date
 [diffConsistency grandConsistency]=check_diff_grand(filenames, condiff, subj, logFlag);
 if ~diffConsistency || ~grandConsistency
     return
 end
 
-%Check the input is correct
+% Check the input is correct
 if isempty(tMintMax) || tMintMax(1) > tMintMax(end)
     fprintf(2,'\nThe time window is  not valid!!!\n');
     fprintf('\n');
@@ -279,8 +280,8 @@ if length(tMintMax)>2 || length(FrMinFrMax)>2
     return
 end
 
-%Prompt the user to select the conditions to plot when using command line
-%function call
+% Prompt the user to select the conditions to plot when using command line
+% function call
 if ~exist('condtoplot','var')
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Taken from Luca Filippin's EGIWaveletPlot.m%
@@ -302,8 +303,8 @@ if strcmp(subj,'grand')
     else
         CommonPath = strcat ('../grand/');
     end    
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,condgrands(1),measure);
     load (char(firstCond));    
 else    
@@ -312,20 +313,20 @@ else
     else
         CommonPath = strcat ('../');
     end    
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,subj,'/',subj,'_',condgrands(1),measure);
     load (char(firstCond));    
 end
 
-timeRes = tim(2) - tim(1); %find time resolution
+timeRes = tim(2) - tim(1); % find time resolution
 if length(Fa)>1
-    frRes = Fa(2) - Fa(1);     %find frequency resolution
+    frRes = Fa(2) - Fa(1); % find frequency resolution
 else
     frRes = 1;
 end
 
-%Adjust times and frequencies limits according to the data sampling
+% Adjust times and frequencies limits according to the data sampling
 tMin=tMintMax(1);
 if tMin<min(tim)
     tMin=min(tim);
@@ -391,16 +392,16 @@ if length(FrMinFrMax)==2
     FrTemp=[FrMin FrMax];
 end
 
-%Save the user input parameters in the pop_cfg folder
+% Save the user input parameters in the pop_cfg folder
 if ~nargin
-    fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
+    fid = fopen(pop_cfgfile, 'wt'); % Overwrite preexisting file with the same name
     fprintf(fid, 'defaultanswer={''[%s]'' ''[%s]'' ''[%s]''};',...
         num2str(tTemp),num2str(FrTemp),num2str(scale,'%.1f'));
     fclose(fid);    
     rehash;    
 end
 
-%Calculate latency subset to plot
+% Calculate latency subset to plot
 if length(tMintMax)==2
     lat=find(tim==tMin):find(tim==tMax);
     latchar=strcat(num2str(tMin),'_',num2str(tMax));
@@ -409,7 +410,7 @@ else
     latchar=num2str(tMin);
 end
 
-%Calculate frequency subset to plot
+% Calculate frequency subset to plot
 if length(FrMinFrMax)==2
     fr=find(Fa==FrMin):find(Fa==FrMax);
     frchar=strcat(num2str(FrMin),'_',num2str(FrMax));
@@ -423,7 +424,7 @@ fprintf('Plotting...\n');
 fprintf('\n');
 
 for cn=1:condN    
-    if logFlag %Convert the data back to non-log scale straight in percent change        
+    if logFlag % Convert the data back to non-log scale straight in percent change        
         WT=100*(10.^WT - 1);        
     end    
     if strcmp(subj,'grand')        
@@ -432,12 +433,12 @@ for cn=1:condN
         figurename=char(strcat(filename,'Subj',subj,'_',condgrands(cn),'_',latchar,'ms','_',frchar,'Hz',measure));        
     end
     
-    %Average along times
+    % Average along times
     WT=mean(WT(:,:,lat),3);
-    %Average along frequencies
+    % Average along frequencies
     WT=mean(WT(:,fr,:),2);
     
-    %Create the figure
+    % Create the figure
     figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
     
     if exist('meshFile','var')
@@ -456,7 +457,7 @@ for cn=1:condN
             'FontWeight','bold','Position',[8 0.55]);
     end
     
-    %load next condition
+    % load next condition
     if strcmp(subj,'grand') && (cn < condN)
         dataset = char(strcat (CommonPath,condgrands(cn+1),measure));
         load (dataset);

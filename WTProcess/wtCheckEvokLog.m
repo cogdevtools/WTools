@@ -2,38 +2,31 @@
 % Created by Eugenio Parise
 % CDC CEU 2012
 
-function [uV, varargout] = wtCheckEvokLog(caller_is_baseline_chop)
+function [log, wtEvok, bsEvok, bsLog] = wtCheckEvokLog()
     wtProject = WTProject();
 
     if ~wtProject.checkIsOpen() 
         return
     end
 
-    % Load previously called parameters from wtPerformCWT and baseline_chop (to set uV)
-    uV = 'on';
-    % Initialize varargout
-    varargout = { 0 0 0 0 };
+    waveletTransformParams = wtProject.Config.WaveletTransform;
+    baselineChopParams = wtProject.Config.BaselineChop;
 
-    waveletTransformData = wtProject.Config.WaveletTransform;
-    baselineChopData = wtProject.Config.BaselineChop;
+    log = 0;
+    wtEvok = 0;
+    bsEvok = 0; 
+    bsLog= 0;
 
-    varargout{1} = waveletTransformData.LogarithmicTransform;
-    varargout{2} = waveletTransformData.EvokedOscillations;
-            
-    % CHECK whether baseline_chop.m is the caller
-    if nargin > 1 && ~caller_is_baseline_chop
-        %GET log value after averaging
-        varargout{1} = varargout{1} || baselineChopData.Log10Enable;
+    if waveletTransformParams.exist()
+        log = waveletTransformParams.LogarithmicTransform;
+        wtEvok = waveletTransformParams.EvokedOscillations;
     end
     
-    % GET evok value after baseline correction
-    varargout{3} = baselineChopData.EvokedOscillations;
-
-    % GET log value after averaging
-    varargout{4} = baselineChopData.Log10Enable;
-
-    % Set Log checkbox on or off (default on)
-    if varargout{1}
-        uV = 'off';
+    if baselineChopParams.exist()
+        % GET evok value after baseline correction
+        bsEvok = baselineChopParams.EvokedOscillations;
+        % GET log value after averaging
+        bsLog = baselineChopParams.Log10Enable;
+        log =  log || bsLog;
     end
 end

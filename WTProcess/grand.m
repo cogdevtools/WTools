@@ -91,8 +91,9 @@ end
 if ~nargin
     
     %CHECK if the data have been already log-transformed and check Evok
-    [enable_uV logFlag last_tfcmor last_bschop]=wtCheckEvokLog();
-    
+    [logFlag, ~, last_bschop] = wtCheckEvokLog();
+    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+
     %SET defaultanswer0
     defaultanswer0={1,1,0,last_bschop};
     mandatoryanswersN=length(defaultanswer0);

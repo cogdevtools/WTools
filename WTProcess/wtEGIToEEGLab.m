@@ -1,4 +1,4 @@
-% egi2eegl.m
+% wtEGIToEEGLab.m
 % Created by Eugenio Parise
 % CDC CEU 2010
 % Function to import netstation files in EEGLAB. Netstation files must be
@@ -7,120 +7,44 @@
 % one EEGLAB file, the script will segmented such file into multiple EEGLAB datasets:
 % one for each experimental condition.
 % To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and digit egi2eegl() (with no argument) at
+% edit 'subj.m' in the 'cfg' folder and digit wtEGIToEEGLab() (with no argument) at
 % the console prompt.
 %
 % Usage:
-%   egi2eegl(subjects)
-%   egi2eegl('01');
-%   egi2eegl();
+%   wtEGIToEEGLab(subjects)
+%   wtEGIToEEGLab('01');
+%   wtEGIToEEGLab();
 
-function egi2eegl(subjects)
-
-    if ~exist('inputgui.m','file')    
-        fprintf(2,'\nPlease, start EEGLAB first!!!\n');
-        fprintf('\n');
-        return    
-    end
-
-    if ispc
-        sla='\';
-    else
-        sla='/';
-    end
-
-    try
-        if ~nargin
-            try
-                PROJECTPATH=evalin('base','PROJECTPATH');
-                cd (PROJECTPATH);
-                addpath(strcat(PROJECTPATH,sla,'pop_cfg'));
-                if exist('filenm.m','file') && exist('exported.m','file')
-                    filenm;
-                    exported;
-                else
-                    fprintf(2,'\nPlease, create a new project or open an existing one.\n');
-                    fprintf('\n');
-                    return
-                end
-            catch
-                fprintf(2,'\nPlease, create a new project or open an existing one.\n');
-                fprintf('\n');
-                return
-            end
-        end
-    catch
-        addpath('../cfg');
-        filenm;
-        exported;
-        chan;
-        cond;
-    end
-
-    if ~nargin    
-        if ~exist('PROJECTPATH','var')
-            subj;
-        else        
-            %Select subjects interactively via GUI
-            if exist(strcat(PROJECTPATH,sla,'pop_cfg',sla,'subj.m'),'file')            
-                parameters = { ...
-                    { 'style' 'text' 'string' 'The subject configuration file already exists!' } ...
-                    { 'style' 'text' 'string' 'Do you want to import the subjects again?' } ...
-                    { 'style' 'text' 'string' 'Ok = Yes      Cancel = No' } };            
-                geometry = { [1] [1] [1] };
-                [outparam userdat strhalt] = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Re-import subjects?');            
-                if ~strcmp(strhalt,'retuninginputui')
-                    return;
-                end            
-            end        
-            subjects = { ...
-                '01' '02' '03' '04' '05' '06' '07' '08' '09' '10' '11' '12' '13' '14' '15' ...
-                '16' '17' '18' '19' '20' '21' '22' '23' '24' '25' '26' '27' '28' '29' '30' ...
-                '31' '32' '33' '34' '35' '36' '37' '38' '39' '40' '41' '42' '43' '44' '45' ...
-                '46' '47' '48' '49' '50' '51' '52' '53' '54' '55' '56' '57' '58' '59' '60' ...
-                '61' '62' '63' '64' '65' '66' '67' '68' '69' '70' '71' '72' '73' '74' '75' ...
-                '76' '77' '78' '79' '80' '81' '82' '83' '84' '85' '86' '87' '88' '89' '90' ...
-                '91' '92' '93' '94' '95' '96' '97' '98' '99' '100' '101' '102' '103' '104' '105' ...
-                '106' '107' '108' '109' '110' '111' '112' '113' '114' '115' '116' '117' '118' '119' '120' };        
-            cd ('Export');
-            [filenames, pathname, filterindex]=uigetfile({ '*.mat' },'Select files to import','MultiSelect','on');
-            cd ('..');        
-            if ~pathname
-                return %quit on cancel button
-            end        
-            if ischar(filenames)
-                filenames = {filenames};
-            end
-            subtoimport = zeros(1,length(filenames));        
-            for i=1:length(filenames)
-                subtoimport(i) = str2num(filenames{1,i}(1:findstr(filenames{1,i},' ')-1));
-            end
-            subjects = subjects(subtoimport);        
-            %Save the subjects config file in the pop_cfg folder
-            pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'subj.m');
-            fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
-            fprintf(fid, 'subjects = { ');
-            for i=1:length(subjects)
-                fprintf(fid, ' ''%s'' ',char(subjects(i)));
-            end
-            fprintf(fid, ' }; ');
-            fclose(fid);
-        end    
-    elseif ischar(subjects)
-        subjects={subjects};
-    elseif ~iscell(subjects)
-        fprintf(2,'\nPlease, enter a subject number in the right format, e.g. egi2eegl(''01'');, to process\n');
-        fprintf(2,'an individual subject, or edit ''subj.m'' in the ''cfg'' folder and enter nothing,\n');
-        fprintf(2,'(i.e. egi2eegl();), to process the whole sample.\n');
-        fprintf('\n');
+function wtEGIToEEGLab(subjects)
+    wtProject = WTProject();
+    wtLog = WTLog();
+    
+    if ~wtProject.checkIsOpen()
         return
     end
 
-    subjN = size(subjects,2);
+    interactive = wtProject.Interactive;
 
-    %Select conditions interactively via GUI
-    if exist('PROJECTPATH','var')
-        allfields = load ('-mat',strcat(PROJECTPATH,exportvar{1},sla,filenames{1}));
+    if interactive  
+        subjectsParams = wtProject.Config.Subjects; 
+        if ~selectUpdateSubjects(subjectsParams)
+            return
+        end  
+        subjects = subjectsParams.SubjectsList; 
+    elseif ischar(subjects)
+        subjects = {subjects};
+    elseif ~WTValidations.isALinearCellArrayOfNonEmptyString(subjects) || isempty(subjects)
+        wtLog.err(['Bad input: enter the subjects number in the right format, e.g. wtEGIToEEGLab(''01''), to process an\n' ...
+            'individual subject, or wtEGIToEEGLab({''01'' ''02'' ...}) to process multiple subjects or you can also\n' ...
+            'specify the  subjects  by editing ''subj.m'' and then calling wtEGIToEEGLab() (with no arguments), to\n' ...
+            'process the whole sample.']);
+        return
+    end
+
+    subjN = length(subjects);
+
+    if interactive
+        allfields = load ('-mat',fullfile(PROJECTPATH,exportvar{1},filenames{1}));
         allfields = fieldnames(allfields);    
         for index = 1:length(allfields)        
             if ~isempty(allfields{index}(1:findstr(allfields{index}, 'Segment')+6))
@@ -138,7 +62,7 @@ function egi2eegl(subjects)
             k=k+1;
         end    
         if length(allfields)>1        
-            %Prompt the user to select the conditions to import from a list
+            % Prompt the user to select the conditions to import from a list
             condlist = listdlg('PromptString','Select conditions:','SelectionMode','multiple','ListString',allfields);        
             if isempty(condlist)
                 return %quit on cancel button
@@ -146,8 +70,8 @@ function egi2eegl(subjects)
             allfields = allfields(condlist);        
         end
         
-        %Save the conditions config file in the pop_cfg folder
-        pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'cond.m');
+        % Save the conditions config file in the pop_cfg folder
+        pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','cond.m');
         fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
         fprintf(fid, 'conditions = { ');
         for i=1:length(allfields)
@@ -166,12 +90,12 @@ function egi2eegl(subjects)
     end
 
     if exist('PROJECTPATH','var')
-        temp=char(exportvar);
-        InPath = strcat (PROJECTPATH,temp,sla);
-        OutPath = strcat (PROJECTPATH,sla);
+        temp = char(exportvar);
+        InPath = fullfile (PROJECTPATH,temp);
+        OutPath = PROJECTPATH;
     else
-        InPath = strcat (exportvar);
-        OutPath = strcat ('../');
+        InPath = char(exportvar);
+        OutPath = '../';
     end
 
     for i = 1:subjN    
@@ -181,17 +105,17 @@ function egi2eegl(subjects)
             mkdir (OutPath, subjDir);
         end    
         if exist('filenames','var')
-            currectSubj = char (strcat (InPath,sla,filenames(i)));
+            currectSubj = char (fullfile(InPath,filenames(i)));
         else
             currectSubj = char (strcat (InPath,subjects(i),'export.mat'));
         end    
         tempfile = char (strcat (InPath,'temp.mat'));    
         if exist('PROJECTPATH','var') && i==1 %do it only once
-            wtoolspath = which('egi2eegl.m');
-            slashes = findstr(wtoolspath,sla);
+            wtoolspath = which('wtEGIToEEGLab.m');
+            slashes = findstr(wtoolspath,sla); % FIX!!!
             chanpath = strcat(wtoolspath(1:slashes(end-1)),'chans_splines');
             cd (chanpath);
-            %Set channels config file (*.sfp file)
+            % Set channels config file (*.sfp file)
             [ChanLocFile, pathname, filterindex]=uigetfile({ '*.sfp' },'Select channels location file','MultiSelect','off');        
             if ~pathname
                 cd (PROJECTPATH);
@@ -201,14 +125,14 @@ function egi2eegl(subjects)
             chanloc = { strcat(pathname,ChanLocFile) };
             filetyp = { 'autodetect' };
             
-            %Create channels array from the chan config file (*.sfp file) used
-            %to set channels to re-ref (eventually) and channels to cut
+            % Create channels array from the chan config file (*.sfp file) used
+            % to set channels to re-ref (eventually) and channels to cut
             [a b c d]=textread(chanloc{1},'%s %s %s %s','delimiter', '\t');
             labels=a(4:end);
             labels=labels';
             
             %Save the channels location file in the pop_cfg folder
-            pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'chan.m');
+            pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','chan.m');
             fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
             fprintf(fid, 'chanloc = { ''%s'' };\r',ChanLocFile);
             fprintf(fid, 'filetyp = { ''autodetect'' };\r');
@@ -328,7 +252,7 @@ function egi2eegl(subjects)
             if ~samplingrate
                 
                 %Load previously called parameters if existing
-                pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'samplrate.m');
+                pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','samplrate.m');
                 if exist(pop_cfgfile,'file')
                     samplrate;
                     defaultanswer=defaultanswer;
@@ -349,7 +273,7 @@ function egi2eegl(subjects)
                     return;
                 end
                 
-                samplingrate=str2num(answer{1,1});
+                samplingrate = str2num(answer{1,1});
                 
                 %Save the user input parameters in the pop_cfg folder
                 fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
@@ -360,7 +284,7 @@ function egi2eegl(subjects)
             end
             
             %Load previously called parameters if existing
-            pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'trigger.m');
+            pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','trigger.m');
             if exist(pop_cfgfile,'file')
                 trigger;
                 defaultanswer=defaultanswer;
@@ -383,7 +307,7 @@ function egi2eegl(subjects)
                 return;
             end
             
-            triglat=str2num(answer{1,1});
+            triglat = str2num(answer{1,1});
             
             %Save the user input parameters in the pop_cfg folder
             fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
@@ -402,7 +326,7 @@ function egi2eegl(subjects)
             answersN=length(defaultanswer0);
             
             %Load previously called parameters if existing
-            pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'minmaxtrialid.m');
+            pop_cfgfile = fullfile(PROJECTPATH,'pop_cfg','minmaxtrialid.m');
             
             if exist(pop_cfgfile,'file')
                 minmaxtrialid;
@@ -666,4 +590,32 @@ function egi2eegl(subjects)
 
     fprintf('\nDone!!!\n');
     fprintf('\n');
+end
+
+
+function success = selectUpdateSubjects(subjectsParams) 
+    success = false;
+    wtLog = WTLog();
+
+    if subjectsParams.exist()
+        [~, ~, strHalt] = WTUtils.eeglabMsgDlg('Re-import subjects?', ['The subject configuration file already exists!\n' ...
+                'Do you want to import the subjects again?\n' ...
+                'Ok = Yes      Cancel = No']);
+        if ~strcmp(strHalt,'retuninginputui')
+            return;
+        end            
+    end     
+    
+    subjects = wtImportSubjectsSelectGUI();
+    if isempty(subjects) 
+        wtLog.warn('No subjects to import selected');
+        return
+    end
+
+    subjectsParams.SubjectsList = subjects;
+    if ~subjectsParams.persist()
+        wtLog.err('Failed to save subjects to import params');
+        return
+    end
+    success = true;
 end

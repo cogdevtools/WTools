@@ -1,17 +1,16 @@
 function success = wtCWTParamsGUI(waveletTransformPrms, timeRange, maxFreq, maxChans, enableLog)
     success = false;
 
-    if ~isa(waveletTransformPrms, 'WTWaveletTransformCfg')
-        wtLog.excpt('BadArgType', 'Bad argument type: expected WTWaveletTransformCfg, got %s')
-    end
+    WTUtils.mustBeA(waveletTransformPrms, ?WTWaveletTransformCfg)
+
     if ~WTValidations.isValidProperRange(timeRange)
-        wtLog.excpt('BadArg', 'Bad argument type or value: timeRange')
+        wtLog.excpt('BadArg', 'Bad argument type or value: timeRange');
     end
     if ~WTValidations.isScalarInt(maxChans) || maxChans <= 0 
-        wtLog.excpt('BadArg', 'Bad argument type or value: maxChans')
+        wtLog.excpt('BadArg', 'Bad argument type or value: maxChans');
     end
     if ~WTValidations.isScalarInt(maxFreq) || maxFreq <= 0 
-        wtLog.excpt('BadArg', 'Bad argument type or value: maxFreq')
+        wtLog.excpt('BadArg', 'Bad argument type or value: maxFreq');
     end
 
     defaultanswer = { ...
@@ -30,11 +29,7 @@ function success = wtCWTParamsGUI(waveletTransformPrms, timeRange, maxFreq, maxC
         waveletTransformPrms.WaveletsCycles, ...
     };
     
-    logFlag = 'off';
-    if logical(enableLog) 
-        logFlag = 'on';
-    end
-
+    logFlag = WTUtils.ifThenElseSet(any(logical(enableLog)), 'on', 'off');
     answer = defaultanswer;
     
     while true
@@ -101,44 +96,44 @@ function success = wtCWTParamsGUI(waveletTransformPrms, timeRange, maxFreq, maxC
             [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 0.25 0.5 0.5 0.5] [1 0.5 1 0.25 0.25 0.25] };
         
         
-        answer = WTUtils.eeglabInputGui( 'geometry', geometry, 'uilist', parameters,'title', 'Set wavelet transformation parameters');
+        answer = WTUtils.eeglabInputMask( 'geometry', geometry, 'uilist', parameters,'title', 'Set wavelet transformation parameters');
         
         if isempty(answer)
             return % quit on cancel button
         end
         
-        isInt        = @(x)(isfinite(x) && x == floor(x));
-        isIntGTE     = @(x,lb)(length(x) == 1 && isInt(x) && x >= lb);
-        isIntBetween = @(x,lb,ub)(isIntGTE(x,lb) && x <= ub);
-        warnDlg      = @(msg)uiwait(warndlg(msg, 'Review parameter'));
+        isInt        = @WTValidations.isInt;
+        isIntGTE     = @WTValidations.isScalarIntGTE;
+        isIntBetween = @WTValidations.isScalarIntBetween;
+        warnDlg      = @(msg)WTUtils.wrnDlg('Review parameter', msg);
 
         timeMin = str2double(answer{1,1});
-        if ~isIntIn(timeMin, timeRange(1), timeRange(2)-1)
+        if ~isIntBetween(timeMin, timeRange(1), timeRange(2)-1)
             warnDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
             continue;
         end
         timeMax = str2double(answer{1,2});
-        if ~isIntIn(timeMax, timeMin+1, timeRange(2))
+        if ~isIntBetween(timeMax, timeMin+1, timeRange(2))
             warnDlg(sprintf('Bad max time value, got: %s', answer{1,2}));
             continue;
         end
         timeRes = str2double(answer{1,3});
-        if ~isIntIn(timeRes, 1, max(1,(timeMax-timeMin+1)/2))
+        if ~isIntBetween(timeRes, 1, max(1,(timeMax-timeMin+1)/2))
             warnDlg(sprintf('Bad time resolution value, got: %s', answer{1,3}));
             continue;
         end
         freqMin = str2double(answer{1,4});
-        if ~isIntIn(freqMin, 1, max(1, maxFreq-1)) 
+        if ~isIntBetween(freqMin, 1, max(1, maxFreq-1)) 
             warnDlg(sprintf('Bad min frequency value, got: %s', answer{1,4}));
             continue;
         end
         freqMax = str2double(answer{1,5});
-        if ~isIntIn(freqMax, freqMin, maxFreq) 
+        if ~isIntBetween(freqMax, freqMin, maxFreq) 
             warnDlg(sprintf('Bad max frequency value, got: %s', answer{1,5}));
             continue;
         end
         freqRes = str2double(answer{1,6});
-        if ~isIntIn(freqRes, 1, max(1,(freqMax-freqMin+1)/2)) 
+        if ~isIntBetween(freqRes, 1, max(1,(freqMax-freqMin+1)/2)) 
             warnDlg(sprintf('Bad frequency resolution value, got: %s', answer{1,6}));
             continue;
         end

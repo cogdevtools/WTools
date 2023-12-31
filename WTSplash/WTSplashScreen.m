@@ -1,4 +1,4 @@
-classdef SplashScreen < hgsetget
+classdef WTSplashScreen < hgsetget
     %SplashScreen  create a splashscreen
     %
     %   s = SplashScreen(title,imagefile) creates a splashscreen using
@@ -24,12 +24,14 @@ classdef SplashScreen < hgsetget
     
     %% Public properties
     properties
-        Visible = 'on'       % Is the splash-screen visible on-screen [on|off]
-        Border = 'on'        % Is the edge pixel darkened to form a border [on|off]
-        ProgressBar = 'off'  % Is the progress bar visible [on|off]
-        ProgressPosition = 10% Height (in pixels) above the bottom of the window for the progress bar
-        ProgressRatio = 0    % The ratio shown on the progress bar (in range 0 to 1)
-        Tag = ''             % User tag for this object
+        Visible = 'on'        % Is the splash-screen visible on-screen [on|off]
+        Border = 'on'         % Is the edge pixel colored to form a border [on|off]
+        BorderColor = [0 0 0] % Is the color of the border
+        BorderThickness = 1   % Is the thickness of the border
+        ProgressBar = 'off'   % Is the progress bar visible [on|off]
+        ProgressPosition = 10 % Height (in pixels) above the bottom of the window for the progress bar
+        ProgressRatio = 0     % The ratio shown on the progress bar (in range 0 to 1)
+        Tag = ''              % User tag for this object
     end % Public properties
     
     %% Read-only properties
@@ -50,7 +52,7 @@ classdef SplashScreen < hgsetget
     %% Public methods
     methods
         
-        function obj = SplashScreen( title, imagename, varargin )
+        function obj = WTSplashScreen( title, imagename, varargin )
             % Construct a new splash-screen object
             if nargin<2
                 error('SplashScreen:BadSyntax', 'Syntax error. You must supply both a window title and imagename.' );
@@ -181,6 +183,20 @@ classdef SplashScreen < hgsetget
             obj.updateAll();
         end % set.Border
         
+        function set.BorderColor(obj,val)
+            val = iInterpretColor( val );
+            obj.BorderColor = val;
+            obj.updateAll();
+        end % set.BorderColor
+
+        function set.BorderThickness(obj,val)
+            if ~isnumeric( val ) || ~isscalar( val ) || val<1 
+                error( 'SplashScreen:BadValue', 'Property ''BorderThickness'' must be a scalar between >= 1' );
+            end
+            obj.BorderThickness = val;
+            obj.updateProgressBar();
+        end % set.BorderThickness
+
         function set.ProgressBar(obj,val)
             if ~ischar( val ) || ~any( strcmpi( {'on','off'}, val ) )
                 error( 'SplashScreen:BadValue', 'Property ''ProgressBar'' must be ''on'' or ''off''' );
@@ -259,6 +275,8 @@ classdef SplashScreen < hgsetget
             gfx = obj.BufferedImage.getGraphics();
             gfx.drawImage( obj.OriginalImage, 0, 0, w, h, 0, 0, w, h, [] );
             
+            obj.updateProgressBar();
+
             % Maybe draw a border
             if strcmpi( obj.Border, 'on' )
                 % Switch on anti-aliasing
@@ -266,11 +284,16 @@ classdef SplashScreen < hgsetget
                 % Draw a semi-transparent rectangle for the background
                 ac = java.awt.AlphaComposite.getInstance( java.awt.AlphaComposite.SRC_OVER, 0.8 );
                 gfx.setComposite( ac );
-                gfx.setPaint( java.awt.Color.black );
-                gfx.drawRect( 0, 0, w-1, h-1 );
+                rgb = obj.BorderColor;
+                color =  java.awt.Color( rgb(1), rgb(2), rgb(3) );
+                gfx.setPaint( color ); % Previously: gfx.setPaint( java.awt.Color.black );
+                for i=0:obj.BorderThickness-1
+                    if w-2*i < 0 || h-2*i < 0 
+                        break
+                    end
+                    gfx.drawRect( i, i, w-2*i, h-2*i );
+                end
             end
-            
-            obj.updateProgressBar();
         end % updateAll
         
         function updateProgressBar( obj )

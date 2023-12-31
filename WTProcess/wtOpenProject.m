@@ -17,14 +17,14 @@ function success = wtOpenProject
     success = false;
 
     prjPath = WTUtils.uiGetDir('.', 'Select the project directory...');
-    if isempty(prjPath)
+    if ~ischar(prjPath)
         return
     end
 
     wtProject = WTProject();
     
     if ~wtProject.open(prjPath) 
-        WTUtils.eeglabMsgGui('Error', 'Failed to open project! Check the log...');
+        WTUtils.eeglabMsgDlg('Error', 'Failed to open project! Check the log...');
         return
     end
 

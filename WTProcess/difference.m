@@ -22,7 +22,7 @@ function difference(subjects, evoked)
 
     if ~wtProject.Config.SubjectsGrand.exist() || ...
        ~wtProject.Config.WaveletTransform.exist()
-        WTUtils.eeglabMsgGui('Info', 'Please, perform the wavelet transformation first!');
+        WTUtils.eeglabMsgDlg('Info', 'Please, perform the wavelet transformation first!');
         return
     end
 
@@ -34,18 +34,18 @@ function difference(subjects, evoked)
         subjects = {subjects};
     elseif ~WTValidations.isALinearCellArrayOfNonEmptyString(subjects)
         wtLog.err('Bad argument format: subjects must be a string or must be a linear cell array of non empty strings');
-        WTUtils.eeglabMsgGui('Warning', 'Subjects must be a string or linear cell array of non empty strings!');
+        WTUtils.eeglabMsgDlg('Warning', 'Subjects must be a string or linear cell array of non empty strings!');
         return
     end
     
     if length(wtProject.Config.ConditionsGrand.ConditionsList) < 2
-        wtLog.warn('There is only one condition, so no conditions diff can be performd!')
-        WTUtils.eeglabMsgGui('Info', 'There only one condition, so no conditions diff can be performd!')
+        wtLog.warn('There is only one condition, so no conditions diff can be performd!');
+        WTUtils.eeglabMsgDlg('Info', 'There only one condition, so no conditions diff can be performd!');
         return
     end
 
     if nargin == 0
-        subjects = wtStrCellsSelectGUI(subjects, 'Select subjects for difference:');
+        subjects = WTUtils.stringsSelectDlg('Select subjects\nfor difference:', subjects);
         if isempty(subjects)
             return
         end
@@ -56,7 +56,7 @@ function difference(subjects, evoked)
 
     condsGrandPrms = wtProject.Config.ConditionsGrand;
     differencePrms = wtProject.Config.Difference;
-    evoked = (nargin > 1 && logical(evoked)) || (nargin < 1 && differencePrms.EvokedOscillations);
+    evoked = (nargin > 1 && any(logical(evoked))) || (nargin < 1 && differencePrms.EvokedOscillations);
     conditions = condsGrandPrms.ConditionsList;
     condiff = condsGrandPrms.ConditionsDiff;
     subjN = length(subjects);
@@ -143,7 +143,7 @@ function difference(subjects, evoked)
 
                 wtLog.warn(['Condition %s will be subtracted from itself!\n' ...
                     'Consider to edit %s in the configuration folder and correct your setting.'], ...
-                    conditions{temp(1)}, condsGrandPrms.getFileName())
+                    conditions{temp(1)}, condsGrandPrms.getFileName());
             end
             
             j = j+1;
@@ -161,7 +161,7 @@ function difference(subjects, evoked)
 
     condstosubtractN = length(condsToSubtract);
     wtLog.info('Computing difference between conditions...');
-    wtLog.ctxOn()
+    wtLog.pushStatus().ctxOn();
 
     if ~evoked
         measure = '_bc-avWT.mat';    
@@ -196,7 +196,7 @@ function difference(subjects, evoked)
 
             if ~WTUtils.saveTo(fullfile(CommonPath, subjects{s}), OutFileName, ...
                 'WT', 'chanlocs', 'Fa', 'Fs', 'nepoch', 'tim', 'wavetyp')
-                wtLog.err('Can''t save the difference between conditions (%s, %s) for subject %s!', C1, C2, subjects{s})
+                wtLog.err('Can''t save the difference between conditions (%s, %s) for subject %s!', C1, C2, subjects{s});
             else
                 wtLog.info('Difference (%s - %s) saved in subject %s folder.', C1, C2, subjects{s});  
             end
@@ -204,7 +204,7 @@ function difference(subjects, evoked)
         end
     end
 
-    wtLog.ctxOff()
+    wtLog.popStatus()
     wtLog.info('Difference computation completed.');
 end
 
@@ -212,9 +212,9 @@ function success = setDifferencePrms(wtLog, wtProject)
     success = false;  
     condsGrandPrms = copy(wtProject.Config.ConditionsGrand);
     differencePrms = copy(wtProject.Config.Difference);
-    [~, logFlag, last_tfcmor] = wtCheckEvokLog();
+    [logFlag, wtEvok] = wtCheckEvokLog();
 
-    if ~wtDifferenceGUI(differencePrms, condsGrandPrms, logFlag, last_tfcmor)
+    if ~wtDifferenceParamsGUI(differencePrms, condsGrandPrms, logFlag, wtEvok)
         return
     end
     if condsGrandPrms.persist() 

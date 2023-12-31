@@ -1,14 +1,14 @@
 classdef WTConfigStorage < matlab.mixin.Copyable
 
     properties(Access=private)
-        IOProc IOProcessor
+        IOProc WTIOProcessor
         DataFileName char
     end
 
     methods
-        function o = WTConfigStorage(ioProcessor, fName)
+        function o = WTConfigStorage(ioProc, fName)
             mustBeNonempty(fName)
-            o.IOProc = ioProcessor;
+            o.IOProc = ioProc;
             o.DataFileName = fName;
         end
     end

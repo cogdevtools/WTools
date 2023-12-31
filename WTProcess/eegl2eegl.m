@@ -192,7 +192,7 @@ for i = 1:subjN
     end
     
     if exist('PROJECTPATH','var') && i==1 %do it only once
-        wtoolspath = which('egi2eegl.m');
+        wtoolspath = which('wtEGIToEEGLab.m');
         slashes = findstr(wtoolspath,sla);
         chanpath = strcat(wtoolspath(1:slashes(end-1)),'chans_splines');
         cd (chanpath);

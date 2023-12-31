@@ -5,8 +5,8 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        MinTrialId uint16 
-        MaxTrialId uint16
+        MinTrialId uint32 
+        MaxTrialId uint32
     end
 
     methods

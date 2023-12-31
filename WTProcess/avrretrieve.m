@@ -68,7 +68,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
                     { 'style' 'text' 'string' '(Ok = Yes)' } };
                 
                 geometry = { [1] [1] };
-                [answer userdat strhalt] = WTUtils.eeglabInputGui('geometry',geometry,'uilist',parameters,'title','Subjects lists rebuild');
+                [answer userdat strhalt] = WTUtils.eeglabInputMask('geometry',geometry,'uilist',parameters,'title','Subjects lists rebuild');
                 
                 if strcmp(strhalt,'retuninginputui')
                     if exist('subjects','var') % Necessary to make subjects working in the function workspace
@@ -89,8 +89,8 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
         end
         
         % CHECK Evok
-        [enable_uV logFlag last_tfcmor]=wtCheckEvokLog();
-        
+        [logFlag, last_tfcmor] = wtCheckEvokLog();
+
         % SET defaultanswer0
         defaultanswer0={'1',[],[],[],[],0,last_tfcmor};
         
@@ -192,7 +192,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
         
         geometry = { [1 1 1] [2.25] [1 0.5 0.25 0.5]  [1 0.5 0.25 0.5] [2.25] [1.5 0.25 0.5] [1.5 0.25 0.5] };
         
-        answer =  WTUtils.eeglabInputGui('geometry', geometry, 'uilist', parameters,'title', 'Set average retrieving parameters');
+        answer =  WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters,'title', 'Set average retrieving parameters');
         
         if isempty(answer)
             assignin('caller','subjects',subjects);
@@ -208,13 +208,13 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
         else
             assignin('caller','subjects',subjects);
             evalin('base','clear chanlocs chans conditions condlist defaultanswer labels ok subjects subjlist');
-            wtLog.err('No channels selected!')
+            wtLog.err('No channels selected!');
             return
         end
         if isempty(ChannelsList)
             assignin('caller','subjects',subjects);
             evalin('base','clear chanlocs chans conditions condlist defaultanswer labels ok subjects subjlist');
-            wtLog.err('No channels selected!')
+            wtLog.err('No channels selected!');
             return
         end    
         labels={};

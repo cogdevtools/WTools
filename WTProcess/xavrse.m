@@ -136,8 +136,9 @@ if ~nargin
     end
     
     %CHECK if the data have been log-transformed
-    [enable_uV logFlag]=wtCheckEvokLog();
-    
+    logFlag = wtCheckEvokLog();
+    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+
     %SET defaultanswer0
     defaultanswer0={[],[],[],[],1};
     

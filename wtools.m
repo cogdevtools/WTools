@@ -34,10 +34,14 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @wtools_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin && ischar(varargin{1})
-    gui_State.gui_Callback = str2func(varargin{1});
-end
 
+if nargin && ischar(varargin{1}) 
+    if ~strcmp(varargin{1}, 'no-splash')
+        gui_State.gui_Callback = str2func(varargin{1});
+    elseif nargin > 1 && ischar(varargin{2})
+        gui_State.gui_Callback = str2func(varargin{2});
+    end
+end
 if nargout
     [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
 else
@@ -52,11 +56,38 @@ function wtools_OpeningFcn(hObject, eventdata, handles, varargin)
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to wtools (see VARARGIN)
-if handles.ForceQuit 
+wtLog = WTLog();
+forceClose = false;
+showSplash = true;
+
+try 
+    for i = 4:nargin
+        switch varargin{i-3}
+            case 'no-splash'
+                showSplash = false;
+                continue
+            otherwise
+                wtLog.warn('Unknown command line option: %s', num2str(varargin{i-3}));
+        end
+    end
+    if showSplash && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))      
+        wtSplash()
+    end
+    if ~WTUtils.eeglabDep()
+        forceClose = true;
+    end
+    wtChangeGUIColors(hObject, [0.1 0.8 0.4], [0 0.9 .1])
+catch me
+    WTLog().mexcpt(me);
+    forceClose = true;
+end
+
+if forceClose 
     closereq()
     return
 end
+
+handles.wtoolsOpen = 1;
 % Choose default command line output for wtools
 handles.output = hObject;
 % Update handles structure
@@ -75,7 +106,7 @@ function varargout = wtools_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 
-% If ForceQuit was set we the figure has been deleted at this point
+% If ForceQuit was set the figure has been deleted at this point
 % so we need to check if handles is empty or not.
 if ~isempty(handles) 
     varargout{1} = handles.output;
@@ -116,21 +147,20 @@ function NewPushButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 wtProject = WTProject();
 wtLog = WTLog();
-wtLog.ctxOn('NewProject')
+wtLog.ctxOn('NewProject');
 try
     if wtNewProject()
         set(handles.ProjectEdit, 'String', wtProject.Config.getName());
-        set(handles.SSnEdit,'String', '0');
-        cd(wtProject.Config.getRootDir())
+        set(handles.SSnEdit, 'String', '0');
     end
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
 if ~wtProject.IsOpen
     set(handles.ProjectEdit, 'String', 'None');
     set(handles.SSnEdit,'String', 'None');
 end
-wtLog.ctxReset();
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in OpenPushButton.
@@ -140,22 +170,24 @@ function OpenPushButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 wtProject = WTProject();
 wtLog = WTLog();
-wtLog.ctxOn('OpenProject')
+wtLog.ctxOn('OpenProject');
 try
     if wtOpenProject()
         set(handles.ProjectEdit, 'String', wtProject.Config.getName());
         subjsGrand = wtProject.Config.SubjectsGrand;
-        if ~subjsGrand.exist() || subjsGrand.load(); end
-        set(handles.SSnEdit,'String', num2str(length(subjsGrand.SubjectsList)))
+        if subjsGrand.exist() 
+            subjsGrand.load(); 
+        end
+        set(handles.SSnEdit,'String', num2str(length(subjsGrand.SubjectsList)));
     end
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
 if ~wtProject.IsOpen
     set(handles.ProjectEdit, 'String', 'None');
     set(handles.SSnEdit,'String', 'None');
 end
-wtLog.ctxReset();
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in ImportEEGPushButton.
@@ -164,13 +196,13 @@ function ImportEEGPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('Import')
+wtLog.ctxOn('Import');
 try
-    import2eegl();
+    wtImport();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset();  
+wtLog.reset();  
 guidata(hObject, handles);
 
 % --- Executes on button press in SSManagerPushButton.
@@ -200,7 +232,7 @@ function WTPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('Time/Freq analysis')
+wtLog.ctxOn('Time/Freq analysis');
 try
     wtPerformCWT();
     if exist('subjects','var')
@@ -209,9 +241,9 @@ try
         set(handles.SSnEdit, 'String', 'None');
     end
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset();  
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in Chop_BasePushButton.
@@ -220,13 +252,13 @@ function Chop_BasePushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('BaselineChop')
+wtLog.ctxOn('BaselineChop');
 try
-    baseline_chop();
+    wtBaselineChop();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in DifferencePushButton.
@@ -235,13 +267,13 @@ function DifferencePushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('ConditionsDifference')
+wtLog.ctxOn('ConditionsDifference');
 try
     difference();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in GrandPushButton.
@@ -271,13 +303,13 @@ function XavrPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('GlobalPlots')
+wtLog.ctxOn('GlobalPlots');
 try
     xavr();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in ChavrPushButton.
@@ -286,13 +318,13 @@ function ChavrPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('ChannelsPlots')
+wtLog.ctxOn('ChannelsPlots');
 try
     chavr();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in XavrSEPushButton.
@@ -301,13 +333,13 @@ function XavrSEPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('GlobalPlotsWithStdError')
+wtLog.ctxOn('GlobalPlotsWithStdError');
 try
     xavrse();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in ChavrSEPushButton.
@@ -316,13 +348,13 @@ function ChavrSEPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('ChannelsPlotsWithStdError')
+wtLog.ctxOn('ChannelsPlotsWithStdError');
 try
     chavrse();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in SmavrPushButton.
@@ -331,13 +363,13 @@ function SmavrPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('ScalpMapPlots')
+wtLog.ctxOn('ScalpMapPlots');
 try
     smavr();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in Smavr3dPushButton.
@@ -346,13 +378,13 @@ function Smavr3dPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('3DScalpMapPlots')
+wtLog.ctxOn('3DScalpMapPlots');
 try
     smavr3d();
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in AvrretrievePushButton.
@@ -382,13 +414,13 @@ function HelpPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('Help')
+wtLog.ctxOn('Help');
 try
     web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
 catch me
-    wtLog.mexcpt(me)
+    wtLog.mexcpt(me);
 end
-wtLog.ctxReset()
+wtLog.reset();
 guidata(hObject, handles);
 
 function LogLevelPopupMenu_CreateFcn(hObject, eventdata, handles)
@@ -413,7 +445,6 @@ function WToolsMain_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 WTSession().open();
-handles.ForceQuit = ~WTUtils.eeglabDep();
 handles.output = hObject;
 guidata(hObject, handles);    
 

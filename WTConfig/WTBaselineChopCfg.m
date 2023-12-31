@@ -5,17 +5,17 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        ChopMin(1,1) uint32
-        ChopMax(1,1) uint32
-        BaselineMin(1,1) uint32
-        BaselineMax(1,1) uint32
+        ChopMin(1,1) single
+        ChopMax(1,1) single
+        BaselineMin(1,1) single
+        BaselineMax(1,1) single
         Log10Enable(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         NoBaselineCorrection(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) uint8  {WTValidations.mustBeZeroOrOne} = 0
     end
     methods
         function o = WTBaselineChopCfg(ioProc)
-            o@WTConfigStorage(ioProc, 'baseline_chop_config.m');
+            o@WTConfigStorage(ioProc, 'baseline_chop_cfg.m');
             o.default();
         end
 
@@ -53,6 +53,18 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
                 WTLog().mexcpt(me);
                 success = false;
             end
+        end
+
+        function success = validate(o)
+            success = false;
+
+            if o.ChopMin > o.ChopMax 
+                return
+            end
+            if ~o.NoBaselineCorrection && o.BaselineMin > o.BaselineMax
+                return
+            end
+            success = true;
         end
 
         function success = persist(o)

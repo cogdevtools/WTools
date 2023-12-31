@@ -1,18 +1,12 @@
 
-function success = wtDifferenceGUI(differencePrms, conditionsGrandPrms, logFlag, evokFlag)
+function success = wtDifferenceParamsGUI(differencePrms, conditionsGrandPrms, logFlag, evokFlag)
     success = false;
     wtLog = WTLog();
 
-    if ~isa(differencePrms, 'WTDifferenceCfg') 
-        wtLog.excpt('BadArgType', 'Bad argument type: expected WTDifferenceCfg, got %s', class(differencePrms))
-    end
-
-    if ~isa(conditionsGrandPrms, 'WTConditionsGrandCfg') 
-        wtLog.excpt('BadArgType','Bad argument type: expected WTConditionsGrandCfg, got %s', class(conditionsGrandPrms))
-    end
-
-    evokFlag = WTUtils.ifThenElse(evokFlag, 1, 0);
-    logFlag = WTUtils.ifThenElse(logFlag, 1, 0);
+    WTUtils.mustBeA(differencePrms, ?WTDifferenceCfg)
+    WTUtils.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
+    evokFlag = any(logical(evokFlag));
+    logFlag = any(logical(logFlag));
 
     % Set defaultanswer0
     defaultanswer0 = { 1,1,1,0,evokFlag };    
@@ -109,7 +103,7 @@ function success = wtDifferenceGUI(differencePrms, conditionsGrandPrms, logFlag,
             { 'style'   'text'       'string'   '' } ...
             { 'Style'   'pushbutton' 'string'   'Delete difference' 'callback'      cb_del } };
         
-        [answer, ~, strhalt] = WTUtils.eeglabInputGui('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Define differences to compute');
+        [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Define differences to compute');
         condiff = evalin('base','condiff');
 
         if strcmp(strhalt,'retuninginputui') && ~isempty(answer) && ~isempty(condiff)

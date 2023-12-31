@@ -24,9 +24,9 @@ classdef WTSession < handle
         function o = WTSession()
             st = singleton();
             if isempty(st) || ~isvalid(st)
-                o.ToolsDir = WTUtils.toolsScriptsDir();
+                o.ToolsDir = WTUtils.getToolsDir();
                 o.Workspace = WTWorkspace();
-                singleton(o)
+                singleton(o);
             else 
                 o = st;
             end
@@ -36,10 +36,10 @@ classdef WTSession < handle
             if o.SessionOpen 
                 return
             end
-            o.prepareContext();
             o.SessionOpen = true;
+            o.prepareContext();
             wtLog = WTLog();
-            wtLog.ctxReset();
+            wtLog.reset();
             wtLog.info('Starting WTools...');
             WTProject();
         end
@@ -51,7 +51,7 @@ classdef WTSession < handle
             o.SessionOpen = false;
             wtProject = WTProject();
             wtLog = WTLog();
-            wtLog.info('Closing WTools...')
+            wtLog.info('Closing WTools...');
             wtProject.clear();
             wtLog.clear();
             o.restoreContext()

@@ -15,6 +15,7 @@ function coeffs = wtCWT(signal, scales, points, cwMatrix)
         signalDC = repmat(mean(signal(ch, :)), 1 , nSamples);
         signal(ch,:) = signal(ch,:) - signalDC;
     end
+    
     % Calculate CWT at each frequency. (The wavelets calculation has been moved to wtPerformCWT.m 
     % to speed up computation)
     if  ~isOldConv2Function() 

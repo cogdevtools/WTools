@@ -12,7 +12,7 @@ classdef WTWorkspace < handle
         
         function e = pop(o)
             if size(o.wsStack, 2) == 0
-                WTLog().excpt('WTWorkspace', 'Empty stack')
+                WTLog().excpt('WTWorkspace', 'Empty stack');
             end
             c = o.wsStack(end); 
             o.wsStack(end) = [];
@@ -77,7 +77,7 @@ classdef WTWorkspace < handle
 
         function varargout = popToVars(o, varargin) 
             if nargin ~= nargout+1 
-                WTLog().excpt('WTWorkspace', 'Input/output args number mismatch')
+                WTLog().excpt('WTWorkspace', 'Input/output args number mismatch');
             end
             if nargin == 1 
                 return

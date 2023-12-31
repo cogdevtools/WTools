@@ -1,7 +1,7 @@
 classdef WTImportCfg < WTConfigStorage & matlab.mixin.Copyable
 
     properties(Constant,Access=private)
-        FldImport = 'export'
+        FldImport = 'exportvar'
     end
 
     properties
@@ -32,7 +32,7 @@ classdef WTImportCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.GenericCellsFieldArgs(o.FldImport, WTFormatter.FldStr, o.ImportDirectory);
+            txt = WTFormatter.GenericCellsFieldArgs(o.FldImport, WTFormatter.FmtStr, o.ImportDirectory);
             success = ~isempty(txt) && o.write(txt);
         end
     end

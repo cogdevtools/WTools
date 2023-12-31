@@ -1,4 +1,4 @@
-classdef WTConfig < matlab.mixin.Copyable
+classdef WTConfig < matlab.mixin.Copyable 
 
     properties
         Prefix WTPrefixCfg
@@ -9,7 +9,7 @@ classdef WTConfig < matlab.mixin.Copyable
         ConditionsGrand WTConditionsGrandCfg
         BaselineChop WTBaselineChopCfg
         ImportToEEGLab WTImportToEEGLabCfg
-        EGIToEEGL WTEGIToEEGLabCfg
+        EGIToEEGLab WTEGIToEEGLabCfg
         WaveletTransform WTWaveletTransformCfg
         Statistics WTStatisticsCfg
         Difference WTDifferenceCfg
@@ -31,7 +31,7 @@ classdef WTConfig < matlab.mixin.Copyable
             o.ConditionsGrand.default();
             o.BaselineChop.default();
             o.ImportToEEGLab.default();
-            o.EGIToEEGL.default();
+            o.EGIToEEGLab.default();
             o.WaveletTransform.default();
             o.Statistics.default();
             o.Difference.default();
@@ -87,8 +87,8 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.ImportToEEGLab.getFileName());
                 return
             end
-            if o.EGIToEEGL.exist() && ~o.EGIToEEGL.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.EGIToEEGL.getFileName());
+            if o.EGIToEEGLab.exist() && ~o.EGIToEEGLab.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.EGIToEEGLab.getFileName());
                 return
             end
             if o.Statistics.exist() && ~o.Statistics.load()
@@ -114,7 +114,7 @@ classdef WTConfig < matlab.mixin.Copyable
     methods(Access = protected)
         function cp = copyElement(o)
             cp = copyElement@matlab.mixin.Copyable(o);
-            cp.ioProc = o.ioProc;
+            cp.IOProc = o.ioProc;
             cp.Prefix = copy(o.Prefix);
             cp.Import = copy(o.Import);
             cp.Subjects = copy(o.Subjects);
@@ -123,7 +123,7 @@ classdef WTConfig < matlab.mixin.Copyable
             cp.ConditionsGrand = copy(o.ConditionsGrand);
             cp.BaselineChop = copy(o.BaselineChop);
             cp.ImportToEEGLab = copy(o.ImportToEEGLab);
-            cp.EGIToEEGL = copy(o.EGIToEEGL);
+            cp.EGIToEEGLab = copy(o.EGIToEEGLab);
             cp.WaveletTransform = copy(o.WaveletTransform);
             cp.Statistics = copy(o.Statistics);
             cp.Difference = copy(o.Difference);
@@ -134,9 +134,8 @@ classdef WTConfig < matlab.mixin.Copyable
 
     methods
         function o = WTConfig()
-            ioProc = IOProcessor();
+            ioProc = WTIOProcessor();
             o.IOProc = ioProc;
-
             o.Prefix = WTPrefixCfg(ioProc);
             o.Import = WTImportCfg(ioProc);
             o.Subjects = WTSubjectsCfg(ioProc);
@@ -154,7 +153,7 @@ classdef WTConfig < matlab.mixin.Copyable
         end
         
         function name = getName(o) 
-            name = WTUtils.getPathTrail(o.IOProc.RootDir);
+            name = WTUtils.getPathTail(o.IOProc.RootDir);
         end
 
         function rootDir = getRootDir(o) 
@@ -172,7 +171,7 @@ classdef WTConfig < matlab.mixin.Copyable
 
         function success = new(o, rootDir)
             o.default()
-            success = o.IOProc.setRootDir(rootDir, false) && o.Prefix.save() && o.Import.save();
+            success = o.IOProc.setRootDir(rootDir, false) && o.Prefix.persist() && o.Import.persist();
         end
     end
 end

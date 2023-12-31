@@ -2,11 +2,27 @@ classdef WTValidations
 
     methods(Static)
         function is = isScalarInt(v)
-            is = isscalar(v) && isInt(v);
+            is = isscalar(v) && WTValidations.isInt(v);
         end 
 
         function is = isScalarIntGT(v, lb)
-            is = isscalar(v) && isInt(v) && v > lb;
+            is = isscalar(v) && WTValidations.isInt(v) && v > lb;
+        end 
+
+        function is = isScalarIntGTE(v, lb)
+            is = isscalar(v) && WTValidations.isInt(v) && v >= lb;
+        end
+
+        function is = isScalarIntLT(v, ub)
+            is = isscalar(v) && WTValidations.isInt(v) && v < ub;
+        end 
+
+        function is = isScalarIntLTE(v, ub)
+            is = isscalar(v) && WTValidations.isInt(v) && v <= ub;
+        end 
+
+        function is = isScalarIntBetween(v, lb, ub)
+            is = isscalar(v) && WTValidations.isInt(v) && v >= lb && v <= ub;
         end 
 
         function is = isInt(v)
@@ -14,11 +30,11 @@ classdef WTValidations
         end 
 
         function is = isValidProperRange(range)
-            is = isValidFiniteRange(range) && range(1) < range(2);
+            is = WTValidations.isValidFiniteRange(range) && range(1) < range(2);
         end
 
         function is = isValidFiniteRange(range)
-            is = isValidRange(range) && ~any(isinf(range));
+            is = WTValidations.isValidRange(range) && ~any(isinf(range));
         end
 
         function is = isValidRange(range)

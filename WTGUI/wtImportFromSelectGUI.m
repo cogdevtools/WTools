@@ -1,19 +1,13 @@
-% import2eegl.m
-% Created by Eugenio Parise
-% CDC CEU 2012
-% Function to select the eeg system to import. It only works from GUI.
-%
-% Usage: import2eegl();
-
-function import2eegl()
-    wt = WTProject();
-
-    if ~wtProject.checkIsOpen()
-        return
-    end
-
+function success = wtImportFromSelectGUI(importToEEGLabData) 
+    success = false;
     wtLog = WTLog();
-    importToEEGLabData = wtProject.Config.ImportToEEGLab;
+    
+    WTUtils.mustBeA(importToEEGLabData, ?WTImportToEEGLabCfg)
+
+    answer = { importToEEGLabData.EEPFlag, ...
+        importToEEGLabData.EGIFlag, ...
+        importToEEGLabData.BRVFlag, ...
+        importToEEGLabData.EEGLabFlag }; 
 
     cb_radiobutton1 = [ ...
         'get(gcbf, ''userdata'');' ...
@@ -46,47 +40,31 @@ function import2eegl()
     parameters = { ...
         { 'style' 'text'        'string' 'Import segmented files from the following system:' } ...
         { 'style' 'text'        'string' '' } ...
-        { 'style' 'radiobutton' 'tag'    'radiobutton1' 'string' 'EEP'    'value'  importToEEGLabData.EEPFlag    'callback' cb_radiobutton1 } ...
-        { 'style' 'radiobutton' 'tag'    'radiobutton2' 'string' 'EGI'    'value'  importToEEGLabData.EGIFlag    'callback' cb_radiobutton2 } ...
-        { 'style' 'radiobutton' 'tag'    'radiobutton3' 'string' 'BRV'    'value'  importToEEGLabData.BRVFlag    'callback' cb_radiobutton3 } ...
-        { 'style' 'radiobutton' 'tag'    'radiobutton4' 'string' 'EEGLAB' 'value'  importToEEGLabData.EEGLabFlag 'callback' cb_radiobutton4 } };
+        { 'style' 'radiobutton' 'tag'    'radiobutton1' 'string' 'EEP'    'value'  answer{1,1} 'callback' cb_radiobutton1 } ...
+        { 'style' 'radiobutton' 'tag'    'radiobutton2' 'string' 'EGI'    'value'  answer{1,2} 'callback' cb_radiobutton2 } ...
+        { 'style' 'radiobutton' 'tag'    'radiobutton3' 'string' 'BRV'    'value'  answer{1,3} 'callback' cb_radiobutton3 } ...
+        { 'style' 'radiobutton' 'tag'    'radiobutton4' 'string' 'EEGLAB' 'value'  answer{1,4} 'callback' cb_radiobutton4 } };
 
     geometry = { 1 1 1 1 1 1 };
 
     while true
-        [answer userdat strhalt] = WTUtils.eeglabInputGui('geometry', geometry, 'uilist', parameters,'title', 'Import segmented EEG');
+        [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters,'title', 'Import segmented EEG');
 
         if ~strcmp(strhalt,'retuninginputui')
-            wtLog.dbg('User quitted import configuration dialog')
+            wtLog.dbg('User quitted import configuration dialog');
             return;
         end
-
-        importToEEGLabData.EEPFlag=answer{1,1};
-        importToEEGLabData.EGIFlag=answer{1,2};
-        importToEEGLabData.BRVFlag=answer{1,3};
-        importToEEGLabData.EEGLabFlag=answer{1,4};
 
         % This is a double check, if for any reason the configuration file was changed manually
         if sum(cellfun(@(e) e, answer)) ~= 0
             break
         end
-
-        WTUtils.eeglabMsgGui('Warning', 'You must select one EEG system among EEP, EGI, BRV, EEGLAB')
+        WTUtils.eeglabMsgDlg('Warning', 'You must select one EEG system among EEP, EGI, BRV, EEGLAB')
     end
 
-    if ~importToEEGLabData.persist()
-        wtLog.err('Failed to save import to EEGLAB params')
-    end
-
-    rehash;
-
-    if importToEEGLabData.EEPFlag %IMPORT EEP
-        eep2eegl;
-    elseif importToEEGLabData.EGIFlag %IMPORT EGI
-        egi2eegl;
-    elseif importToEEGLabData.BRVFlag %IMPORT BRV
-        brv2eegl;
-    elseif importToEEGLabData.EEGLabFlag %IMPORT EEGLAB
-        eegl2eegl;
-    end
+    importToEEGLabData.EEPFlag = answer{1,1};
+    importToEEGLabData.EGIFlag = answer{1,2};
+    importToEEGLabData.BRVFlag = answer{1,3};
+    importToEEGLabData.EEGLabFlag = answer{1,4};
+    success = true;
 end
