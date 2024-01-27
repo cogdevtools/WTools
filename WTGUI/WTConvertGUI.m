@@ -81,7 +81,7 @@ classdef WTConvertGUI
                 { 'style' 'text' 'string' 'Sampling rate (Hz):' } ...
                 { 'style' 'edit' 'string' answer{1,1} } ...
                 { 'style' 'text' 'string' 'Enter the recording sampling rate' } };
-            geometry = { [1 0.5] [1] };
+            geometry = { [1 0.5] 1 };
             
             while true
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set sampling rate');
@@ -111,7 +111,7 @@ classdef WTConvertGUI
                 { 'style' 'text' 'string' 'Enter nothing to time lock to the onset of the stimulus,' } ...
                 { 'style' 'text' 'string' 'enter a positive value to time lock to any point from' } ...
                 { 'style' 'text' 'string' 'the beginning of the segment.' } };
-            geometry = { [1 0.5] [1] [1] [1] };
+            geometry = { [1 0.5] 1 1 1 };
             
             while true
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set trigger');
@@ -161,7 +161,7 @@ classdef WTConvertGUI
                 { 'style' 'text' 'string' 'Enter only min or max to process trials above/below a trial ID.' } ...
                 { 'style' 'text' 'string' 'Enter min/max positive integers to set the min/max trial ID to' } ...
                 { 'style' 'text' 'string' 'process.' } };
-            geometry = { [1 0.5] [1 0.5] [1] [1] [1] [1] };
+            geometry = { [1 0.5] [1 0.5] 1 1 1 1 };
             
             while true
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set min/Max trial ID');

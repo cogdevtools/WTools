@@ -64,7 +64,7 @@ classdef WTLog < handle
         function msg(o, stream, level, fmt, varargin)
             if level <= o.getLogLevel() 
                 [module, func, line] = WTLog.stackInfo(4);
-                time = datestr(now, 'HH:MM:SS.FFF');
+                time = char(datetime('now','TimeZone','local','Format','d-MM-y HH:mm:ss.SSS'));
                 str = o.format(time, module, func, line, level, fmt, varargin{:});
                 fprintf(stream, str);
             end

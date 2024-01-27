@@ -164,8 +164,6 @@ end
 function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
-    interactive = wtProject.Interactive;
     timeRes = data.tim(2) - data.tim(1); 
     chopMin = baselineChopParams.ChopMin;
     chopMax = baselineChopParams.ChopMax;

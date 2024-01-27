@@ -215,7 +215,6 @@ end
 function success = setDifferencePrms()   
     success = false;  
     wtProject = WTProject();
-    wtLog = WTLog();
 
     condsGrandPrms = copy(wtProject.Config.ConditionsGrand);
     differencePrms = copy(wtProject.Config.Difference);

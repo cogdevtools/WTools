@@ -26,7 +26,7 @@ function wtGrandAverage(subjects, conditions)
         return
     end
 
-    interactive = wtProject.Interactive
+    interactive = wtProject.Interactive;
     subjectsGrandPrms = wtProject.Config.SubjectsGrand;
     waveletsTransformPrms = wtProject.Config.WaveletTransform;
     
@@ -78,7 +78,7 @@ function wtGrandAverage(subjects, conditions)
         subjects = subjectsGrandPrms.SubjectsList;
 
         if ~grandAveragePrms.UseAllSubjects 
-            subjects = WTUtils.stringsSelectDlg('Select subjects\nto average:', subjects, false, false)
+            subjects = WTUtils.stringsSelectDlg('Select subjects\nto average:', subjects, false, false);
             if length(subjects) <= 1
                 wtProject.notifyWrn([], 'No enough subjects selected');
                 return
@@ -88,7 +88,7 @@ function wtGrandAverage(subjects, conditions)
         conditions = cat(2, conditionsGrandPrms.ConditionsList, conditionsGrandPrms.ConditionsDiff);
 
         if length(conditions) > 1
-            conditions = WTUtils.stringsSelectDlg('Select conditions:', conditions, false, false)
+            conditions = WTUtils.stringsSelectDlg('Select conditions:', conditions, false, false);
             if isempty(conditions)
                 wtProject.notifyWrn([],'No enough conditions selected');
                 return

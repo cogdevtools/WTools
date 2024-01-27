@@ -198,7 +198,6 @@ end
 function success = selectUpdateSubjects() 
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
 
     subjectsGrand = copy(wtProject.Config.SubjectsGrand);
     subjectsList = wtProject.Config.Subjects.SubjectsList;
@@ -228,7 +227,6 @@ end
 function success = selectUpdateConditions() 
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
 
     condsGrand = wtProject.Config.ConditionsGrand;
     conditionsList = wtProject.Config.Conditions.ConditionsList;
@@ -279,7 +277,6 @@ end
 function success = setUpdateTransformPrms(timeRange, maxFreq, maxChans) 
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
 
     waveletTransformParams = copy(wtProject.Config.WaveletTransform);
      % Check if log was already run after averaging and if so disable the option here

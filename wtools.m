@@ -450,6 +450,7 @@ try
     wtLog.reset();
     WTSession().close();
     WTSession.clear();
+catch
 end
 guidata(hObject, handles);
 

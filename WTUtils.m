@@ -204,7 +204,7 @@ classdef WTUtils
             wtLog = WTLog();
             try
                 if isempty(dirName)
-                    [dirName, fileName] = WTUtils.splitPath(fileName)
+                    [dirName, fileName] = WTUtils.splitPath(fileName);
                 end
                 if ~WTUtils.dirExist(dirName) && ~mkdir(dirName)
                     wtLog.err('Failed to make dir ''%s''', dirName);
@@ -265,7 +265,7 @@ classdef WTUtils
                 
                 for i = 1:nMinArgs-1
                     varargout{i} = result.(args{i});
-                    rmfield(result,  args{i});
+                    result = rmfield(result,  args{i});
                 end
                 if nargout-1 == nArgs
                     varargout{nMinArgs} = result.(args{nMinArgs});
@@ -357,8 +357,6 @@ classdef WTUtils
         end
 
         function found = eeglabDep(fname)
-            found = false;
-
             if nargin == 0
                 fname = 'eeglab.m';
             end
@@ -458,7 +456,6 @@ classdef WTUtils
         end
 
         function ok = eeglabBinaryDlg(title, okStr, cancelStr, fmt, varargin)
-            ok = false;
             legend = {};
             if ~isempty(cancelStr)
                 legend = [legend {sprintf('Cancel = %s', cancelStr)}];

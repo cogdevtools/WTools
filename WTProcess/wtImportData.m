@@ -15,8 +15,8 @@ function wtImportData()
             return
         end
 
-        for srcFile = srcFiles 
-            srcFile = char(srcFile);
+        for srcFileCell = srcFiles 
+            srcFile = char(srcFileCell);
             srcPath = fullfile(srcDir, srcFile);
 
             if isempty(ioProc.getSubjectsFromImportFiles(srcFile))

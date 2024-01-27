@@ -149,7 +149,7 @@ classdef WTIOProcessor < handle
                 fullPath = fullfile(filePath, fileName);
             end
             if nargin > 2 
-                fullpath = [fullpath extension];
+                filePath = [filePath extension];
             end
         end
 
@@ -158,10 +158,11 @@ classdef WTIOProcessor < handle
             chansLocations = {};
             try
                 fullPath = fullfile(WTLayout.getToolsSplinesDir(), fileName);
-                [l x y z] = textread(fullPath,'%s %n %n %n','delimiter', '\t');
+                [l, x, y, z] = textread(fullPath,'%s %n %n %n','delimiter', '\t');
+                chansLocations = cell(1, length(l));
                 for i = 1:length(l)
                     chn = struct('Label', l{i}, 'Location', [x(i) y(i) z(i)]);
-                    chansLocations = [chansLocations {chn}];
+                    chansLocations{i} = chn;
                 end
                 success = true;
             catch me
@@ -185,7 +186,7 @@ classdef WTIOProcessor < handle
 
         function [subjFiles, subjects] = enumImportFiles(o) 
             dirContent = dir(fullfile(o.ImportDir, '*.mat'));
-            subjFiles = cell(length(dirContent), 1);;
+            subjFiles = cell(length(dirContent), 1);
             subjects = cell(length(dirContent), 1);
             nValid = 0;
 
@@ -222,7 +223,6 @@ classdef WTIOProcessor < handle
         end
 
         function [success, varargout] = loadImport(o, fileName, varargin)
-            success = false;
             varargout = cell(1, nargout-1);
             fullPath = o.getImportFile(fileName);
             [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
@@ -239,7 +239,7 @@ classdef WTIOProcessor < handle
             match = result(~cellfun(@isempty, result));
             cndSeg = cat(1, match{:});
             conditions = unique(cndSeg(:,1));
-            success = length(conditions) > 0;
+            success = ~isempty(conditions);
         end
 
         function [fullPath, filePath, fileName] = getProcessedImportFile(o, filePrefix, subject)
@@ -275,9 +275,7 @@ classdef WTIOProcessor < handle
         end
 
         function [success, fullPath, EEG] = writeProcessedImport(o, filePrefix, subject,  EEG)
-            success = false;
-            EEG = [];
-            
+            success = false;        
             try
                 [fullPath, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
                 success = WTUtils.mkdir(filePath);
@@ -286,7 +284,7 @@ classdef WTIOProcessor < handle
                 else
                     EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
                     EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_saveset', EEG,  'filename', fileName, 'filepath', filePath);
-                    success = true
+                    success = true;
                 end
             catch me
                 WTLog().mexcpt(me);
@@ -392,7 +390,7 @@ classdef WTIOProcessor < handle
         % varargin must be char array: the names of the variable to save
         function [success, fullPath] = writeGrandAverage(o, condition, wType, perSubject, varargin)
             success = false;
-            fulltPath = [];
+            fullPath = [];
            
             try
                 [fullPath, filePath, fileName] = o.getGrandAverageFile(condition, wType, perSubject);

@@ -92,7 +92,7 @@ classdef WTValidations
             end
         end
 
-        function mustBeGT(v, vMin, allowNaN, allowMinNaN)
+        function mustBeGT(v, vMin, allowNaN)
             if nargin > 2 && any(logical(allowNaN)) && ~isfinite(v)
                 return
             end

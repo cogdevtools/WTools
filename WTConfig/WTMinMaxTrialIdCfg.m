@@ -53,7 +53,7 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function isAllTrials= allTrials(o)
-            isAllTrials = isnan(o.MinMaxTrialId) && isnan(o.MaxTrialId)
+            isAllTrials = isnan(o.MinMaxTrialId) && isnan(o.MaxTrialId);
         end
 
         function newObj = interpret(o)

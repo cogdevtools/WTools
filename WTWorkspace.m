@@ -84,7 +84,7 @@ classdef WTWorkspace < handle
             end
             ws = o.popMap();
             varargout = cell(nargout,1);
-            for i=1:nargout
+            for i = 1:nargout
                 try
                     varargout{i} = ws(varargin{i});
                 catch

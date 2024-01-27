@@ -36,7 +36,7 @@ function success = wtNewProject
     if  WTUtils.dirExist(prjPath)
         if ~WTUtils.eeglabYesNoDlg('Warning', ['Project directory already exists!\n' ...
             'Directory: %s\n' ...
-            'Do you want to overwrite it?'], prjPath);
+            'Do you want to overwrite it?'], prjPath)
             return;
         end            
     end

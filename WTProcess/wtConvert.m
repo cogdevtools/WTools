@@ -8,7 +8,6 @@
 function success = wtConvert()
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
 
     if ~wtProject.checkIsOpen()
         return
