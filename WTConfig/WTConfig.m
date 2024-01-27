@@ -2,19 +2,21 @@ classdef WTConfig < matlab.mixin.Copyable
 
     properties
         Prefix WTPrefixCfg
-        Import WTImportCfg
         Subjects WTSubjectsCfg
         Conditions WTConditionsCfg
+        Channels WTChannelsCfg
         SubjectsGrand WTSubjectsGrandCfg
         ConditionsGrand WTConditionsGrandCfg
+        GrandAverage WTGrandAverageCfg
         BaselineChop WTBaselineChopCfg
-        ImportToEEGLab WTImportToEEGLabCfg
+        ConvertToEEGLab WTConvertToEEGLabCfg
         EGIToEEGLab WTEGIToEEGLabCfg
         WaveletTransform WTWaveletTransformCfg
         Statistics WTStatisticsCfg
         Difference WTDifferenceCfg
         MinMaxTrialId WTMinMaxTrialIdCfg
         GlobalPlots WTGlobalPlotsCfg
+        Sampling WTSamplingCfg
     end
 
     properties(SetAccess=private,GetAccess=public)
@@ -24,33 +26,27 @@ classdef WTConfig < matlab.mixin.Copyable
     methods(Access=private)
         function default(o)
             o.Prefix.default();
-            o.Import.default();
             o.Subjects.default();
             o.Conditions.default();
+            o.Channels.default();
             o.SubjectsGrand.default();
             o.ConditionsGrand.default();
+            o.GrandAverage.default();
             o.BaselineChop.default();
-            o.ImportToEEGLab.default();
+            o.ConvertToEEGLab.default();
             o.EGIToEEGLab.default();
             o.WaveletTransform.default();
             o.Statistics.default();
             o.Difference.default();
             o.MinMaxTrialId.default();
             o.GlobalPlots.default();
+            o.Sampling.default();
         end
 
         function success = load(o) 
             success = false;
             wtLog = WTLog();
             
-            if ~o.Import.exist() 
-                wtLog.err('An essential configuration file is missing: ''%s'' ', o.Import.getFileName());
-                return
-            end
-            if ~o.Import.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.Import.getFileName());
-                return
-            end
             if ~o.Prefix.exist()
                 wtLog.err('An essential project configuration file is missing: ''%s'' ', o.Prefix.getFileName());
                 return
@@ -67,12 +63,20 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.Conditions.getFileName());
                 return
             end
+            if o.Channels.exist() && ~o.Channels.load()
+                wtLog.err('Failed to load channels configuration file: ''%s'' ', o.Channels.getFileName());
+                return
+            end
             if o.SubjectsGrand.exist() && ~o.SubjectsGrand.load()
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.SubjectsGrand.getFileName());
                 return
             end
             if o.ConditionsGrand.exist() && ~o.ConditionsGrand.load()
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.ConditionsGrand.getFileName());
+                return
+            end
+            if o.GrandAverage.exist() && ~o.GrandAverage.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.GrandAverage.getFileName());
                 return
             end
             if o.WaveletTransform.exist() && ~o.WaveletTransform.load()
@@ -83,8 +87,8 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.BaselineChop.getFileName());
                 return
             end
-            if o.ImportToEEGLab.exist() && ~o.ImportToEEGLab.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.ImportToEEGLab.getFileName());
+            if o.ConvertToEEGLab.exist() && ~o.ConvertToEEGLab.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ConvertToEEGLab.getFileName());
                 return
             end
             if o.EGIToEEGLab.exist() && ~o.EGIToEEGLab.load()
@@ -107,6 +111,10 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.GlobalPlots.getFileName());
                 return
             end
+            if o.Sampling.exist() &&  ~o.Sampling.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.Sampling.getFileName());
+                return
+            end
             success = true;
         end
     end
@@ -116,19 +124,21 @@ classdef WTConfig < matlab.mixin.Copyable
             cp = copyElement@matlab.mixin.Copyable(o);
             cp.IOProc = o.ioProc;
             cp.Prefix = copy(o.Prefix);
-            cp.Import = copy(o.Import);
             cp.Subjects = copy(o.Subjects);
             cp.Conditions = copy(o.Conditions);
+            cp.Channels = copy(o.Channels);
             cp.SubjectsGrand = copy(o.SubjectsGrand);
+            cp.GrandAverage = copy(o.GrandAverage);
             cp.ConditionsGrand = copy(o.ConditionsGrand);
             cp.BaselineChop = copy(o.BaselineChop);
-            cp.ImportToEEGLab = copy(o.ImportToEEGLab);
+            cp.ConvertToEEGLab = copy(o.ConvertToEEGLab);
             cp.EGIToEEGLab = copy(o.EGIToEEGLab);
             cp.WaveletTransform = copy(o.WaveletTransform);
             cp.Statistics = copy(o.Statistics);
             cp.Difference = copy(o.Difference);
             cp.MinMaxTrialId = copy(o.MinMaxTrialId);
             cp.GlobalPlots = copy(o.GlobalPlots);
+            cp.Sampling = copy(o.Sampling);
         end
      end
 
@@ -137,19 +147,21 @@ classdef WTConfig < matlab.mixin.Copyable
             ioProc = WTIOProcessor();
             o.IOProc = ioProc;
             o.Prefix = WTPrefixCfg(ioProc);
-            o.Import = WTImportCfg(ioProc);
             o.Subjects = WTSubjectsCfg(ioProc);
             o.Conditions = WTConditionsCfg(ioProc);
+            o.Channels = WTChannelsCfg(ioProc);
             o.SubjectsGrand = WTSubjectsGrandCfg(ioProc);
             o.ConditionsGrand = WTConditionsGrandCfg(ioProc);
+            o.GrandAverage = WTGrandAverageCfg(ioProc);
             o.BaselineChop = WTBaselineChopCfg(ioProc);
-            o.ImportToEEGLab = WTImportToEEGLabCfg(ioProc);
+            o.ConvertToEEGLab = WTConvertToEEGLabCfg(ioProc);
             o.EGIToEEGLab = WTEGIToEEGLabCfg(ioProc);
             o.WaveletTransform = WTWaveletTransformCfg(ioProc);
             o.Statistics = WTStatisticsCfg(ioProc);
             o.Difference = WTDifferenceCfg(ioProc);
             o.MinMaxTrialId = WTMinMaxTrialIdCfg(ioProc);
             o.GlobalPlots = WTGlobalPlotsCfg(ioProc);
+            o.Sampling = WTSamplingCfg(ioProc);
         end
         
         function name = getName(o) 
@@ -171,7 +183,9 @@ classdef WTConfig < matlab.mixin.Copyable
 
         function success = new(o, rootDir)
             o.default()
-            success = o.IOProc.setRootDir(rootDir, false) && o.Prefix.persist() && o.Import.persist();
+            name = WTUtils.getPathTail(rootDir);
+            o.Prefix.FilesPrefix = name;
+            success = o.IOProc.setRootDir(rootDir, false) && o.Prefix.persist();
         end
     end
 end

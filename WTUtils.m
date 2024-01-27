@@ -1,9 +1,4 @@
 classdef WTUtils
-    properties (Constant, Access=private)
-        ResourcesSubDir = 'WTResources'
-        PicturesSubDir = 'WTPictures'
-        SplineSubDir = 'WTSplines'
-    end
 
     methods (Static, Access=private)
         function [interpreter, msg] = setDlgMsg(fontSize, fmt, varargin)
@@ -165,19 +160,6 @@ classdef WTUtils
             [~,name,~] = fileparts(fname);
         end
 
-        function d = getToolsDir() 
-            fn = mfilename('fullpath');
-            d = WTUtils.getPathPrefix(fn);
-        end
-
-        function d = getToolsPicturesDir() 
-            d = fullfile(WTUtils.getToolsDir(), WTUtils.ResourcesSubDir, WTUtils.PicturesSubDir);
-        end
-
-        function d = getToolsSplinesDir() 
-            d = fullfile(WTUtils.getToolsDir(), WTUtils.ResourcesSubDir, WTUtils.PicturesSubDir);
-        end
-
         function response = fileExist(fnamePart, varargin)
             fname = fullfile(fnamePart, varargin{:});
             response = exist(fname, 'file');
@@ -188,31 +170,47 @@ classdef WTUtils
             response = exist(dname, 'dir');
         end
 
-        function success = writeTxtFile(fname, mode, varargin)
-            success = true;
-            if nargin > 2
-                file = fopen(fname, mode, 'native', 'UTF-8');
+        function success = writeTxtFile(dirName, fileName, mode, varargin)
+            success = false;
+            fullName = [];
+            try
+                if nargin < 4
+                    varargin = {''};
+                end
+                if ~WTUtils.dirExist(dirName) && ~mkdir(dirName)
+                    wtLog.err('Failed to make dir ''%s''', dirName);
+                    return
+                end
+                fullName = fullfile(dirName, fileName);
+                file = fopen(fullName, mode, 'native', 'UTF-8');
                 if file >= 0 
                     text = join(varargin, '\n');
                     fprintf(file, strcat(text{1}, newline));
                     fclose(file);
-                else
-                    success = false;
+                    success = true;
                 end
+            catch me
+                wtLog.mexcpt(me);
+            end
+            if ~success 
+                wtLog.err('Failed to write text to file ''%s''', WTUtils.ifThenElseSet(isempty(fullName), '<?>', fullName))
             end
         end
 
         % varargin must be strings
-        function success = saveTo(dir, fileName, varargin)
+        function success = saveTo(dirName, fileName, varargin)
             success = false;
             targetFile = [];
             wtLog = WTLog();
             try
-                if ~WTUtils.dirExist(dir) && ~mkdir(dir)
-                    wtLog.err('Failed to make dir ''%s''', dir);
+                if isempty(dirName)
+                    [dirName, fileName] = WTUtils.splitPath(fileName)
+                end
+                if ~WTUtils.dirExist(dirName) && ~mkdir(dirName)
+                    wtLog.err('Failed to make dir ''%s''', dirName);
                     return
                 end
-                targetFile = fullfile(dir, fileName);
+                targetFile = fullfile(dirName, fileName);
                 args = [targetFile varargin];
                 args = WTUtils.quoteMany(args{:});
                 cmd = sprintf('save(%s)', char(join(args, ',')));
@@ -224,18 +222,59 @@ classdef WTUtils
             end
         end
 
+        % Examples:
+        %   Supposing 'file' contains a struct S with fields a, b, c, c
+        %   [~, a] = loadFrom('file') => S
+        %   [~, a, b, c] = loadFrom('file', 'a', 'b', 'c') => S.a, S.b , S.c
+        %   [~, a, b, c] = loadFrom('file', 'a') => S.a, {} ,{}
+        %   [~, a, b] = loadFrom('file', 'a', 'b', 'c') => S.a, struct(b: S.b, c: S.c)
+        % If varargin contains -regexp, then only the first varargout will be valued with 
+        % a struct containing all the matching fields. 
+        % Differently from 'load', non existing fields are not accepted and cause error, 
+        % not a warning.
         function [success, varargout] = loadFrom(fileName, varargin)
-            success = false;
+            success = true;
+            if nargout <= 1
+                return
+            end
             varargout = cell(1, nargout-1); 
             try
                 args = [fileName varargin];
                 args = WTUtils.quoteMany(args{:});
                 cmd = sprintf('load(%s)', char(join(args, ',')));
-                varargout{:} = evalin('caller', cmd);
-                success = true;
-            catch
-                wtLog.mexcpt(me);
-                WTLog().err('Failed to load from file ''%s''',  WTUtils.ifThenElseSet(ischar(fileName), fileName, '<?>'));
+                result = evalin('caller', cmd);
+
+                argsAreRegExp = any(strcmp('-regexp', varargin));
+
+                if nargin <= 1 || argsAreRegExp
+                    varargout{1} = result;
+                    return
+                end
+
+                args = varargin(:);
+                args(strcmp(args, '-mat')) = [];
+                args(strcmp(args, '-ascii')) = [];
+                nArgs = length(args);
+
+                if nArgs == 0 
+                    varargout{1} = result;
+                    return
+                end
+
+                nMinArgs = min(nargout-1, nArgs);
+                
+                for i = 1:nMinArgs-1
+                    varargout{i} = result.(args{i});
+                    rmfield(result,  args{i});
+                end
+                if nargout-1 == nArgs
+                    varargout{nMinArgs} = result.(args{nMinArgs});
+                else % return what's left in the struct
+                    varargout{nMinArgs} = result;
+                end                
+            catch me
+                success = false;
+                WTLog().mexcpt(me).err('Failed to load from file ''%s''',  WTUtils.ifThenElseSet(ischar(fileName), fileName, '<?>'));
             end
         end
 
@@ -278,51 +317,43 @@ classdef WTUtils
             end
         end
         
-        function [fileNames, filesDir, filterIdx] = uiGetFile(filter, msg, varargin)
+        function [fileNames, filesDir, filterIdx] = uiGetFiles(filter, msg, varargin)
             if nargin > 1
                 WTUtils.msgBoxIf(ismac, 'Select file(s)', msg, varargin{:});
                 [fileNames, filesDir, filterIdx] = uigetfile(filter, msg, varargin{:});
             else 
                 [fileNames, filesDir, filterIdx] = uigetfile(filter);
             end
-            if ischar(fileNames) 
+            if isscalar(fileNames) 
+                fileNames = {};
+            elseif ischar(fileNames) 
                 fileNames = {fileNames};
             end
         end
 
-        function selection = stringsSelectDlg(prompt, list, single, confirm)
+        function [selection, indexes] = stringsSelectDlg(prompt, list, single, confirm, varargin)
             if ~WTValidations.isALinearCellArrayOfNonEmptyString(list)
                 WTLog.expt('BadArg', 'Bad argument type or value: list');
             end
-            if nargin > 2
-                single = any(logical(single));
-            else
-                single = false;
-            end
-            if single 
-                mode = 'single';
-            else 
-                mode = 'multiple';
-            end
-            if nargin > 3
-                confirm = any(logical(confirm));
-            else
-                confirm = false;
-            end
+
             selection = list;
+            indexes = WTUtils.ifThenElseSet(length(list) == 1, 1, []);
+            confirm =  nargin > 3 && any(logical(confirm));
+            
             if isempty(list) || (length(list) < 2 && ~confirm)
                 return
             end
 
+            mode = WTUtils.ifThenElseSet(nargin > 2 && any(logical(single)), 'single', 'multiple');
             prompt = strrep(prompt, '\n', newline);
             prompt = splitlines(prompt)';
 
-            [indxs, ok] = listdlg('PromptString', prompt, 'SelectionMode', mode, 'ListString', list);
+            [indexes, ok] = listdlg(varargin{:}, 'PromptString', prompt, 'SelectionMode', mode, 'ListString', list);
             if ~ok
                 selection = {};
                 return 
             end 
-            selection = list(indxs);
+            selection = list(indexes);
         end
 
         function found = eeglabDep(fname)
@@ -360,7 +391,8 @@ classdef WTUtils
                     addpath(eeglabRoot);
                     wtLog.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeglab nogui');
                     found = true;
-                catch
+                catch me
+                    wtLog.mexcpt(me);
                 end
             end
 
@@ -369,33 +401,32 @@ classdef WTUtils
             end
         end
 
-        function varargout = eeglabRun(varargin) 
+        % When 'safeMode' is true, exceptions are trapped and the first parameter returned is 'success'
+        function varargout = eeglabRun(logLevel, safeMode, varargin) 
+            safeMode = any(logical(safeMode));
             varargout = cell(nargout,1);
+            cmdArgOfs = WTUtils.ifThenElseSet(safeMode, 2, 1);
             wtLog = WTLog();
+            warnState = warning;
+            me = [];
+            warning('off', 'all');
+            
             try
-                if nargin == 0 
-                    varargin = {'eeglab'};
-                end
-                eeglabFunc = varargin{1};
-                if length(varargin) == 1
-                    [varargout{:}] = wtLog.evalcLog(wtLog.LevelInf, 'EEGLAB', eeglabFunc);
+                if nargin < 3 % no argument, just run eeglab by default
+                    [varargout{cmdArgOfs:end}] = wtLog.evalcLog(logLevel, 'EEGLAB', 'eeglab');
                 else
-                    cmdStr = sprintf('%s(varargin{2:length(varargin)});', eeglabFunc);
-                    [varargout{:}] = wtLog.evalcLog(wtLog.LevelInf, 'EEGLAB', cmdStr);
+                    cmdStr = sprintf('%s(varargin{2:length(varargin)});', varargin{1});
+                    [varargout{cmdArgOfs:end}] = wtLog.evalcLog(logLevel, 'EEGLAB', cmdStr);
                 end
             catch me
                 wtLog.err('Failed to run eeglab command...');
-                wtLog.mexcpt(me, true);
             end
-        end
 
-        function [success, varargout] = eeglabSafeRun(varargin) 
-            varargout = cell(nargout-1,1);
-            try
-                [varargout{:}] = WTUtils.eeglabRun(varargin{:});
-                success = true;
-            catch
-                success = false;
+            warning(warnState);
+            if safeMode 
+                varargout{1} = isempty(me);
+            elseif ~isempty(me)
+                wtLog.mexcpt(me, true);
             end
         end
 
@@ -404,7 +435,7 @@ classdef WTUtils
                 WTLog().excpt('WTUtils:EEGLABDependency', 'Can''t find ''inputgui.m''');
             end
             varargout = cell(nargout,1);
-            [varargout{:}] = WTUtils().eeglabRun('inputgui', varargin{:});
+            [varargout{:}] = WTUtils().eeglabRun(WTLog.LevelDbg, false, 'inputgui', varargin{:});
         end
 
         function varargout = eeglabMsgDlg(title, fmt, varargin)
@@ -424,6 +455,26 @@ classdef WTUtils
             catch
                 WTLog().err('Failed to display on GUI the following msg:\n\nTitle: %s\nMessage: %s', title, msg);
             end
+        end
+
+        function ok = eeglabBinaryDlg(title, okStr, cancelStr, fmt, varargin)
+            ok = false;
+            legend = {};
+            if ~isempty(cancelStr)
+                legend = [legend {sprintf('Cancel = %s', cancelStr)}];
+            end
+            if ~isempty(okStr)
+                legend = [legend {sprintf('Ok = %s', okStr)}];
+            end
+            if ~isempty(legend)
+                fmt = strcat(fmt, sprintf('\n[ %s ]', char(join(legend, ' | '))));
+            end
+            [~, ~, strHalt] = WTUtils.eeglabMsgDlg(title, fmt, varargin{:});
+            ok = strcmp(strHalt,'retuninginputui');
+        end     
+
+        function yes = eeglabYesNoDlg(title, fmt, varargin)
+            yes = WTUtils.eeglabBinaryDlg(title, 'YES', 'NO', fmt, varargin{:});
         end
 
         % module: without trailing .m

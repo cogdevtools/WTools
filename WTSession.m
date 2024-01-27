@@ -24,7 +24,7 @@ classdef WTSession < handle
         function o = WTSession()
             st = singleton();
             if isempty(st) || ~isvalid(st)
-                o.ToolsDir = WTUtils.getToolsDir();
+                o.ToolsDir = WTLayout.getToolsDir();
                 o.Workspace = WTWorkspace();
                 singleton(o);
             else 

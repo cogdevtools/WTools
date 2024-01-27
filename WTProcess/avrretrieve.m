@@ -34,23 +34,23 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
     wtLog = WTLog();
     PROJECTPATH = wtProject.Config.getRootDir();
 
-    % Make pop_cfg folder to store config files for gui working functions
+    % Make Config folder to store config files for gui working functions
     if exist('PROJECTPATH','var')
         CommonPath = strcat (PROJECTPATH,'/');
-        alreadyexistdir=strcat(CommonPath,'pop_cfg');
+        alreadyexistdir=strcat(CommonPath,'Config');
         if ~exist(alreadyexistdir,'dir')
-            mkdir (CommonPath,'pop_cfg');
+            mkdir (CommonPath,'Config');
         end
-        addpath(strcat(PROJECTPATH,'/pop_cfg'));
-        pop_cfgfile = strcat(CommonPath,'pop_cfg/avrretrieve_cfg.m');
+        addpath(strcat(PROJECTPATH,'/Config'));
+        pop_cfgfile = strcat(CommonPath,'Config/avrretrieve_cfg.m');
     else
         CommonPath = strcat ('../');
-        alreadyexistdir=strcat(CommonPath,'pop_cfg');
+        alreadyexistdir=strcat(CommonPath,'Config');
         if ~exist(alreadyexistdir,'dir')
-            mkdir (CommonPath,'pop_cfg');
+            mkdir (CommonPath,'Config');
         end
-        addpath(strcat('../','pop_cfg'));
-        pop_cfgfile = strcat('../pop_cfg/avrretrieve_cfg.m');
+        addpath(strcat('../','Config'));
+        pop_cfgfile = strcat('../Config/avrretrieve_cfg.m');
     end
 
     % Call gui only if no arguments were entered
@@ -74,7 +74,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
                     if exist('subjects','var') % Necessary to make subjects working in the function workspace
                         subjN = size(subjects,2);
                     else
-                        subjgrand; % In case the user quit the subjrebuild module after calling it
+                        subjgrand; % In case the user quit the wtSubjectsRebuild module after calling it
                     end
                 else
                     subjgrand;
@@ -105,7 +105,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
                 defaultanswer{1,answersN}=last_tfcmor;
             catch
                 fprintf('\n');
-                fprintf(2, 'The avrretrieve_cfg.m file in the pop_cfg folder was created by a previous version\n');
+                fprintf(2, 'The avrretrieve_cfg.m file in the Config folder was created by a previous version\n');
                 fprintf(2, 'of WTools. It will be updated to the most recent version and overwritten.');
                 fprintf('\n');
                 defaultanswer=defaultanswer0;
@@ -349,7 +349,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
         end
     end
 
-    % Save the user input parameters in the pop_cfg folder
+    % Save the user input parameters in the Config folder
     if ~nargin
         fid = fopen(pop_cfgfile, 'wt'); % Overwrite preexisting file with the same name
         fprintf(fid, 'defaultanswer={ ''[%s]'' ''%s'' ''%s'' ''%s'' ''%s'' %i %i};',...

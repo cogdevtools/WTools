@@ -25,7 +25,45 @@ classdef WTProject < handle
         function open = checkIsOpen(o)
             open = o.IsOpen;
             if ~open
-                WTUtils.eeglabMsgDlg('Warning', 'You must open a project or create a new one first')
+                o.notifyWrn([], 'A project must be opened/created to proceed');
+            end
+        end
+
+        function notify(o, title, fmt, varargin)
+            if o.Interactive 
+                WTUtils.eeglabMsgDlg(title, fmt, varargin{:});
+            end
+        end
+
+        function notifyErr(o, title, fmt, varargin)
+            wtLog = WTLog(); 
+            if wtLog.getLogLevel() >= WTLog.LevelErr 
+                WTLog().err(fmt, varargin{:});
+                o.notify(WTUtils.ifThenElseSet(isempty(title), 'Error', title), fmt, varargin{:});
+            end
+        end
+
+        function notifyWrn(o, title, fmt, varargin)
+            wtLog = WTLog(); 
+            if wtLog.getLogLevel() >= WTLog.LevelWrn 
+                WTLog().warn(fmt, varargin{:});
+                o.notify(WTUtils.ifThenElseSet(isempty(title), 'Warning', title), fmt, varargin{:});
+            end
+        end
+
+        function notifyInf(o, title, fmt, varargin)
+            wtLog = WTLog(); 
+            if wtLog.getLogLevel() >= WTLog.LevelInf 
+                WTLog().info(fmt, varargin{:});
+                o.notify(WTUtils.ifThenElseSet(isempty(title), 'Info', title), fmt, varargin{:});
+            end
+        end
+
+        function success = checkIsValidName(o, name, warn)
+            success = ~isempty(name) && length(split(name)) == 1 && length(split(name,'\')) == 1 && length(split(name,'/')) == 1;
+            if ~success && nargin > 1 && warn
+                o.notifyErr([], ['Empty or invalid project name!\n'...
+                    'Make sure to remove blanks and / \\ chars from the name.']);
             end
         end
 
@@ -35,9 +73,9 @@ classdef WTProject < handle
             name = WTUtils.getPathTail(rootDir);  
             parentDir = WTUtils.getPathPrefix(rootDir);
             if success 
-                WTLog().info('Project ''%s''in dir ''%s'' opened successfully', name, parentDir);
+                o.notifyInf([], 'Project ''%s''in dir ''%s'' opened successfully', name, parentDir);
             else
-                WTLog().err('Failed to open project ''%s'' in dir ''%s''', name, parentDir);
+                o.notifyErr([], 'Failed to open project ''%s'' in dir ''%s''', name, parentDir);
             end
         end 
 
@@ -47,22 +85,14 @@ classdef WTProject < handle
             name = WTUtils.getPathTail(rootDir);  
             parentDir = WTUtils.getPathPrefix(rootDir);
             if success 
-                WTLog().info('New project ''%s'' created successfully in dir ''%s''', name, parentDir); 
+                o.notifyInf([], 'New project ''%s'' created successfully in dir ''%s''', name, parentDir); 
             else
-                WTLog().err('Failed to create project ''%s'' in dir ''%s''', name, parentDir);
+                o.notifyErr([], 'Failed to create project ''%s'' in dir ''%s''', name, parentDir);
             end
         end 
     end
 
     methods(Static)
-        function success = checkIsValidName(name, warn)
-            success = ~isempty(name) && length(split(name)) == 1 && length(split(name,'\')) == 1 && length(split(name,'/')) == 1;
-            if ~success && nargin > 1 && warn
-                WTUtils.eeglabMsgDlg('Error', ['Empty or invalid project name!\n'...
-                    'Make sure to remove blanks and / \\ chars from the name.']);
-            end
-        end
-    
         function clear()
             singleton();
             munlock('singleton');

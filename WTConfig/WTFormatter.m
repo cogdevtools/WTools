@@ -31,7 +31,7 @@ classdef WTFormatter
                 return
             end
             try
-                fmt = strcat('%s = { ', repmat('%d ', 1, length(cells)), '};');
+                fmt = ['%s = { ' repmat('%d ', 1, length(cells)) '};'];
                 txt = sprintf(fmt, fieldName, cells{:});
             catch me
                 WTLog().mexcpt(me, false);
@@ -49,9 +49,9 @@ classdef WTFormatter
                 return
             end 
             try
-                contentFmt = join(varargin(1:2:nargin-1), ' ');
-                contentVal = varargin(2:2:nargin-1);
-                fmt = strcat('%s = { ', contentFmt{1}, ' };');
+                contentFmt = join(varargin(1:2:end), ' ');
+                contentVal = varargin(2:2:end);
+                fmt = ['%s = { ' contentFmt{1} ' };'];
                 txt = sprintf(fmt, fieldName, contentVal{:});
             catch me
                 WTLog().mexcpt(me, false);

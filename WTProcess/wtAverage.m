@@ -68,6 +68,8 @@
 function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, timeMin, timeMax, waveletType, chansToAnalyse, selection, normalization, epochsList, cwtMatrix)
     success = false;
     files = {};
+
+    wtProject = WTProject();
     wtLog = WTLog();
 
     if ~wtProject.checkIsOpen()
@@ -79,6 +81,9 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     if ~WTValidations.isALinearCellArrayOfString(selection)
         wtLog.excpt('BadArgType', 'Bad argument type: cell expected cell array of strings, got %s', class(selection));
     end 
+
+    % The other params should be checked here: there are too many of them BTW...
+    % ...
 
     ioProc = wtProject.Config.IOProc;
     extraEdges = cwtParams.EdgePadding;
@@ -165,15 +170,15 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             if i == 1
                 wtLog.dbg('Operating on epoch nr: %d/%d', i, nChans);
             else
-                wtLog.dbg('Operating on epoch nr:  %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
+                wtLog.dbg('Operating on epoch nr: %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
              end
 
             t = cputime;
             
             if strcmp(waveletType,'Gabor (stft)')
-                WT = gabortf(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, Fs, fb,timeMin:dt:timeMax);
+                WT = gabortf(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, Fs, fb, timeMin:dt:timeMax);
             elseif strcmp(waveletType,'cmor')
-                WT = fastwavelet(squeeze(X(chansToAnalyse,:,actualEpoch))', scales, waveletType,fb,timeMin:dt:timeMax);
+                WT = fastwavelet(squeeze(X(chansToAnalyse,:,actualEpoch))', scales, waveletType, fb, timeMin:dt:timeMax);
             elseif strcmp(waveletType,'cwt')  %Introduced by Eugenio Parise
                 WT = wtCWT(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, timeMin:dt:timeMax, cwtMatrix);
             else 

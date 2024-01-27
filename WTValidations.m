@@ -92,8 +92,20 @@ classdef WTValidations
             end
         end
 
-        function mustBeGT(v, vMin)
+        function mustBeGT(v, vMin, allowNaN, allowMinNaN)
+            if nargin > 2 && any(logical(allowNaN)) && ~isfinite(v)
+                return
+            end
             if ~isnumeric(v) && v <= vMin
+                error(['Value must be numeric and < ' num2str(vMin)])
+            end
+        end
+
+        function mustBeGTE(v, vMin, allowNaN)
+            if nargin > 2 && any(logical(allowNaN)) && ~isfinite(v)
+                return
+            end
+            if ~isnumeric(v) && v < vMin
                 error(['Value must be numeric and < ' num2str(vMin)])
             end
         end

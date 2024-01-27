@@ -35,7 +35,7 @@ function success = wtBaselineChop()
     conditions = conditionsGrandParams.ConditionsList;
 
     if ~subjectsGrandParams.exist() || ~waveletTransformParams.exist()
-        wtLog.warn('Before to execute baseline correction & edges chopping, apply wavelet transformation...');
+        wtProject.notifyWrn([], 'Before to execute baseline correction & edges chopping, apply wavelet transformation...');
         return
     end
 
@@ -44,7 +44,7 @@ function success = wtBaselineChop()
     end
 
     if isempty(subjects)
-        wtLog.warn('No subjects to process: quitting...'); 
+        wtProject.notifyWrn([], 'No subjects to process!'); 
         return
     end
 
@@ -53,7 +53,7 @@ function success = wtBaselineChop()
     end
 
     if isempty(conditions)
-        wtLog.warn('No conditions to process: quitting...'); 
+        wtProject.notifyWrn([], 'No conditions to process!'); 
         return
     end
 
@@ -61,7 +61,7 @@ function success = wtBaselineChop()
     
     while true
         if interactive 
-            if ~wtBaselineChopParamsGUI(waveletTransformParams, baselineChopParams)
+            if ~WTBaselineChopGUI.baselineChopParams(waveletTransformParams, baselineChopParams)
                 return
             end
         elseif ~baselineChopParams.validate()
@@ -76,7 +76,7 @@ function success = wtBaselineChop()
         % Load the first data set to get information like 'Fa' and 'tim'
         [success, data] = ioProc.loadWaveletsAnalysis(subjects{1}, conditions{1}, measure);
         if ~success 
-            WTLog.err('Failed to load dataset');
+            wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{1}, conditions{1});
             return
         end
 
@@ -90,7 +90,7 @@ function success = wtBaselineChop()
     end
 
     if ~baselineChopParams.persist()
-        wtLog.err('Failed to save baseline corrections & edges chopping params');
+        wtProject.notifyErr([], 'Failed to save baseline corrections & edges chopping params');
         return
     end
 
@@ -122,7 +122,8 @@ function success = wtBaselineChop()
             
             [success, data] = ioProc.loadWaveletsAnalysis(subjects{s}, conditions{c}, measure);
             if ~success 
-                wtLog.err('Failed to load dataset').popStatus();
+                wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{s}, conditions{c});
+                wtLog.popStatus();
                 return
             end
             
@@ -147,21 +148,24 @@ function success = wtBaselineChop()
 
             [success, filePath] = ioProc.writeBaselineCorrection(subjects(s), conditions(c), measure, '-struct', 'data');
             if ~success 
-                wtLog.err('Failed to save basaline corrected & edge chopped data to ''%s''', filePath).popStatus();
+                wtProject.notifyErr([], 'Failed to save basaline corrected & edge chopped data to ''%s''', filePath);
+                wtLog.popStatus();
                 return
             end
         end 
     end
 
-    wtLog.popStatus().info('Baseline correction and edges chopping processing completed');
+    wtLog.popStatus();
+    wtProject.notifyInf([], 'Baseline correction and edges chopping processing completed!');
     success = true;
 end
 
 
 function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
     success = false;
+    wtProject = WTProject();
     wtLog = WTLog();
-    interactive = WTProject().Interactive;
+    interactive = wtProject.Interactive;
     timeRes = data.tim(2) - data.tim(1); 
     chopMin = baselineChopParams.ChopMin;
     chopMax = baselineChopParams.ChopMax;
@@ -170,12 +174,10 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
     timeMin = min(data.tim);
     timeMax = max(data.tim);
 
-    errDialog = @(msg)WTUtils.ifThenElseDo(interactive,  @WTUtils.wrnDlg, {'Review parameter', msg});
-    errNotify = @(msg)WTUtils.execFunctions(@wtLog.err, {msg}, errDialog, {msg});
-    errManage = @(fmt, varargin)errNotify(sprintf(fmt, varargin{:}));
+    errNotify = @(fmt, varargin)wtProject.notifyErr('Review parameter', fmt, varargin{:});
 
     if chopMin < timeMin || chopMin >= timeMax
-        errManage(['Then minimum of the chopping window, %.2f ms, is out of boundaries! ' ...
+        errNotify(['Then minimum of the chopping window, %.2f ms, is out of boundaries! ' ...
                    'Choose a value in [%.2f, %.2f) ms'], chopMin, timeMin, timeMax);
         return
     else
@@ -185,7 +187,7 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
     end
 
     if chopMax > timeMax
-        errManage(['Then maximum of the chopping window, %.2f ms, is out of boundaries! ' ...
+        errNotify(['Then maximum of the chopping window, %.2f ms, is out of boundaries! ' ...
                    'Choose a value in (%.2f, %.2f] ms'], chopMax, timeMin, timeMax);
         return
     else
@@ -196,7 +198,7 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
 
     if ~baselineChopParams.NoBaselineCorrection
         if baselineMin < timeMin || baselineMin >= timeMax
-            errManage(['Then minimum of the baseline window, %.2f ms, is out of boundaries! ' ...
+            errNotify(['Then minimum of the baseline window, %.2f ms, is out of boundaries! ' ...
                         'Choose a value in [%.2f, %.2f) ms'], baselineMin, timeMin, timeMax);
             return
         else
@@ -205,7 +207,7 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
             baselineMin = timeGTE(1);
         end
         if baselineMax > timeMax
-            errManage(['Then maximum of the baseline window, %.2f ms, is out of boundaries! ' ...
+            errNotify(['Then maximum of the baseline window, %.2f ms, is out of boundaries! ' ...
                    'Choose a value in (%.2f, %.2f] ms'], baselineMax, timeMin, timeMax);
             return
         else

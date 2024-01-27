@@ -21,11 +21,8 @@ function varargout = wtools(varargin)
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
-
 % Edit the above text to modify the response to help wtools
-
 % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
-
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -56,7 +53,6 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
-
 
 % --- Executes just before wtools is made visible.
 function wtools_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -120,10 +116,8 @@ handles.wtoolsOpen = 1;
 handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
-
 % UIWAIT makes wtools wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = wtools_OutputFcn(hObject, eventdata, handles) 
@@ -131,9 +125,7 @@ function varargout = wtools_OutputFcn(hObject, eventdata, handles)
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Get default command line output from handles structure
-
 % If ForceQuit was set the figure has been deleted at this point
 % so we need to check if handles is empty or not.
 if ~isempty(handles) 
@@ -173,20 +165,14 @@ function NewPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to NewPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-wtProject = WTProject();
 wtLog = WTLog();
 wtLog.ctxOn('NewProject');
 try
-    if wtNewProject()
-        set(handles.ProjectEdit, 'String', wtProject.Config.getName());
-        set(handles.SSnEdit, 'String', '0');
-    end
+    wtNewProject();
+    updateProjectName(handles);
+    updateTotalSubjects(handles);
 catch me
     wtLog.mexcpt(me);
-end
-if ~wtProject.IsOpen
-    set(handles.ProjectEdit, 'String', 'None');
-    set(handles.SSnEdit,'String', 'None');
 end
 wtLog.reset();
 guidata(hObject, handles);
@@ -196,24 +182,14 @@ function OpenPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to OpenPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-wtProject = WTProject();
 wtLog = WTLog();
 wtLog.ctxOn('OpenProject');
 try
-    if wtOpenProject()
-        set(handles.ProjectEdit, 'String', wtProject.Config.getName());
-        subjsGrand = wtProject.Config.SubjectsGrand;
-        if subjsGrand.exist() 
-            subjsGrand.load(); 
-        end
-        set(handles.SSnEdit,'String', num2str(length(subjsGrand.SubjectsList)));
-    end
+    wtOpenProject();
+    updateProjectName(handles);
+    updateTotalSubjects(handles);
 catch me
     wtLog.mexcpt(me);
-end
-if ~wtProject.IsOpen
-    set(handles.ProjectEdit, 'String', 'None');
-    set(handles.SSnEdit,'String', 'None');
 end
 wtLog.reset();
 guidata(hObject, handles);
@@ -226,7 +202,7 @@ function ImportEEGPushButton_Callback(hObject, eventdata, handles)
 wtLog = WTLog();
 wtLog.ctxOn('Import');
 try
-    wtImport();
+    wtConvert();
 catch me
     wtLog.mexcpt(me);
 end
@@ -238,20 +214,15 @@ function SSManagerPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to SSManagerPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% context: 'SubjectManager'
-subjrebuild();
-if exist('subjects','var')
-    nn = num2str(length(subjects));
-    set(handles.SSnEdit,'String',nn);
-    clear global ans;
-elseif exist('handles.SSnEdit','var')
-    %'Cancel' has been pressed on the ui
-    nn = 'None';
-    set(handles.SSnEdit,'String',nn);
-else
-    return
+wtLog = WTLog();
+wtLog.ctxOn('SubjectManager');
+try
+    wtSubjectsRebuild();
+    updateTotalSubjects(handles);
+catch me
+    wtLog.mexcpt(me);
 end
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in WTPushButton.
@@ -260,14 +231,10 @@ function WTPushButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 wtLog = WTLog();
-wtLog.ctxOn('Time/Freq analysis');
+wtLog.ctxOn('TimeFreqAnalysis');
 try
     wtPerformCWT();
-    if exist('subjects','var')
-        set(handles.SSnEdit, 'String', num2str(length(subjects)));
-    else
-        set(handles.SSnEdit, 'String', 'None');
-    end
+    updateTotalSubjects(handles);
 catch me
     wtLog.mexcpt(me);
 end
@@ -297,7 +264,7 @@ function DifferencePushButton_Callback(hObject, eventdata, handles)
 wtLog = WTLog();
 wtLog.ctxOn('ConditionsDifference');
 try
-    difference();
+    wtDifference();
 catch me
     wtLog.mexcpt(me);
 end
@@ -309,20 +276,15 @@ function GrandPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to GrandPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% Context: SubjectsGrandAverage
-grand();
-if exist('subjects','var')
-    nn = num2str(length(subjects));
-    set(handles.SSnEdit,'String',nn);
-    clear global ans;
-elseif exist('handles.SSnEdit','var')
-    %'Cancel' has been pressed on the ui
-    nn = 'None';
-    set(handles.SSnEdit,'String',nn);
-else
-    return
+wtLog = WTLog();
+wtLog.ctxOn('SubjectsGrandAverage');
+try
+    wtGrandAverage();
+    updateTotalSubjects(handles)
+catch me
+    wtLog.mexcpt(me);
 end
+wtLog.reset();
 guidata(hObject, handles);
 
 % --- Executes on button press in XavrPushButton.
@@ -420,23 +382,18 @@ function AvrretrievePushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to AvrretrievePushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% Context: 'Statistics'
-avrretrieve();
-if exist('subjects','var')
-    nn = num2str(length(subjects));
-    set(handles.SSnEdit,'String',nn);
-    clear global ans;
-elseif exist('handles.SSnEdit','var')
-    %'Cancel' has been pressed on the ui
-    nn = 'None';
-    set(handles.SSnEdit,'String',nn);
-else
-    return
+wtLog = WTLog();
+wtLog.ctxOn('Statistics');
+try
+    avrretrieve();
+    updateTotalSubjects();
+catch me
+    wtLog.mexcpt(me);
 end
+wtLog.reset();
 guidata(hObject, handles);
 
-
+% --- Executes on button press in HelpPushButton.
 function HelpPushButton_Callback(hObject, eventdata, handles)
 % hObject    handle to HelpPushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -451,6 +408,7 @@ end
 wtLog.reset();
 guidata(hObject, handles);
 
+% --- Executes during object creation, after setting all properties.
 function LogLevelPopupMenu_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to ProjectEdit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -459,7 +417,7 @@ level = WTLog().getLogLevel();
 set(hObject, 'Value', level);
 guidata(hObject, handles);
 
-
+% --- Executes on selection in LogLevelPopupMenu.
 function LogLevelPopupMenu_Callback(hObject, eventdata, handles)
 % hObject    handle to LogLevelPopupMenu (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -472,14 +430,43 @@ function WToolsMain_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to WToolsMain (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
-WTSession().open();
-handles.output = hObject;
-guidata(hObject, handles);    
+wtLog = WTLog();
+wtLog.ctxOn('Init');
+try
+    WTSession().open();
+catch me
+    wtLog.mexcpt(me);
+end
+wtLog.reset();
+guidata(hObject, handles); 
 
 % --- Executes during object deletion, before destroying properties.
 function WToolsMain_DeleteFcn(hObject, eventdata, handles)
 % hObject    handle to WToolsMain (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-WTSession().close();
-WTSession.clear();
+wtLog = WTLog();
+try
+    wtLog.reset();
+    WTSession().close();
+    WTSession.clear();
+end
+guidata(hObject, handles);
+
+
+% --- Utilities
+function updateProjectName(handles) 
+if isfield(handles,'ProjectEdit')
+    wtProject = WTProject();
+    prjName = WTUtils.ifThenElseSet(wtProject.IsOpen, wtProject.Config.getName(), '?');
+    set(handles.ProjectEdit, 'String', prjName);
+end
+
+function updateTotalSubjects(handles) 
+if isfield(handles,'SSnEdit')
+    wtProject = WTProject();
+    nSubjs = length(wtProject.Config.SubjectsGrand.SubjectsList);
+    nSubjsStr = WTUtils.ifThenElseSet(wtProject.IsOpen, num2str(nSubjs), '?');
+    set(handles.SSnEdit, 'String', nSubjsStr);
+end
+

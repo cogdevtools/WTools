@@ -30,32 +30,27 @@ function success = wtPerformCWT()
     end
 
     interactive = wtProject.Interactive;
-    ioProc = wtProject.Config.IOProc;
-    prefixParams = wtProject.Config.Prefix;
-    subjsGrandParams = wtProject.Config.SubjectsGrand;
-    condsGrandParams = wtProject.Config.ConditionsGrand;
-    waveletTransformParams = wtProject.Config.WaveletTransform;
-    subjects = wtProject.Config.Subjects.SubjectsList;
-    conditions = wtProject.Config.Conditions.ConditionsList;
 
-    if interactive
-        if ~selectUpdateSubjects(subjsGrandParams, subjects) || ...
-            ~selectUpdateConditions(condsGrandParams, conditions)
-            return
-        end
-
-        [success, timeRange, maxFreq, maxChans] = getTransformDomain(ioProc, prefixParams.FilesPrefix, subjects{1}, conditions{1}); 
+    if interactive || isempty(wtProject.Config.WaveletTransform.ChannelsList)
+        [success, timeRange, maxFreq, maxChans] = getTransformDomain(); 
         if ~success 
-            wtLog.err('Can''t determine CWT transform domain');
-            return
-        end
-
-        [~, ~, ~, bsLogEnabled] = wtCheckEvokLog(); % Check if log was already run after averaging and if so disable the option here
-        if ~setUpdateTransformPrms(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
             return
         end
     end
 
+    if interactive
+        if ~selectUpdateSubjects() || ~selectUpdateConditions()
+            return
+        end
+        if ~setUpdateTransformPrms(timeRange, maxFreq, maxChans)
+            return
+        end
+    end
+
+    ioProc = wtProject.Config.IOProc;
+    prefixParams = wtProject.Config.Prefix;
+    waveletTransformParams = wtProject.Config.WaveletTransform;
+    
     timeMin = waveletTransformParams.TimeMin;
     timeMax = waveletTransformParams.TimeMax;
     channelsList = waveletTransformParams.ChannelsList;
@@ -64,8 +59,8 @@ function success = wtPerformCWT()
         channelsList = 1:maxChans;
     end
 
-    subjects = subjsGrandParams.SubjectsList;
-    conditions = condsGrandParams.ConditionsList;
+    subjects = wtProject.Config.SubjectsGrand.SubjectsList;
+    conditions = wtProject.Config.ConditionsGrand.ConditionsList;
     subjectsCount = length(subjects);
     conditionsCount = length(conditions);
     
@@ -180,7 +175,7 @@ function success = wtPerformCWT()
     
             % Calculate wavelets at each frequency (once)
             if doItOnce
-                [cwMatrix, Fa] = generateMorletWavelets(waveletTransformParams, EEG.srate);     
+                [cwMatrix, Fa] = generateMorletWavelets(EEG.srate);     
             end
             
             [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMin, timeMax, 'cwt', ...
@@ -191,83 +186,120 @@ function success = wtPerformCWT()
                 return
             end
 
-            WTUtils.eeglabRun('eeg_checkset', EEG);
+            WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
             wtLog.popStatus(); 
         end
     end
 
-    wtLog.info('Time/Frequency analysis completed!');
+    wtProject.notifyInf([], 'Time/Frequency analysis completed!');
     success = true;
 end
 
-function success = selectUpdateSubjects(subjectsGrand, subjectsList) 
+function success = selectUpdateSubjects() 
     success = false;
+    wtProject = WTProject();
     wtLog = WTLog();
+
+    subjectsGrand = copy(wtProject.Config.SubjectsGrand);
+    subjectsList = wtProject.Config.Subjects.SubjectsList;
+
     if isempty(subjectsList)
-        wtLog.warn('Empty subjects list');
+        wtProject.notifyWrn([], 'Empty subjects list');
         return
     end 
+
     subjectsList = WTUtils.stringsSelectDlg('Select subjects\nto transform:', subjectsList);
     if isempty(subjectsList)
-        wtLog.warn('No subjects selected');
+        wtProject.notifyWrn([],'No subjects selected');
         return
     end
+
     subjectsGrand.SubjectsList = subjectsList;
+
     if ~subjectsGrand.persist()
-        wtLog.err('Failed to save subjects grand params');
+        wtProject.notifyErr([],'Failed to save subjects grand params');
         return
     end
+
+    wtProject.Config.SubjectsGrand = subjectsGrand;
     success = true;
 end
 
-function success = selectUpdateConditions(condsGrand, conditionsList) 
+function success = selectUpdateConditions() 
     success = false;
+    wtProject = WTProject();
     wtLog = WTLog();
+
+    condsGrand = wtProject.Config.ConditionsGrand;
+    conditionsList = wtProject.Config.Conditions.ConditionsList;
+
     if isempty(conditionsList)
-        wtLog.warn('Empty conditions list');
+        wtProject.notifyWrn([],'Empty conditions list');
         return
     end
+
     conditionsList = WTUtils.stringsSelectDlg('Select conditions to\ntransform:', conditionsList);
     if isempty(conditionsList)
-        wtLog.warn('No conditions selected');
+        wtProject.notifyWrn([],'No conditions selected');
         return
     end
+
     condsGrand.ConditionsList = conditionsList;
     condsGrand.ConditionsDiff = {};
+
     if ~condsGrand.persist() 
-        wtLog.err('Failed to save conditions grand params');
+        wtProject.notifyErr([],'Failed to save conditions grand params');
         return
     end
+
+    wtProject.Config.ConditionsGrand = condsGrand;
     success = true;
 end
 
-function [success, timeRange, maxFreq, maxChans] = getTransformDomain(ioProc, dataFilePx, subject, condition) 
-    [success, EEG] = ioProc.loadCondition(dataFilePx, subject, condition, true);
+function [success, timeRange, maxFreq, maxChans] = getTransformDomain() 
+    wtProject = WTProject();
+
+    [success, EEG] = wtProject.Config.IOProc.loadCondition(wtProject.Config.Prefix.FilesPrefix, ...
+        wtProject.Config.Subjects.SubjectsList{1}, ...
+        wtProject.Config.Conditions.ConditionsList{1}, ...
+        false);
     if ~success 
+        wtProject.notifyErr([],'Can''t determine CWT transform domain');
         timeRange = [];
         maxFreq = 0;
         maxChans = 0;
         return 
     end
+
     timeRange = int64([EEG.xmin*1000 EEG.xmax*1000]);
     maxFreq = EEG.srate/2;
     maxChans = size(EEG.data, 1);
 end
 
-function success = setUpdateTransformPrms(waveletTransformParams, timeRange, maxFreq, maxChans, enableLog) 
+function success = setUpdateTransformPrms(timeRange, maxFreq, maxChans) 
     success = false;
+    wtProject = WTProject();
     wtLog = WTLog();
-    if ~wtCWTParamsGUI(waveletTransformParams, timeRange, maxFreq, maxChans, enableLog)
+
+    waveletTransformParams = copy(wtProject.Config.WaveletTransform);
+     % Check if log was already run after averaging and if so disable the option here
+     [~, ~, ~, bsLogEnabled] = wtCheckEvokLog();
+
+    if ~WTTransformGUI.cwtParams(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
         return
     end
+
     if ~waveletTransformParams.persist() 
-        wtLog.err('Failed to save complex Morlet transform params');
+        wtProject.notifyErr([],'Failed to save complex Morlet transform params');
         return
     end
+
+    wtProject.Config.WaveletTransform = waveletTransformParams;
     success = true;
 end
 
-function [cwMatrix, scales] = generateMorletWavelets(waveletTransformParams, samplingRate)
+function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
+    waveletTransformParams = WTProject().Config.WaveletTransform;
     scales = (waveletTransformParams.FreqMin : waveletTransformParams.FreqRes : waveletTransformParams.FreqMax);
     Fs = double(samplingRate) / double(waveletTransformParams.TimeRes);
     cwMatrix = cell(length(scales),2);

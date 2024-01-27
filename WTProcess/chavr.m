@@ -35,7 +35,7 @@ end
 
 try
     PROJECTPATH=evalin('base','PROJECTPATH');
-    addpath(strcat(PROJECTPATH,'/pop_cfg'));
+    addpath(strcat(PROJECTPATH,'/Config'));
     filenm;
     if exist('condgrand.m','file')
         condgrand;
@@ -71,23 +71,23 @@ elseif ~strcmp(varargin,'evok')
     return
 end
 
-%Make pop_cfg folder to store config files for gui working functions
+%Make Config folder to store config files for gui working functions
 if exist('PROJECTPATH','var')
     CommonPath = strcat (PROJECTPATH,'/');
-    alreadyexistdir=strcat(CommonPath,'pop_cfg');
+    alreadyexistdir=strcat(CommonPath,'Config');
     if ~exist(alreadyexistdir,'dir')
-        mkdir (CommonPath,'pop_cfg');
+        mkdir (CommonPath,'Config');
     end
-    addpath(strcat(PROJECTPATH,'/pop_cfg'));
-    pop_cfgfile = strcat(CommonPath,'pop_cfg/chavr_cfg.m');
+    addpath(strcat(PROJECTPATH,'/Config'));
+    pop_cfgfile = strcat(CommonPath,'Config/chavr_cfg.m');
 else
     CommonPath = strcat ('../');
-    alreadyexistdir=strcat(CommonPath,'pop_cfg');
+    alreadyexistdir=strcat(CommonPath,'Config');
     if ~exist(alreadyexistdir,'dir')
-        mkdir (CommonPath,'pop_cfg');
+        mkdir (CommonPath,'Config');
     end
-    addpath(strcat('../','pop_cfg'));
-    pop_cfgfile = strcat('../pop_cfg/chavr_cfg.m');
+    addpath(strcat('../','Config'));
+    pop_cfgfile = strcat('../Config/chavr_cfg.m');
 end
 
 %Call gui only if no arguments were entered
@@ -146,7 +146,7 @@ if ~nargin
             end
         catch
             fprintf('\n');
-            fprintf(2, 'The chavr_cfg.m file in the pop_cfg folder was created by a previous version\n');
+            fprintf(2, 'The chavr_cfg.m file in the Config folder was created by a previous version\n');
             fprintf(2, 'of WTools. It will be updated to the most recent version and overwritten.');
             fprintf('\n');
             defaultanswer=defaultanswer0;
@@ -358,7 +358,7 @@ lat=find(tim==tMin):reduction:find(tim==tMax);
 %Calculate frequency submset to plot
 fr=find(Fa==FrMin):find(Fa==FrMax);
 
-%Save the user input parameters in the pop_cfg folder
+%Save the user input parameters in the Config folder
 if ~nargin
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
     fprintf(fid, 'defaultanswer={''%s'' ''%s'' ''%s'' ''%s'' ''[%s]'' %i};',...

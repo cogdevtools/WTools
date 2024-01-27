@@ -5,17 +5,17 @@ classdef WTPrefixCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        FilesPrefix char
+        FilesPrefix char {mustBeNonempty}
     end
 
     methods
         function o = WTPrefixCfg(ioProc)
             o@WTConfigStorage(ioProc, 'filenm.m');
-            o.FilesPrefix = '';
+            o.default();
         end
 
         function default(o) 
-            o.FilesPrefix = '';
+            o.FilesPrefix = 'Data';
         end
         
         function success = load(o) 
@@ -32,7 +32,7 @@ classdef WTPrefixCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.StringCellsFieldArgs(o.FldFileName, strcat(o.FilesPrefix, '_'));
+            txt = WTFormatter.StringCellsFieldArgs(o.FldFileName, o.FilesPrefix);
             success = ~isempty(txt) && o.write(txt);
         end
     end

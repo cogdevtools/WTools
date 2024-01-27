@@ -1,30 +1,30 @@
-classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
+classdef WTSamplingCfg < WTConfigStorage & matlab.mixin.Copyable
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
     end
 
     properties
-        TriggerLatency(1,1) single {mustBeFinite, WTValidations.mustBeGTE(TriggerLatency, 0)}
+        SamplingRate single {mustBeFinite, WTValidations.mustBeGT(SamplingRate, 0)}
     end
 
     methods
-        function o = WTEGIToEEGLabCfg(ioProc)
-            o@WTConfigStorage(ioProc, 'trigger.m');
+        function o = WTSamplingCfg(ioProc)
+            o@WTConfigStorage(ioProc, 'samplrate.m');
             o.default();
         end
 
         function default(o) 
-            o.TriggerLatency = 0;
+            o.SamplingRate = 1;
         end
 
         function success = load(o) 
             [success, cells] = o.read(o.FldDefaultAnswer);
-            if ~success 
+            if ~success
                 return
-            end 
+            end
             try
-                o.TriggerLatency = str2double(cells{1});
+                o.SamplingRate = str2double(cells{1});
             catch me
                 WTLog().mexcpt(me);
                 success = false;
@@ -32,7 +32,7 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.GenericCellsFieldArgs(o.FldDefaultAnswer, WTFormatter.FmtFloatStr, o.TriggerLatency);
+            txt = WTFormatter.GenericCellsFieldArgs(o.FldDefaultAnswer, WTFormatter.FmtStr, num2str(o.SamplingRate));
             success = ~isempty(txt) && o.write(txt);
         end
     end

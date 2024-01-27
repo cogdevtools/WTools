@@ -24,10 +24,12 @@ function success = wtOpenProject
     wtProject = WTProject();
     
     if ~wtProject.open(prjPath) 
-        WTUtils.eeglabMsgDlg('Error', 'Failed to open project! Check the log...');
         return
     end
 
-    WTLog().warn('Check that the files in ''%s'' are up to date before to begin the processing!', wtProject.Config.getConfigDir());
+    if WTUtils.eeglabYesNoDlg('Update import', 'Do you want to import new data files?')
+        wtImportData();
+    end
+
     success = true;
 end

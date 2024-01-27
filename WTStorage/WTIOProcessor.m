@@ -1,9 +1,12 @@
 classdef WTIOProcessor < handle
 
     properties(Constant,Access=private)
-        ConfigSubDir   = 'pop_cfg';
-        ImportSubDir   = 'Export';
+        ConfigSubDir   = 'Config';
+        ImportSubDir   = 'Import';
         WaveletsSubDir = 'Wavelets';
+        AnalysisSubDir = 'Analysis';
+        GrandAvgSubDir = 'GrandAvg';
+        TempSubDir     = 'Tmp';
     end
 
     properties(Constant)
@@ -16,14 +19,20 @@ classdef WTIOProcessor < handle
         WaveletsAnalisys_WTav    = 'WTav'
         WaveletsAnalisys_Induced = 'Induced'
 
-        ImportFileRe   = '^0\d+.+\.mat$'
+        ChannelsLocationFileTypeFlt = '*.sfp'
+        SplineFileTypeFlt = '*.spl'
+
+        ImportFileRe = '^(?<subject>\d+) export\.mat$'
+        SubjAnalysisSubDirRe  = '^\d+$'
+        EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
     end
 
     properties(SetAccess=private,GetAccess=public)
         RootDir char
         ConfigDir char
         ImportDir char
-        WaveletsDir char
+        AnalysisDir char
+        TemporaryDir char
     end
 
     methods(Static,Access=private)
@@ -43,7 +52,7 @@ classdef WTIOProcessor < handle
 
         function success = writeModule(dir, file, varargin) 
             fName = fullfile(dir, file);
-            success = WTUtils.writeTxtFile(fName, 'wt', varargin{:});
+            success = WTUtils.writeTxtFile(dir, file, 'wt', varargin{:});
             if ~success 
                 WTLog().err('Failed to write file ''%s''', fName);
             end
@@ -63,7 +72,8 @@ classdef WTIOProcessor < handle
             o.RootDir = '';
             o.ConfigDir = '';
             o.ImportDir = '';
-            o.WaveletsDir = '';
+            o.AnalysisDir = '';
+            o.TemporaryDir = '';
         end
     end
 
@@ -77,7 +87,8 @@ classdef WTIOProcessor < handle
             o.RootDir = WTUtils.getAbsPath(rootDir);
             o.ConfigDir = fullfile(o.RootDir, o.ConfigSubDir);
             o.ImportDir = fullfile(o.RootDir, o.ImportSubDir);
-            o.WaveletsDir = fullfile(o.RootDir, o.WaveletsSubDir);
+            o.AnalysisDir = fullfile(o.RootDir, o.AnalysisSubDir);
+            o.TemporaryDir = fullfile(o.RootDir, o.TempSubDir);
             wtLog = WTLog();
             
             if mustExist
@@ -86,7 +97,9 @@ classdef WTIOProcessor < handle
                 elseif ~isfolder(o.ConfigDir)
                     wtLog.err('Config directory doesn''t exist or it''s not a directory: %s', o.ConfigDir); 
                 elseif ~isfolder(o.ImportDir)
-                    wtLog.err('Import directory doesn''t exist or it''s not a directory: %s', o.Import); 
+                    wtLog.err('Import directory doesn''t exist or it''s not a directory: %s', o.ImportDir); 
+                elseif ~isfolder(o.AnalysisDir)
+                    wtLog.err('Analysis directory doesn''t exist or it''s not a directory: %s', o.AnalysisDir); 
                 else 
                     success = true;
                 end
@@ -96,6 +109,8 @@ classdef WTIOProcessor < handle
                 wtLog.err('Failed to create config directory: %s', o.ConfigDir);
             elseif ~WTUtils.mkdir(o.ImportDir)
                 wtLog.err('Failed to create import directory: %s', o.ImportDir);
+            elseif ~WTUtils.mkdir(o.AnalysisDir)
+                wtLog.err('Failed to create analysis directory: %s', o.AnalysisDir);
             else
                 success = true;
             end
@@ -125,39 +140,188 @@ classdef WTIOProcessor < handle
             [fName, fileExist] = WTIOProcessor.exist(shouldExist, o.ConfigDir, cfgFile);
         end
 
-        function importDir = getImportDir(o) 
-            importDir = fullfile(o.RootDir, o.ImportSubDir);
+
+        function [fullPath, filePath] = getTemporaryFile(o, fileName, extension)
+            filePath = o.TemporaryDir;
+            if nargin < 2 || isempty(fileName)
+                fullPath = tempname(filePath);
+            else
+                fullPath = fullfile(filePath, fileName);
+            end
+            if nargin > 2 
+                fullpath = [fullpath extension];
+            end
         end
 
-        function isValid = isValidImportFile(o, fileName)
-            matchIdx = regexp(fileName, o.ImportFileRe, 'ONCE');
-            isValid = ~isempty(matchIdx);
+        function [success, chansLocations] = readChannelsLocations(o, fileName)
+            success = false;
+            chansLocations = {};
+            try
+                fullPath = fullfile(WTLayout.getToolsSplinesDir(), fileName);
+                [l x y z] = textread(fullPath,'%s %n %n %n','delimiter', '\t');
+                for i = 1:length(l)
+                    chn = struct('Label', l{i}, 'Location', [x(i) y(i) z(i)]);
+                    chansLocations = [chansLocations {chn}];
+                end
+                success = true;
+            catch me
+                WTLog().mexcpt(me);
+                return
+            end
         end
 
-        function [fullPath, filePath, fileName] = getConditionFile(o, filePrefix, subject, condition)
-            fileName = strcat(filePrefix, subject, '_', condition, '.set');
-            filePath = fullfile(o.RootDir, subject);
+        % In this case fileName can be either scalar or a cell array of strings
+        function [subjects, sbjFiles] = getSubjectsFromImportFiles(o, varargin)
+            subjects = {};
+            sbjFiles = {};
+            match = regexp(varargin, o.ImportFileRe, 'once', 'names');
+            for i = 1:length(match)
+                if ~isempty(match{i})
+                    sbjFiles = [sbjFiles varargin(i)];
+                    subjects = [subjects {match{i}.subject}];
+                end
+            end
+        end
+
+        function [subjFiles, subjects] = enumImportFiles(o) 
+            dirContent = dir(fullfile(o.ImportDir, '*.mat'));
+            subjFiles = cell(length(dirContent), 1);;
+            subjects = cell(length(dirContent), 1);
+            nValid = 0;
+
+            for i = 1:length(dirContent)
+                if dirContent(i).isdir
+                    continue
+                end
+                subject = o.getSubjectsFromImportFiles(dirContent(i).name);
+                if ~isempty(subject)
+                    nValid = nValid + 1;
+                    subjFiles{nValid} = dirContent(i).name;
+                    subjects{nValid} = subject;
+                end
+            end
+
+            subjFiles = subjFiles(1:nValid);
+            subjects = subjects{1:nValid};
+        end
+
+        function [success, sbjDir] = makeAnalysisSubjectDir(o, subject)
+            sbjDir = fullfile(o.AnalysisDir, subject);
+            success = WTUtils.mkdir(sbjDir);
+        end
+
+        function [fullPath, filePath, fileName] = getImportFileForSubject(o, subject)
+            filePath = o.ImportDir;
+            fileName = strcat(subject, ' export.mat');
             fullPath = fullfile(filePath, fileName);
         end
 
-        function [success, EEG] = loadCondition(o, filePrefix, subject, condition, loadOnly)
+        function [fullPath, filePath] = getImportFile(o, fileName)
+            filePath = o.ImportDir;
+            fullPath = fullfile(filePath, fileName);
+        end
+
+        function [success, varargout] = loadImport(o, fileName, varargin)
             success = false;
-            loadOnly = nargin > 4 && any(logical(loadOnly));
-            [~, filePath, fileName] = o.getConditionFile(filePrefix, subject, condition);
-    
+            varargout = cell(1, nargout-1);
+            fullPath = o.getImportFile(fileName);
+            [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+        end
+
+        function [success, conditions, data] = getConditionsFromImport(o, fileName)
+            conditions = {};
+            [success, data] = o.loadImport(fileName);
+            if ~success 
+                return
+            end
+            fieldNames = fieldnames(data);
+            result = regexp(fieldNames, o.EGIConditionSegmentFldRe, 'once', 'tokens');
+            match = result(~cellfun(@isempty, result));
+            cndSeg = cat(1, match{:});
+            conditions = unique(cndSeg(:,1));
+            success = length(conditions) > 0;
+        end
+
+        function [fullPath, filePath, fileName] = getProcessedImportFile(o, filePrefix, subject)
+            fileName = strcat(filePrefix, '_', subject, '.set');
+            filePath = fullfile(o.AnalysisDir, subject);
+            fullPath = fullfile(filePath, fileName);
+        end
+
+        function [success, EEG] = loadProcessedImport(o, filePrefix, subject, updateALLEEG)
+            success = false;
+            EEG = [];
+            
             try
-                if loadOnly
-                    EEG = WTUtils.eeglabRun('pop_loadset', 'filename', fileName, 'filepath', filePath);
+                updateALLEEG = nargin < 4 || any(logical(updateALLEEG));
+                [~, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
+
+                if ~updateALLEEG
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
                 else
-                    [ALLEEG, ~, ~, ~] = WTUtils.eeglabRun();
-                    EEG = WTUtils.eeglabRun('pop_loadset', 'filename', fileName, 'filepath', filePath);
-                    [~, EEG, ~] = WTUtils.eeglabRun('eeg_store', ALLEEG, EEG, 0);
-                    EEG = WTUtils.eeglabRun('eeg_checkset', EEG);
+                    [ALLEEG, ~, ~, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false);
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    [~, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
                 end
                 success = true;
             catch 
-                EEG = [];
-                return
+                WTLog().mexcpt(me);
+            end 
+
+            if ~success 
+                WTLog().err('Failed to load processed import related to subject ''%s''', subject);
+            end
+        end
+
+        function [success, fullPath, EEG] = writeProcessedImport(o, filePrefix, subject,  EEG)
+            success = false;
+            EEG = [];
+            
+            try
+                [fullPath, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
+                success = WTUtils.mkdir(filePath);
+                if ~success
+                    WTLog().err('Failed to make dir ''%s''', filePath);
+                else
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_saveset', EEG,  'filename', fileName, 'filepath', filePath);
+                    success = true
+                end
+            catch me
+                WTLog().mexcpt(me);
+            end
+        end
+
+        function setName = getConditionSet(o, filePrefix, subject, condition)
+            setName = strcat(filePrefix, '_', subject, '_', condition);
+        end
+
+        function [fullPath, filePath, fileName] = getConditionFile(o, filePrefix, subject, condition)
+            fileName = strcat(o.getConditionSet(filePrefix, subject, condition), '.set');
+            filePath = fullfile(o.AnalysisDir, subject);
+            fullPath = fullfile(filePath, fileName);
+        end
+
+        function [success, EEG] = loadCondition(o, filePrefix, subject, condition, updateALLEEG)
+            success = false;
+            EEG = [];
+            
+            try
+                updateALLEEG = nargin < 5 || any(logical(updateALLEEG));
+                [~, filePath, fileName] = o.getConditionFile(filePrefix, subject, condition);
+
+                if ~updateALLEEG
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                else
+                    [ALLEEG, ~, ~, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false);
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    [~, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
+                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+                end
+                success = true;
+            catch 
+                WTLog().mexcpt(me)
             end 
         end
 
@@ -173,41 +337,127 @@ classdef WTIOProcessor < handle
                     return
             end
             fileName = strcat(subject, '_', condition, '_bc-', wType, '.mat');
-            filePath = fullfile(o.RootDir, subject);
+            filePath = fullfile(o.AnalysisDir, subject);
             fullPath = fullfile(filePath, fileName);
         end
 
         % varargin must be char array: the names of the variable to save
         function [success, fullPath] = writeBaselineCorrection(o, subject, condition, wType, varargin)
-            wtLog = WTLog();
             success = false;
+            fullPath = [];
+           
             try
                 [fullPath, filePath, fileName] = o.getBaselineCorrectionFile(subject, condition, wType);
-                if isempty(fullPath)
-                    wtLog.err('Failed to write baseline correction (type ''%s'', subject ''%s'', condition ''%s'')', wType, subject, condition);
-                    return
+                if ~isempty(fullPath)
+                    argsName = [{filePath fileName} varargin];
+                    argsName = WTUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    evalin('caller', cmd);
+                    success = true;
                 end
-                argsName = [{filePath fileName} varargin];
-                argsName = WTUtils.quoteMany(argsName{:});
-                cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
-                evalin('caller', cmd);
-                success = true;
             catch me
-                wtLog.mexcpt(me);
+                WTLog().mexcpt(me);
             end
-            % cmd = sprintf('evalin(''caller'', ''%s'')', strrep(cmd, '''', ''''''));
-            % success = wtLog.evalinLog(cmd);
         end
 
         function [success, varargout] = loadBaselineCorrection(o, subject, condition, wType, varargin)
             success = false;
             varargout = cell(1, nargout-1);
             fullPath = o.getBaselineCorrectionFile(subject, condition, wType);
-            if isempty(fullPath)
-                WTLog().err('Failed to load baseline correction (type ''%s'', subject ''%s'', condition ''%s'')', wType, subject, condition);
-                return
+            if ~isempty(fullPath)
+                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
-            [success, varargout{:}] = WTUtils.loadFrom(fullPath);
+        end
+
+        function [fullPath, filePath, fileName] = getGrandAverageFile(o, condition, wType, perSubject)
+            switch wType
+                case WTIOProcessor.WaveletsAnalisys_evWT
+                case WTIOProcessor.WaveletsAnalisys_avWT
+                otherwise
+                    fullPath = [];
+                    filePath = [];
+                    fileName = [];
+                    WTLog().err('Unknown file type %s', wType);
+                    return
+            end
+            extension = '.mat';
+            if any(logical(perSubject)) 
+                extension = '.ss';
+            end
+            fileName = strcat(condition, '_bc-', wType, extension);
+            filePath = fullfile(o.AnalysisDir, o.GrandAvgSubDir);
+            fullPath = fullfile(filePath, fileName);
+        end
+
+        % varargin must be char array: the names of the variable to save
+        function [success, fullPath] = writeGrandAverage(o, condition, wType, perSubject, varargin)
+            success = false;
+            fulltPath = [];
+           
+            try
+                [fullPath, filePath, fileName] = o.getGrandAverageFile(condition, wType, perSubject);
+                if ~isempty(fullPath)
+                    argsName = [{filePath fileName} varargin];
+                    argsName = WTUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    evalin('caller', cmd);
+                    success = true;
+                end
+            catch me
+                WTLog().mexcpt(me);
+            end
+        end
+
+        function [success, varargout] = loadGrandAverage(o, condition, wType, perSubject, varargin)
+            success = false;
+            varargout = cell(1, nargout-1);
+            fullPath = o.getGrandAverageFile(condition, wType, perSubject);
+            if ~isempty(fullPath)
+                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+            end
+        end
+
+        function [fullPath, filePath, fileName] = getDifferenceFile(o, subject, condA, condB, wType)
+            switch wType
+                case WTIOProcessor.WaveletsAnalisys_evWT
+                case WTIOProcessor.WaveletsAnalisys_avWT
+                otherwise
+                    fullPath = [];
+                    filePath = [];
+                    fileName = [];
+                    WTLog().err('Unknown file type %s', wType);
+                    return
+            end
+            fileName = strcat(subject, '_', condA, '-', condB, '_bc-', wType, '.mat');
+            filePath = fullfile(o.AnalysisDir, subject);
+            fullPath = fullfile(filePath, fileName);
+        end
+
+        % varargin must be char array: the names of the variable to save
+        function [success, fullPath] = writeDifference(o, subject, condA, condB, wType, varargin)
+            success = false;
+            fullPath = [];
+            try
+                [fullPath, filePath, fileName] = o.getDifferenceFile(subject, condA, condB, wType);
+                if ~isempty(fullPath)
+                    argsName = [{filePath fileName} varargin];
+                    argsName = WTUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    evalin('caller', cmd);
+                    success = true;
+                end
+            catch me
+                WTLog().mexcpt(me);
+            end
+        end
+
+        function [success, varargout] = loadDifference(o, subject, condA, condB, wType, varargin)
+            success = false;
+            varargout = cell(1, nargout-1);
+            fullPath = o.getDifferenceFile(subject, condA, condB, wType);
+            if ~isempty(fullPath)
+                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+            end
         end
 
         function [fullPath, filePath, fileName] = getWaveletAnalysisFile(o, subject, condition, wType)
@@ -232,86 +482,53 @@ classdef WTIOProcessor < handle
             if isempty(fileName)
                 fileName = strcat(subject, '_' , condition, '-', wType, '.mat');
             end
-            filePath = fullfile(o.RootDir,  o.WaveletsSubDir, condition);
+            filePath = fullfile(o.AnalysisDir, subject, o.WaveletsSubDir, condition);
             fullPath = fullfile(filePath, fileName);
         end
 
         % varargin must be char array: the names of the variable to save
         function [success, fullPath] = writeWaveletsAnalysis(o, subject, condition, wType, varargin)
-            wtLog = WTLog();
             success = false;
+            fullPath = [];
             try
-                [fullPath, filePath, fileName]  = o.getWaveletAnalysisFile(subject, condition, wType);
-                if isempty(fullPath)
-                    wtLog.err('Failed to write wavelets analysis (type ''%s'', subject ''%s'', condition ''%s'')', wType, subject, condition);
-                    return
+                [fullPath, filePath, fileName] = o.getWaveletAnalysisFile(subject, condition, wType);
+                if ~isempty(fullPath)
+                    argsName = [{filePath fileName} varargin];
+                    argsName = WTUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    evalin('caller', cmd);
+                    success = true;
                 end
-                argsName = [{filePath fileName} varargin];
-                argsName = WTUtils.quoteMany(argsName{:});
-                cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
-                evalin('caller', cmd);
-                success = true;
             catch me
-                wtLog.mexcpt(me);
+                WTLog().mexcpt(me);
             end
-            % cmd = sprintf('evalin(''caller'', ''%s'')', strrep(cmd, '''', ''''''));
-            % success = wtLog.evalinLog(cmd);
         end
 
         function [success, varargout] = loadWaveletsAnalysis(o, subject, condition, wType, varargin)
             success = false;
             varargout = cell(1, nargout-1);
             fullPath = o.getWaveletAnalysisFile(subject, condition, wType);
-            if isempty(fullPath)
-                WTLog().err('Failed to load wavelets analysis (type ''%s'', subject ''%s'', condition ''%s'')', wType, subject, condition);
-                return
+            if ~isempty(fullPath)
+                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
-            [success, varargout{:}] = WTUtils.loadFrom(fullPath);
         end
 
-        function importFiles = getImportFiles(o) 
-            dirContent = dir(fullfile(o.RootDir, o.ImportSubDir, '*.mat'));
-            importFiles = cell(length(dirContent), 1);
-            nFiles = 0;
+        function subjects = getAnalysedSubjects(o)
+            dirContent = dir(fullfile(o.AnalysisDir, '*'));
+            subjects = cell(length(dirContent), 1);
+            nValid = 0;
+
             for i = 1:length(dirContent)
-                if ~dirContent(i).isdir && regexp(dirContent(i).name, o.ImportFileRe) == 1
-                    nFiles = nFiles + 1;
-                    importFiles{nFiles} = dirContent(i).name;
-                end
-            end
-            importFiles = importFiles(1:nFiles);
-        end
-    end
-
-    methods(Static)
-        % The names of the data files to import should start with the subject number, followed by space and a trailing part
-        function subjectsNums = getSubjectNumberFromImport(varargin) 
-            wtLog = WTLog();
-            fileNames = varargin;
-            subjectsNums = zeros(1, length(fileNames)); 
-            crntSubjIdx = 0;
-
-            for i = 1:nargin
-                name = fileNames{1, i};
-
-                if ~ischar(name) && ~isstring(name)
-                    wtLog.warn('Argument %d is not a char array or a string: skipped', i);
+                if ~dirContent(i).isdir
                     continue
                 end
-
-                name = char(name);
-                nameParts = split(name, ' ');
-                subjNum = str2double(nameParts{1});
-
-                if isempty(subjNum) || subjNum <= 0
-                    wtLog.warn('Data file name should start with a integer > 0 followed by a space (skipped): ''%s''', name);
-                    continue
+                if ~isempty(regexp(dirContent(i).name, o.SubjAnalysisSubDirRe, 'once')) 
+                    nValid = nValid + 1;
+                    subjects{nValid} = dirContent(i).name;
                 end
-
-                crntSubjIdx = crntSubjIdx + 1;
-                subjectsNums(crntSubjIdx) = subjNum;
             end
-            subjectsNums = sort(subjectsNums(1:crntSubjIdx));
-        end
+
+            subjects = subjects{1:nValid};
+        end 
     end
 end

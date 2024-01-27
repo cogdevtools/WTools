@@ -38,7 +38,7 @@ try
         try
             PROJECTPATH=evalin('base','PROJECTPATH');
             cd (PROJECTPATH);
-            addpath(strcat(PROJECTPATH,sla,'pop_cfg'));
+            addpath(strcat(PROJECTPATH,sla,'Config'));
             if exist('filenm.m','file') && exist('exported.m','file')
                 filenm;
                 exported;
@@ -68,7 +68,7 @@ if ~nargin
     else
         
         %Select subjects interactively via GUI
-        if exist(strcat(PROJECTPATH,sla,'pop_cfg',sla,'subj.m'),'file')            
+        if exist(strcat(PROJECTPATH,sla,'Config',sla,'subj.m'),'file')            
             parameters = { ...
                 { 'style' 'text' 'string' 'The subject configuration file already exists!' } ...
                 { 'style' 'text' 'string' 'Do you want to import the subjects again?' } ...
@@ -92,7 +92,7 @@ if ~nargin
             '91' '92' '93' '94' '95' '96' '97' '98' '99' '100' '101' '102' '103' '104' '105' ...
             '106' '107' '108' '109' '110' '111' '112' '113' '114' '115' '116' '117' '118' '119' '120' };
         
-        cd ('Export');
+        cd ('Import');
         [filenames, pathname, filterindex] = uigetfile({ '*.set' },'Select files to import','MultiSelect','on');
         cd ('..');
         
@@ -108,8 +108,8 @@ if ~nargin
         end
         subjects = subjects(subtoimport);
         
-        %Save the subjects config file in the pop_cfg folder
-        pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'subj.m');
+        %Save the subjects config file in the Config folder
+        pop_cfgfile = strcat(PROJECTPATH,sla,'Config',sla,'subj.m');
         fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
         fprintf(fid, 'subjects = { ');
         for i=1:length(subjects)
@@ -151,8 +151,8 @@ if exist('PROJECTPATH','var')
     
     condlist=events(condlist);
     
-    %Save the conditions config file in the pop_cfg folder
-    pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'cond.m');
+    %Save the conditions config file in the Config folder
+    pop_cfgfile = strcat(PROJECTPATH,sla,'Config',sla,'cond.m');
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
     fprintf(fid, 'conditions = { ');
     for i=1:length(condlist)
@@ -162,7 +162,7 @@ if exist('PROJECTPATH','var')
     fprintf(fid, 'condiff = {};');
     fclose(fid);
     
-    cd ('pop_cfg');
+    cd ('Config');
     cond;
     cd (PROJECTPATH);
     condN = size(conditions,2);    
@@ -213,13 +213,13 @@ for i = 1:subjN
         labels=a(1:end);
         labels=labels';
         
-        %Save the channels location file in the pop_cfg folder
-        pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'chan.m');
+        %Save the channels location file in the Config folder
+        pop_cfgfile = strcat(PROJECTPATH,sla,'Config',sla,'chan.m');
         fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
         fprintf(fid, 'chanloc = { ''%s'' };\r',ChanLocFile);
         fprintf(fid, 'filetyp = { ''autodetect'' };\r');
         
-        %Save the spline file in the pop_cfg folder
+        %Save the spline file in the Config folder
         [SplineFile, pathname, filterindex]=uigetfile({ '*.spl' },'Select spline file','MultiSelect','off');
         
         if ~pathname
@@ -243,11 +243,11 @@ for i = 1:subjN
             [outparam userdat strhalt] = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Select channels');
             
             if strcmp(strhalt,'retuninginputui')
-                %Save the re-ref info (re-ref to avr) and no new reference channels in the pop_cfg folder
+                %Save the re-ref info (re-ref to avr) and no new reference channels in the Config folder
                 fprintf(fid, 'ReRef = %i;\r',1);
                 fprintf(fid, 'newrefchan = {};\r');
             else
-                %Save the re-ref info (re-ref to new channels) in the pop_cfg folder
+                %Save the re-ref info (re-ref to new channels) in the Config folder
                 fprintf(fid, 'ReRef = %i;\r',2);
                 chanlist = listdlg('PromptString','Select channels:','SelectionMode','multiple','ListString',labels);
                 
@@ -256,7 +256,7 @@ for i = 1:subjN
                 end
                 
                 newrefchan = labels(chanlist);
-                %Save the new reference channels in the pop_cfg folder
+                %Save the new reference channels in the Config folder
                 fprintf(fid, 'newrefchan = { ');
                 for k=1:length(newrefchan)
                     fprintf(fid, ' ''%s'' ',char(newrefchan(k)));
@@ -264,7 +264,7 @@ for i = 1:subjN
                 fprintf(fid, ' };\r');                
             end            
         else
-            %Save the re-ref info (no re-ref needed) in the pop_cfg folder
+            %Save the re-ref info (no re-ref needed) in the Config folder
             fprintf(fid, 'ReRef = %i;\r',0);
         end
         
@@ -281,7 +281,7 @@ for i = 1:subjN
             end
             
             CutChannels = labels(chanlist);
-            %Save the the channels to cut info in the pop_cfg folder
+            %Save the the channels to cut info in the Config folder
             fprintf(fid, 'CutChannels = { ');
             for k=1:length(CutChannels)
                 if k<length(CutChannels)
@@ -311,8 +311,8 @@ for i = 1:subjN
     
     if i == 1 %READ sampling rate, trigger latency and set max trial ID to process (only once, for the first subject)
         samplingrate = EEG.srate;
-        %Save the user input parameters in the pop_cfg folder
-        pop_cfgfile = strcat(PROJECTPATH,sla,'pop_cfg',sla,'samplrate.m');
+        %Save the user input parameters in the Config folder
+        pop_cfgfile = strcat(PROJECTPATH,sla,'Config',sla,'samplrate.m');
         fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
         fprintf(fid, 'defaultanswer={''%s''};',...
             num2str(samplingrate));

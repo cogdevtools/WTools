@@ -5,11 +5,11 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        Condition1(1,1) uint8 
-        Condition2(1,1) uint8 
-        ConditionDiff(1,1) uint8 
-        LogDiff(1,1) uint8 
-        EvokedOscillations(1,1) uint8 
+        Condition1(1,1) uint8 {mustBeFinite}
+        Condition2(1,1) uint8 {mustBeFinite}
+        ConditionDiff(1,1) uint8 {mustBeFinite}
+        LogDiff(1,1) uint8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods

@@ -46,8 +46,7 @@ classdef WTLog < handle
                 header = sprintf('[%s WTOOLS %s:%s(%d)%s|%s]', time, module, func, line, jctx{1}, level);
             end
             msgout = sprintf(fmt, varargin{:});
-            msgout = strrep(msgout, '%', '%%');
-            msgout = strrep(msgout, '\n', newline);
+            msgout = regexprep(msgout, {'%','\\n','\\'}, {'%%',newline,'\\\\'});
             toks = splitlines(msgout)';
             indent = (length(o.Context)+1)*2;
             padding = repelem(' ', indent);
@@ -125,12 +124,16 @@ classdef WTLog < handle
             o.StatusStack = [o.StatusStack {{o.Context, o.HeaderOn}}];
         end
 
-        function o = popStatus(o)
-            if isempty(o.StatusStack)
-                return
+        function o = popStatus(o, n)
+            if nargin < 2
+                n = 1;
             end
-            [o.Context,  o.HeaderOn] = o.StatusStack{end}{:};
-            o.StatusStack(end) = [];
+            nStack = length(o.StatusStack);
+            n = min(n, nStack);
+            if n > 0
+                [o.Context,  o.HeaderOn] = o.StatusStack{end-n+1}{:};
+                o.StatusStack(end-n+1:end) = [];
+            end
         end
 
         function headerOn = isHeaderOn(o)
@@ -193,13 +196,13 @@ classdef WTLog < handle
                 case WTLog.LevelErr
                     o.err(fmt, varargin{:});
                 case WTLog.LevelWrn
-                    o.wrn(fmt, varargin{:});
+                    o.warn(fmt, varargin{:});
                 case WTLog.LevelInf
                     o.info(fmt, varargin{:});
                 case WTLog.LevelDbg
                     o.dbg(fmt, varargin{:});
                 otherwise
-                    o.inf(fmt, varargin{:});
+                    o.info(fmt, varargin{:});
             end
         end
 

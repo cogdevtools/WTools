@@ -1,4 +1,4 @@
-classdef WTImportToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
+classdef WTConvertToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
@@ -12,7 +12,7 @@ classdef WTImportToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     methods
-        function o = WTImportToEEGLabCfg(ioProc)
+        function o = WTConvertToEEGLabCfg(ioProc)
             o@WTConfigStorage(ioProc, 'import2eegl_cfg.m');
             o.default();
         end

@@ -1,6 +1,6 @@
 function wtSplash() 
     version = WTVersion();
-    splash = WTSplashScreen('WTools', fullfile(WTUtils.getToolsPicturesDir(), 'WToolsSplash.png'));
+    splash = WTSplashScreen('WTools', fullfile(WTLayout.getToolsPicturesDir(), 'WToolsSplash.png'));
     splash.BorderColor = 'yellow';
     splash.BorderThickness = 2;
     splash.addText(30, 60, 'WTOOLS', 'FontName', 'Courier', 'FontSize', 20, 'FontAngle', 'italic', 'Color', [0.1 0.5 0.6]);
