@@ -171,7 +171,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                 wtLog.dbg('Operating on epoch nr: %d/%d', i, nChans);
             else
                 wtLog.dbg('Operating on epoch nr: %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
-             end
+            end
 
             t = cputime;
             

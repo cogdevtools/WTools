@@ -112,4 +112,3 @@ function o = singleton(o)
         delete(uniqueInstance)
     end
 end
-

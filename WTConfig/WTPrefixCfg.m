@@ -5,7 +5,7 @@ classdef WTPrefixCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        FilesPrefix char {mustBeNonempty}
+        FilesPrefix char {mustBeNonempty} = 'Data';
     end
 
     methods

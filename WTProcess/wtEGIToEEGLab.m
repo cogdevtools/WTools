@@ -148,7 +148,7 @@ function wtEGIToEEGLab()
                 case channelsPrms.ReReferenceWithChannels
                     wtLog.info('Re-referencing with channels...');
                     chansIntersect = intersect(channelsPrms.CutChannels, channelsPrms.NewChannelsReference);
-                    if length(chansIntersect)
+                    if ~isempty(chansIntersect)
                         wtProject.notifyErr([], 'Reference channels contains cut channel(s): %s', char(join(chansIntersect)));
                         wtLog.popStatus();
                         return
@@ -169,16 +169,16 @@ function wtEGIToEEGLab()
             end
 
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
-            [ALLEEG EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
             
-            [success, ~, EEG] = ioProc.writeProcessedImport(, outFilesPrefix, subject, EEG)
+            [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
             if ~success
                 wtProject.notifyErr([], 'Failed to save processed import for subject ''%s''', subject);
                 wtLog.popStatus();
                 return
             end
 
-            [ALLEEG EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
         catch me
             wtLog.mexcpt(me);
             wtProject.notifyErr([], 'Failed to perform channels adjustment');
@@ -202,13 +202,13 @@ function wtEGIToEEGLab()
 
             try
                 cndSet = ioProc.getConditionSet(outFilesPrefix, subject, condition);
-                [cndFileFullPath, ~, cndFileName] = ioProc.getConditionFile(outFilesPrefix, subject, condition);
+                [cndFileFullPath, ~, ~] = ioProc.getConditionFile(outFilesPrefix, subject, condition);
 
                 EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_selectevent', ...
                     EEG,  'type', { condition }, 'deleteevents', 'on', 'deleteepochs', 'on', 'invertepochs', 'off');
-                [ALLEEG EEG CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
+                [ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
                     ALLEEG, EEG, 1, 'setname', cndSet, 'savenew', cndFileFullPath, 'gui', 'off');
-                [ALLEEG EEG CURRENTSET] =  WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
+                [ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
                     ALLEEG, EEG, cnd+1, 'retrieve', 1, 'study', 0);
                 EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);  
             catch me
@@ -862,12 +862,11 @@ function [success, sbjFileNames] = selectUpdateSubjects()
     wtProject = WTProject();
     wtLog = WTLog();
     subjectsParams = wtProject.Config.Subjects;
-    subjects = {};
     sbjFileNames = {};
 
     if subjectsParams.exist()
         if ~WTUtils.eeglabYesNoDlg('Re-import subjects?', ['The subject configuration file already exists!\n' ...
-                'Do you want to import the subjects again?']);
+                'Do you want to import the subjects again?'])
             return;
         end            
     end     
@@ -946,7 +945,7 @@ function success = selectUpdateChannels()
     channelsPrms = copy(wtProject.Config.Channels);
 
     selectionFlt = fullfile(ioProc.ImportDir, ioProc.ChannelsLocationFileTypeFlt);
-    [chanLocFile, chnLocDir, ~] = WTUtils.uiGetFiles(selectionFlt, ...
+    [chanLocFile, ~, ~] = WTUtils.uiGetFiles(selectionFlt, ...
         'Select channels location file', 'MultiSelect', 'off', WTLayout.getToolsSplinesDir());
     if isempty(chanLocFile) 
         wtLog.warn('No channel location file selected');
@@ -954,7 +953,7 @@ function success = selectUpdateChannels()
     end
 
     selectionFlt = fullfile(ioProc.ImportDir, ioProc.SplineFileTypeFlt);
-    [splineFile, splineDir, ~] = WTUtils.uiGetFiles(selectionFlt, ...
+    [splineFile, ~, ~] = WTUtils.uiGetFiles(selectionFlt, ...
         'Select spline file', 'MultiSelect', 'off', WTLayout.getToolsSplinesDir());
     if isempty(splineFile) 
         wtLog.warn('No spline file selected');
@@ -1017,7 +1016,7 @@ function success = selectUpdateChannels()
                     end
                 end 
                 while ~doneWithSelection
-                    [refChannels, selected] = WTUtils.stringsSelectDlg('Select reference channels\n(cut channels are excluded):', channelsLabels, false, true);
+                    [refChannels, ~] = WTUtils.stringsSelectDlg('Select reference channels\n(cut channels are excluded):', channelsLabels, false, true);
                     if isempty(refChannels)
                         if WTUtils.eeglabYesNoDlg('Confirm', 'No channels for re-referencing selected: proceed?')
                             channelsPrms.ReReference = channelsPrms.ReReferenceNone;
@@ -1043,9 +1042,7 @@ function success = selectUpdateChannels()
 end
 
 function success = setSamplingRate(subjFileName)
-    success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
     ioProc = wtProject.Config.IOProc;
  
     [success, samplingRate] = ioProc.loadImport(subjFileName, 'samplingRate'); % Netstation 4.4.x
@@ -1073,7 +1070,6 @@ end
 function success = setTriggerLatency()
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
     egi2eeglPrms = copy(wtProject.Config.EGIToEEGLab);
 
     if ~WTConvertGUI.defineTriggerLatency(egi2eeglPrms)
@@ -1090,7 +1086,6 @@ function success = setTriggerLatency()
 end
 
 function [success, egi2eeglPrms] = autoSetTriggerLatency(subjFileName)
-    success = false;
     wtProject = WTProject();
     ioProc = wtProject.Config.IOProc;
     egi2eeglPrms = copy(wtProject.Config.EGIToEEGLab);
@@ -1112,7 +1107,6 @@ end
 function success = setMinMaxTrialId()
     success = false;
     wtProject = WTProject();
-    wtLog = WTLog();
     minMaxTrialIdPrms = copy(wtProject.Config.MinMaxTrialId);
 
     if ~WTConvertGUI.defineTrialsRangeId(minMaxTrialIdPrms)
@@ -1129,8 +1123,8 @@ function success = setMinMaxTrialId()
 end
 
 function [success, dataOut] = filterAndRenameDataFields(subjFileName)
-    success = false;
     wtProject = WTProject();
+    ioProc = wtProject.Config.IOProc;
     dataOut = struct();
 
     [success, data] = ioProc.loadImport(subjFileName);
@@ -1160,10 +1154,10 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
     cndSeg = cat(1, matches{:});  % {{'cnd'}, {'seg'}}
     conditions = unique(cndSeg(:,1));
     % create a counters for each condition
-    counters = cell2struct(repmat({zeros(1)},1,length(conditions)), conditions, 2);
+    counters = cell2struct(repmat({zeros(1)}, 1, length(conditions)), conditions, 2);
     
     for i = 1:length(selectedIdxs)
-        fldIdx = idxs(i)
+        fldIdx = idxs(i);
         cndName = reResult{fldIdx}{1};
         if ~any(strcmp(cndName, selectedConditions)) % ignore unselected conditions
             continue
@@ -1174,10 +1168,10 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
             continue
         end
         cndName = reResult{fldIdx}{1};
-        newSegNum = getfield(counters, fldName)+1;
-        setfield(counters, cndName, newSegNum);
+        newSegNum = counters.(fldName)+1;
+        counters.(cndName) = newSegNum;
         newFieldName = [cndName '_Segment' num2str(newSegNum)];
-        setfield(dataOut, newFieldName, getfield(data, dataFields{fldIdx}));
+        dataOut.(newFieldName) = data.(dataFields{fldIdx});
     end
 
     invariantFields = char(dataFields(~selected));

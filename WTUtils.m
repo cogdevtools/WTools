@@ -9,7 +9,6 @@ classdef WTUtils
     end
 
     methods (Static)
-
         function is = isa(obj, metaClass)
             if ~isa(metaClass, 'meta.class')
                 wtLog.excpt('BadValueType','Not a meta class');
