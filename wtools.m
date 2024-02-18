@@ -24,6 +24,7 @@ function varargout = wtools(varargin)
     % Edit the above text to modify the response to help wtools
     % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
     % Begin initialization code - DO NOT EDIT
+    wtInit();
     gui_Singleton = 1;
     gui_State = struct('gui_Name',       mfilename, ...
                        'gui_Singleton',  gui_Singleton, ...
@@ -334,7 +335,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.ctxOn('GlobalPlots');
         try
-            xavr();
+            wtPlotAverage();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show plots');
@@ -540,7 +541,7 @@ function varargout = wtools(varargin)
     function updateProjectName(hObject, handles) 
         if isfield(handles,'ProjectEdit')
             wtProject = WTProject();
-            prjName = fastif(wtProject.IsOpen, wtProject.Config.getName(), '?');
+            prjName = WTUtils.ifThenElse(wtProject.IsOpen, wtProject.Config.getName(), '?');
             set(handles.ProjectEdit, 'String', prjName);
             guidata(hObject, handles);
         end
@@ -549,7 +550,7 @@ function varargout = wtools(varargin)
         if isfield(handles,'SSnEdit')
             wtProject = WTProject();
             nSubjs = length(wtProject.Config.SubjectsGrand.SubjectsList);
-            nSubjsStr = fastif(wtProject.IsOpen, num2str(nSubjs), '?');
+            nSubjsStr = WTUtils.ifThenElse(wtProject.IsOpen, num2str(nSubjs), '?');
             set(handles.SSnEdit, 'String', nSubjsStr);
             guidata(hObject, handles);
         end

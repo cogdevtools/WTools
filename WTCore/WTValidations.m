@@ -51,7 +51,7 @@ classdef WTValidations
             if ~valid 
                 return
             end
-            array = fastif(nargout > 1, zero(size(array_)), []);
+            array = WTUtils.ifThenElse(nargout > 1, zero(size(array_)), []);
             for i = 1:numel(array_)
                 if ~WTValidations.isInt(array(i))
                     valid = false;
@@ -63,9 +63,9 @@ classdef WTValidations
         end
 
         function [valid, values] = strIsNumberCellArray(strCellArray, allowEmptyStr)
-            isChkr = fastif(nargin > 1 && any(logical(allowEmptyStr)), ...
+            isChkr = WTUtils.ifThenElse(nargin > 1 && any(logical(allowEmptyStr)), ...
                 @WTValidations.strIsNumber,  @WTValidations.strIsEmptyOrNumber);
-            values = fastif(nargout > 1, cell(size(strCellArray)), {});
+            values = WTUtils.ifThenElse(nargout > 1, cell(size(strCellArray)), {});
             valid = true;
 
             for i = 1:numel(strCellArray)
@@ -79,9 +79,9 @@ classdef WTValidations
         end
 
         function [valid, values] = strIsIntCellArray(strCellArray, allowEmptyStr) 
-            isChkr = fastif(nargin > 1 && any(logical(allowEmptyStr)), ...
+            isChkr = WTUtils.ifThenElse(nargin > 1 && any(logical(allowEmptyStr)), ...
                 @WTValidations.strIsInt,  @WTValidations.strIsEmptyOrInt);
-                values = fastif(nargout > 1, cell(size(strCellArray)), {});
+                values = WTUtils.ifThenElse(nargout > 1, cell(size(strCellArray)), {});
             valid = true;
 
             for i = 1:numel(strCellArray)

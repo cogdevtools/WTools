@@ -26,6 +26,20 @@ classdef WTException < MException
             o@MException(WTException.errId(errId), msg, varargin{:});
         end
 
+        % addSource not just a add a new source id, but return a new exception object
+        function new = addSource(o, source)
+            ids = split(o.identifier, ":");
+            ids = {source ids{2:end}};
+            identifier = char(join(ids, ':'));
+            new = WTException(identifier, o.message);
+            for cause = o.cause
+                new.addCause(o.cause);
+            end
+            for correction = o.Correction
+                new.addCorrection(correction);
+            end
+        end
+
         function o = log(o)
             WTLog().fromCaller().err('Exception(%s): %s', o.identifier, o.message);
         end

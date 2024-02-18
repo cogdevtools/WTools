@@ -1,14 +1,14 @@
 classdef WTSplashScreen < hgsetget
     % WTSplashScreen  create a splashscreen
     %
-    %   s = SplashScreen(title,imagefile) creates a splashscreen using
+    %   s = WTSplashScreen(title,imagefile) creates a splashscreen using
     %   the specified image. The title is the name of the window as shown
     %   in the task-bar. Use "delete(s)" to remove it. Note that images
     %   must be in PNG, GIF or JPEG format. Use the addText method to add
     %   text to your splashscreen
     %
     %   Examples:
-    %   s = SplashScreen( 'Splashscreen', 'example_splash.png', ...
+    %   s = WTSplashScreen( 'Splashscreen', 'example_splash.png', ...
     %                     'ProgressBar', 'on', ...
     %                     'ProgressPosition', 5, ...
     %                     'ProgressRatio', 0.4 )
@@ -17,7 +17,7 @@ classdef WTSplashScreen < hgsetget
     %   s.addText( 300, 270, 'Loading...', 'FontSize', 20, 'Color', 'white' )
     %   delete( s )
     %
-    %   See also: SplashScreen/addText
+    %   See also: WTSplashScreen/addText
     
     %   Copyright 2008-2011 The MathWorks, Inc.
     %   Revision: 1.1
@@ -55,7 +55,7 @@ classdef WTSplashScreen < hgsetget
         function obj = WTSplashScreen( title, imagename, varargin )
             % Construct a new splash-screen object
             if nargin<2
-                error('SplashScreen:BadSyntax', 'Syntax error. You must supply both a window title and imagename.' );
+                error('WTSplashScreen:BadSyntax', 'Syntax error. You must supply both a window title and imagename.' );
             end
             % First try to load the image as an icon
             fullname = iMakeFullName( imagename );
@@ -63,7 +63,7 @@ classdef WTSplashScreen < hgsetget
                 % Try on the path
                 fullname = which( imagename );
                 if isempty( fullname )
-                    error('SplashScreen:BadFile', 'Image ''%s'' could not be found.', imagename );
+                    error('WTSplashScreen:BadFile', 'Image ''%s'' could not be found.', imagename );
                 end
             end
             % Create the interface
@@ -82,7 +82,7 @@ classdef WTSplashScreen < hgsetget
             if strcmpi(obj.Visible,'on')
                 obj.Frame.setVisible(true);
             end
-        end % SplashScreen
+        end % WTSplashScreen
         
         function addText( obj, x, y, text, varargin )
             %addText  Add some text to the background image
@@ -99,10 +99,10 @@ classdef WTSplashScreen < hgsetget
             %   'Shadow'     'on' or 'off' (default 'on')
             %
             %   Examples:
-            %   s = SplashScreen( 'Splashscreen', 'example_splash.png' );
+            %   s = WTSplashScreen( 'Splashscreen', 'example_splash.png' );
             %   s.addText( 30, 50, 'My Cool App', 'FontSize', 30, 'Color', [0 0 0.6] )
             %
-            %   See also: SplashScreen
+            %   See also: WTSplashScreen
             
             % We write into the original image so that the text is
             % permanent
@@ -169,7 +169,7 @@ classdef WTSplashScreen < hgsetget
         
         function set.Visible(obj,val)
             if ~ischar( val ) || ~any( strcmpi( {'on','off'}, val ) )
-                error( 'SplashScreen:BadValue', 'Property ''ProgressBar'' must be ''on'' or ''off''' );
+                error( 'WTSplashScreen:BadValue', 'Property ''ProgressBar'' must be ''on'' or ''off''' );
             end
             obj.Visible = lower( val );
             obj.Frame.setVisible( strcmpi(val,'ON') ); %#ok<MCSUP>
@@ -177,7 +177,7 @@ classdef WTSplashScreen < hgsetget
         
         function set.Border(obj,val)
             if ~ischar( val ) || ~any( strcmpi( {'on','off'}, val ) )
-                error( 'SplashScreen:BadValue', 'Property ''Border'' must be ''on'' or ''off''' );
+                error( 'WTSplashScreen:BadValue', 'Property ''Border'' must be ''on'' or ''off''' );
             end
             obj.Border = val;
             obj.updateAll();
@@ -191,7 +191,7 @@ classdef WTSplashScreen < hgsetget
 
         function set.BorderThickness(obj,val)
             if ~isnumeric( val ) || ~isscalar( val ) || val<1 
-                error( 'SplashScreen:BadValue', 'Property ''BorderThickness'' must be a scalar between >= 1' );
+                error( 'WTSplashScreen:BadValue', 'Property ''BorderThickness'' must be a scalar between >= 1' );
             end
             obj.BorderThickness = val;
             obj.updateProgressBar();
@@ -199,7 +199,7 @@ classdef WTSplashScreen < hgsetget
 
         function set.ProgressBar(obj,val)
             if ~ischar( val ) || ~any( strcmpi( {'on','off'}, val ) )
-                error( 'SplashScreen:BadValue', 'Property ''ProgressBar'' must be ''on'' or ''off''' );
+                error( 'WTSplashScreen:BadValue', 'Property ''ProgressBar'' must be ''on'' or ''off''' );
             end
             obj.ProgressBar = val;
             obj.updateProgressBar();
@@ -207,7 +207,7 @@ classdef WTSplashScreen < hgsetget
         
         function set.ProgressRatio(obj,val)
             if ~isnumeric( val ) || ~isscalar( val ) || val<0 || val > 1
-                error( 'SplashScreen:BadValue', 'Property ''ProgressRatio'' must be a scalar between 0 and 1' );
+                error( 'WTSplashScreen:BadValue', 'Property ''ProgressRatio'' must be a scalar between 0 and 1' );
             end
             obj.ProgressRatio = val;
             obj.updateProgressBar();
@@ -215,7 +215,7 @@ classdef WTSplashScreen < hgsetget
         
         function set.ProgressPosition(obj,val)
             if ~isnumeric( val ) || ~isscalar( val ) || val<1 || val > obj.Height %#ok<MCSUP>
-                error( 'SplashScreen:BadValue', 'Property ''ProgressPosition'' must be a vertical position inside the window' );
+                error( 'WTSplashScreen:BadValue', 'Property ''ProgressPosition'' must be a vertical position inside the window' );
             end
             obj.ProgressPosition = val;
             obj.updateAll();
@@ -223,7 +223,7 @@ classdef WTSplashScreen < hgsetget
         
         function set.Tag(obj,val)
             if ~ischar( val )
-                error( 'SplashScreen:BadValue', 'Property ''Tag'' must be a character array' );
+                error( 'WTSplashScreen:BadValue', 'Property ''Tag'' must be a character array' );
             end
             obj.Tag = val;
         end % set.Tag
@@ -242,7 +242,7 @@ classdef WTSplashScreen < hgsetget
             try
                 obj.OriginalImage = javax.imageio.ImageIO.read( jImFile );
             catch err
-                error('SplashScreen:BadFile', 'Image ''%s'' could not be loaded.', imageFile );
+                error('WTSplashScreen:BadFile', 'Image ''%s'' could not be loaded.', imageFile );
             end
             % Read it again into the copy we'll draw on
             obj.BufferedImage = javax.imageio.ImageIO.read( jImFile );
@@ -367,7 +367,7 @@ if nargin
     params = varargin(1:2:end);
     values = varargin(2:2:end);
     if numel( params ) ~= numel( values )
-        error( 'UIExtras:SplashScreen:BadSyntax', 'Optional arguments must be supplied as parameter-value pairs.' );
+        error( 'UIExtras:WTSplashScreen:BadSyntax', 'Optional arguments must be supplied as parameter-value pairs.' );
     end
     for ii=1:numel( params )
         switch upper( params{ii} )
@@ -382,7 +382,7 @@ if nargin
                     case 'BOLD'
                         fontWeight = java.awt.Font.PLAIN;
                     otherwise
-                        error( 'UIExtras:SplashScreen:BadParameterValue', 'Unsupported FontWeight: %s.', values{ii} );
+                        error( 'UIExtras:WTSplashScreen:BadParameterValue', 'Unsupported FontWeight: %s.', values{ii} );
                 end
             case 'FONTANGLE'
                 switch upper( values{ii} )
@@ -391,18 +391,18 @@ if nargin
                     case 'ITALIC'
                         fontAngle = java.awt.Font.ITALIC;
                     otherwise
-                        error( 'UIExtras:SplashScreen:BadParameterValue', 'Unsupported FontAngle: %s.', values{ii} );
+                        error( 'UIExtras:WTSplashScreen:BadParameterValue', 'Unsupported FontAngle: %s.', values{ii} );
                 end
             case 'COLOR'
                 rgb = iInterpretColor( values{ii} );
                 color = java.awt.Color( rgb(1), rgb(2), rgb(3) );
             case 'SHADOW'
                 if ~ischar( values{ii} ) || ~ismember( upper( values{ii} ), {'ON','OFF'} )
-                    error( 'UIExtras:SplashScreen:BadParameter', 'Option ''Shadow'' must be ''on'' or ''off''.' );                    
+                    error( 'UIExtras:WTSplashScreen:BadParameter', 'Option ''Shadow'' must be ''on'' or ''off''.' );                    
                 end
                 shadow = strcmpi( values{ii}, 'on' );
             otherwise
-                error( 'UIExtras:SplashScreen:BadParameter', 'Unsupported optional parameter: %s.', params{ii} );
+                error( 'UIExtras:WTSplashScreen:BadParameter', 'Unsupported optional parameter: %s.', params{ii} );
         end
     end
 end

@@ -39,7 +39,7 @@ classdef WTProject < handle
             wtLog = WTLog(); 
             if wtLog.getLogLevel() >= WTLog.LevelErr 
                 WTLog().err(fmt, varargin{:});
-                o.notify(fastif(isempty(title), 'Error', title), fmt, varargin{:});
+                o.notify(WTUtils.ifThenElse(isempty(title), 'Error', title), fmt, varargin{:});
             end
         end
 
@@ -47,7 +47,7 @@ classdef WTProject < handle
             wtLog = WTLog(); 
             if wtLog.getLogLevel() >= WTLog.LevelWrn 
                 WTLog().warn(fmt, varargin{:});
-                o.notify(fastif(isempty(title), 'Warning', title), fmt, varargin{:});
+                o.notify(WTUtils.ifThenElse(isempty(title), 'Warning', title), fmt, varargin{:});
             end
         end
 
@@ -55,7 +55,7 @@ classdef WTProject < handle
             wtLog = WTLog(); 
             if wtLog.getLogLevel() >= WTLog.LevelInf 
                 WTLog().info(fmt, varargin{:});
-                o.notify(fastif(isempty(title), 'Info', title), fmt, varargin{:});
+                o.notify(WTUtils.ifThenElse(isempty(title), 'Info', title), fmt, varargin{:});
             end
         end
 

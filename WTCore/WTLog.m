@@ -64,7 +64,7 @@ classdef WTLog < handle
         
         function msg(o, stream, level, fmt, varargin)
             if level <= o.getLogLevel() 
-                stackLevel = fastif(o.FromCaller, 5, 4);
+                stackLevel = WTUtils.ifThenElse(o.FromCaller, 5, 4);
                 [module, func, line] = WTLog.stackInfo(stackLevel);
                 o.FromCaller = false;
                 time = char(datetime('now','TimeZone','local','Format','d-MM-y HH:mm:ss.SSS'));

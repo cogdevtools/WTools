@@ -120,7 +120,7 @@ function wtEGIToEEGLab()
 
         if ~success 
             wtProject.notifyErr([], 'Failed to import %s data file in eeglab:\n%s', ...
-               fastif(deleteFileToImport, 'ADJUSTED ', ''), subjFileName);
+               WTUtils.ifThenElse(deleteFileToImport, 'ADJUSTED ', ''), subjFileName);
             wtLog.popStatus();
             return   
         end

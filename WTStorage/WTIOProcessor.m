@@ -86,7 +86,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     re = '^(?<subject>\d+) .*\.mat$';
                 otherwise
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
     end
@@ -121,7 +121,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     extension = 'mat';
                 otherwise
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -136,7 +136,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     fileNames = {};
                 otherwise
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -151,7 +151,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     extension = 'sfp';
                 otherwise
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -171,7 +171,7 @@ classdef WTIOProcessor < handle
                         '%s %s %s %s %n %n %n %s %s %s %s %s', 'delimiter', '\t', 'headerlines', 1);
                     l = cat(1,l, {'VEOG';'HEOG';'DIGI'});
                 else
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
                 end
 
                 chansLocations = cell(1, length(l));
@@ -328,7 +328,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadbva', fullPath);
                 otherwise
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -353,7 +353,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     conditions = sort(unique({ data.event.type }));
                 otherwise
-                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 

@@ -9,6 +9,7 @@ classdef WTLayout
         function d = getToolsDir() 
             fn = mfilename('fullpath');
             d = WTUtils.getPathPrefix(fn);
+            d = WTUtils.getAbsPath(fullfile(d, '..'));
         end
 
         function d = getToolsPicturesDir() 

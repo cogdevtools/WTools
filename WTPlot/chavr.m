@@ -1,15 +1,12 @@
-function xavr(subj,tMin,tMax,FrMin,FrMax,scale,contr,varargin)
-% xavr.m
+function chavr(subj, channels, tMin, tMax, FrMin, FrMax, scale, contr, varargin)
+% chavr.m
 % Created by Eugenio Parise
-% CDC CEU 2010 - 2011
-% Based on topmontageplot.m Written by Morten Moerup (ERPWAVELABv1.1)
+% CDC CEU 2011
 % One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-% Plots the time-frequency activity of the 3-way array WT in the
-% correct position according to each channels topographic location.
-% Datafile are located in the folder 'grand', already separated by
-% condition, baseline corrected and chopped.
+% Plots the average time-frequency activity of the desired channels for an
+% individual subject or for the grand average.
 % Add 'evok' as last argument to plot evoked oscillations
-% (of course if they have been previously computed).
+% (of course, if they have been previously computed).
 % DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
 % Interactive user interface needs inputgui.m from EEGLab.
 %
@@ -17,22 +14,23 @@ function xavr(subj,tMin,tMax,FrMin,FrMax,scale,contr,varargin)
 %
 % contr=0, no contours will be plotted; set to 1 to plot them.
 %
-% xavr(subj,tMin,tMax,FrMin,FrMax,scale);
-% xavr(subj,tMin,tMax,FrMin,FrMax,scale,'evok');
+% chavr(subj, channels, tMin, tMax, FrMin, FrMax, scale, contr);
 %
-% xavr('01',-200,1200,10,90,[-0.5 0.5],1); %to plot a single subject
+% chavr('01',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],0);
+% to plot average of channels from a single subject
 %
-% xavr('grand',-200,1200,10,90,[-0.5 0.5],0); %to plot the grand average
+% chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1);
+% to plot average of channels from the grand average
 %
-% xavr('grand',-200,1200,10,90,[-0.5 0.5],0,'evok'); %to plot the grand
-% average of evoked oscillations
+% chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1,'evok');
+% to plot average of channels from the grand average of evoked oscillations
 %
-% xavr(); to run via GUI
+% chavr(); to run via GUI
 
-if ~exist('inputgui.m','file')    
+if ~exist('inputgui.m','file')
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
     fprintf('\n');
-    return    
+    return
 end
 
 try
@@ -61,16 +59,16 @@ catch
     end
 end
 
-if isempty(varargin)    
-    measure=strcat('_bc-avWT.mat');    
-elseif strcmp(varargin,'evok')    
-    measure=strcat('_bc-evWT.mat');    
-elseif ~strcmp(varargin,'evok')    
+if isempty(varargin)
+    measure=strcat('_bc-avWT.mat');
+elseif strcmp(varargin,'evok')
+    measure=strcat('_bc-evWT.mat');
+elseif ~strcmp(varargin,'evok')
     fprintf(2,'\nThe measure %s is not present in the %s folder!!!\n',varargin,subj);
     fprintf(2,'If you want to plot evoked oscillations, please type ''evok'' as last argument (after the contours argument).\n');
     fprintf(2,'Type nothing after the contours argument if you want to plot total-induced oscillations.\n');
     fprintf('\n');
-    return    
+    return
 end
 
 % Make Config folder to store config files for gui working functions
@@ -81,7 +79,7 @@ if exist('PROJECTPATH','var')
         mkdir (CommonPath,'Config');
     end
     addpath(strcat(PROJECTPATH,'/Config'));
-    pop_cfgfile = strcat(CommonPath,'Config/xavr_cfg.m');
+    pop_cfgfile = strcat(CommonPath,'Config/chavr_cfg.m');
 else
     CommonPath = strcat ('../');
     alreadyexistdir=strcat(CommonPath,'Config');
@@ -89,15 +87,15 @@ else
         mkdir (CommonPath,'Config');
     end
     addpath(strcat('../','Config'));
-    pop_cfgfile = strcat('../Config/xavr_cfg.m');
+    pop_cfgfile = strcat('../Config/chavr_cfg.m');
 end
 
 % Call gui only if no arguments were entered
 if ~nargin
-    [filenames, pathname, filterindex]=uigetfile({ '*-avWT.mat'; '*-evWT.mat' },'Select files to plot','MultiSelect','on');    
+    [filenames, pathname, filterindex]=uigetfile({ '*-avWT.mat'; '*-evWT.mat' },'Select files to plot','MultiSelect','on');
     if ~pathname
         return %quit on cancel button
-    end    
+    end
     % Find subject/grand folder from the path
     if ispc
         sla='\';
@@ -105,7 +103,7 @@ if ~nargin
         sla='/';
     end
     slashs=findstr(pathname,sla);
-    subj=pathname(slashs(end-1)+1:end-1);    
+    subj=pathname(slashs(end-1)+1:end-1);
     if filterindex==2
         varargin='evok';
         measure=strcat('_bc-evWT.mat');
@@ -119,15 +117,15 @@ if ~nargin
     
     % CHECK if the data have been log-transformed
     logFlag = wtCheckEvokLog();
-    enable_uV = fastif(logFlag, 'off', 'on');
+    enable_uV = WTUtils.ifThenElse(logFlag, 'off', 'on');
 
     % SET defaultanswer0
     % SET color limits and GUI
     if logFlag
-        defaultanswer0={[],[],[],[],'[-10.0    10.0]',0,1};
+        defaultanswer0={[],[],[],[],'[-10.0    10.0]',1};
         Scale='Scale (�x% change)';
     else
-        defaultanswer0={[],[],[],[],'[-0.5    0.5]',0,1};
+        defaultanswer0={[],[],[],[],'[-0.5    0.5]',1};
         Scale='Scale (mV)';
     end
     
@@ -135,7 +133,7 @@ if ~nargin
     
     % Load previously called parameters if existing
     if exist(pop_cfgfile,'file')
-        xavr_cfg;
+        chavr_cfg;
         try
             defaultanswer=defaultanswer;
             defaultanswer{1,answersN};
@@ -145,10 +143,10 @@ if ~nargin
             scale=WTUtils.str2nums(defaultanswer{1,5});
             if (abs(scale(1))==abs(scale(2))) && (logFlag && (scale(2)<3)) || (~logFlag && (scale(2)>=3))
                 defaultanswer{1,5}=defaultanswer0{1,5};
-            end                
+            end
         catch
             fprintf('\n');
-            fprintf(2, 'The xavr_cfg.m file in the Config folder was created by a previous version\n');
+            fprintf(2, 'The chavr_cfg.m file in the Config folder was created by a previous version\n');
             fprintf(2, 'of WTools. It will be updated to the most recent version and overwritten.');
             fprintf('\n');
             defaultanswer=defaultanswer0;
@@ -169,15 +167,9 @@ if ~nargin
         { 'style' 'text'       'string' Scale } ...
         { 'style' 'edit'       'string' defaultanswer{1,5} }...
         { 'style' 'text'       'string' 'Draw contours' } ...
-        { 'style' 'checkbox'   'value' defaultanswer{1,6} } ...
-        { 'style' 'text'       'string' 'Plot all channels' } ...
-        { 'style' 'checkbox'   'value' defaultanswer{1,7} } ...
-        { 'style' 'text'       'string' '' } ...
-        { 'style' 'text'       'string' '' } };
+        { 'style' 'checkbox'   'value' defaultanswer{1,6} } };
     
-    geometry = { [0.25 0.15 0.15 0.15]  [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
-    
-    % answer=inputdlg(parameters,'Set parameters',1.2,defaultanswer);
+    geometry = { [0.25 0.15 0.15 0.15]  [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
     
     answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plotting parameters');
     
@@ -191,7 +183,6 @@ if ~nargin
     FrMax=WTUtils.str2nums(answer{1,4});
     scale=WTUtils.str2nums(answer{1,5});
     contr=answer{1,6};
-    allchan=answer{1,7};
     
     % Find conditions to plot from the user selected files
     if ~iscell(filenames)
@@ -237,7 +228,7 @@ end
 
 % Check the input is correct
 if tMin > tMax
-    fprintf(2,'\nThe time window is  not valid!!!\n');
+    fprintf(2,'\nThe time window is not valid!!!\n');
     fprintf('\n');
     return
 end
@@ -275,27 +266,30 @@ if length(varargin)==1
     varargin=varargin{1};
 end
 
-if strcmp(subj,'grand')    
+if strcmp(subj,'grand')
     if exist('PROJECTPATH','var')
         CommonPath = strcat (PROJECTPATH,'/grand/');
     else
         CommonPath = strcat ('../grand/');
-    end    
+    end
     % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
     % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,condgrands(1),measure);
-    load (char(firstCond));    
-else    
+    load (char(firstCond));
+else
     if exist('PROJECTPATH','var')
         CommonPath = strcat (PROJECTPATH,'/');
     else
         CommonPath = strcat ('../');
-    end    
+    end
     % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
     % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,subj,'/',subj,'_',condgrands(1),measure);
-    load (char(firstCond));    
+    load (char(firstCond));
 end
+
+avrchlabels={};
+figlabels=[];
 
 timeRes = tim(2) - tim(1); %find time resolution
 if length(Fa)>1
@@ -351,7 +345,7 @@ else
 end
 
 % Calculate latency subset to plot and reduce time to speed up
-% plotting of individual channels
+% plotting
 if timeRes==1
     reduction=4;
 elseif timeRes==2
@@ -367,138 +361,109 @@ fr=find(Fa==FrMin):find(Fa==FrMax);
 % Save the user input parameters in the Config folder
 if ~nargin
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
-    fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''[%s]'' %i %i};',...
-        num2str(tMin),num2str(tMax),num2str(FrMin),num2str(FrMax),num2str(scale,'%.1f'),contr,allchan);
+    fprintf(fid, 'defaultanswer={''%s'' ''%s'' ''%s'' ''%s'' ''[%s]'' %i};',...
+        num2str(tMin),num2str(tMax),num2str(FrMin),num2str(FrMax),num2str(scale,'%.1f'),contr);
     fclose(fid);
     rehash;
 end
 
-% FIND channels to plot from gui
-if ~nargin && ~allchan
+% FIND channels to process from gui
+if ~nargin
     labels={};
     labels=cat(1,labels,chanlocs(1,:).labels);
     labels=labels';
-    [ChannelsList, ok] = listdlg('PromptString','Select channels:','SelectionMode','multiple','ListString',labels);
+    [chan, ok] = listdlg('PromptString','Select channels:','SelectionMode','multiple','ListString',labels);
     if ~ok
         return
     else
-        channelsN=length(ChannelsList);
+        chanN=length(chan);
     end
-else
-    % SET parameters
-    channelsN = size(WT,1);
-    ChannelsList = 1:channelsN;
 end
 
-width=0.1;
-height=0.1;
-
-% set figure parameters for current Matlab and EEGLAB version and color axis
-% measure
+% set figure parameters for current Matlab and EEGLAB version and color axis measure
 [DEFAULT_COLORMAP, clabel, Rotation, xclabel] = wtSetFigure(enable_uV);
 
 fprintf('\n');
 fprintf('Plotting...\n');
 fprintf('\n');
 
-for cn=1:condN    
-    if logFlag %Convert the data back to non-log scale straight in percent change        
-        WT=100*(10.^WT - 1);        
+for cn=1:condN
+    if logFlag %Convert the data back to non-log scale straight in percent change
+        WT=100*(10.^WT - 1);
+    end
+    avrChanWT=zeros(1,size(WT,2),size(WT,3));
+    
+    if strcmp(subj,'grand')
+        figurename=char(strcat(filename,condgrands(cn),measure));
+    else
+        figurename=char(strcat(filename,'Subj',subj,'_',condgrands(cn),measure));
+    end
+    % Add channels found from gui
+    if ~nargin
+        for i=1:chanN
+            avrChanWT = avrChanWT + WT(chan(i),:,:);
+            if cn==1
+                avrchlabels=cat(1,avrchlabels,chanlocs(1,chan(i)).labels);
+            end
+        end
+    else
+        % FIND channels to process from commandline
+        chanN=length(channels);
+        for ch = 1:chanN
+            actualchan = channels(ch);
+            labels={};
+            labels=cat(1,labels,chanlocs(1,:).labels);
+            labels=labels';
+            chanindex=strfind(labels,char(actualchan));
+            chan=find(~cellfun(@isempty,chanindex));
+            chan=chan(1,1); %Avoid douplicate values (e.g. E100 to E109 when searching E10)
+            if isempty(chan)
+                fprintf(2,'\nChannel %s not found!!!\n', char(actualchan));
+                fprintf(2,'The channel you are trying to average might had not been transformed.\n');
+                fprintf(2,'This function is case sensitive: enter the channels in capital letters.\n');
+                fprintf('\n');
+                return
+            end
+            % Add channels from commandline
+            avrChanWT = avrChanWT + WT(chan,:,:);
+            if cn==1
+                avrchlabels=cat(1,avrchlabels,char(actualchan));
+            end
+        end
+    end
+    
+    % Average channels
+    avrChanWT = avrChanWT/chanN;
+    
+    if cn==1
+        for i=1:length(avrchlabels)
+            figlabels=strcat(figlabels, strcat(avrchlabels(i),', '));
+        end
+        figlabels=char(figlabels);
+        if chanN==1
+            figlabels=strcat('Channel: ', figlabels(1:end-1));
+        else
+            figlabels=strcat('Average of: ', figlabels(1:end-1));
+        end
     end
     
     tim=[tMin tMax];
     Fa=[FrMin FrMax];
     
-    % channelsN=size(WT,1);
-    chanlocs = chanlocs(ChannelsList);
-    
-    if strcmp(subj,'grand')        
-        figurename=char(strcat(filename,condgrands(cn),measure));        
-    else        
-        figurename=char(strcat(filename,'Subj',subj,'_',condgrands(cn),measure));        
-    end
-    
-    for k=1:length(chanlocs)
-        if ~isempty(chanlocs(k).radius)
-            x(k)=sin(chanlocs(k).theta/360*2*pi)*chanlocs(k).radius;
-            y(k)=cos(chanlocs(k).theta/360*2*pi)*chanlocs(k).radius;
-        end
-    end
-    minx=min(x);
-    miny=min(y);
-    maxx=max(x);
-    maxy=max(y);
-    a=(maxx-minx)/50; % air to edge of plot
-    b=(maxy-miny)/50; % air to edge of plot
-    mx=maxx-minx+width;
-    my=maxy-miny+height;
-    
-    % Create the main figure
-    h = figure('WindowButtonDownFcn',{@showTFplot,WT,x,y,chanlocs,ChannelsList,...
-        tim,Fa,scale,mx,my,a,b,width,height,fr,lat,figurename,reduction,FrMin,...
-        FrMax,contr,DEFAULT_COLORMAP,clabel,Rotation,xclabel});    
-    colormap(DEFAULT_COLORMAP);    
-    set(h, 'Name', figurename);
-    set(h, 'NumberTitle', 'off');
-    set(h, 'ToolBar','none');
-    clf;
-    set(h, 'Color', [1 1 1]);
-    set(h, 'PaperUnits', 'centimeters');
-    set(h, 'PaperType', '<custom>');
-    set(h, 'PaperPosition', [0 0 12 12]);
-    
-    % Create axes for the main figure
-    h = axes('position', [0 0 1 1]);
-    set(h, 'Visible', 'off');
-    for ch = 1:channelsN        
-        % Create axes for each channel
-        h = axes('Position',[(x(ch)-minx+a)/(mx+2*a), (y(ch)-miny+a)/(my+2*b), width/mx, height/mx ]);
-        hold on;        
-        % Draw channels
-        imagesc(squeeze(WT(ChannelsList(ch),fr,lat)));
-        % set(gca);
-        caxis(scale);
-        axis off;
-        text(0,0,chanlocs(ch).labels,'FontSize',8,'FontWeight','bold');
-        hold off;        
-    end
-
-    % load next condition
-    if strcmp(subj,'grand') && (cn < condN)
-        dataset = char(strcat (CommonPath,condgrands(cn+1),measure));
-        load (dataset);
-    elseif cn < condN
-        dataset = char(strcat (CommonPath,subj,'/',subj,'_',condgrands(cn+1),measure));
-        load (dataset);
-    end    
-end
-
-function showTFplot(src,event,WT,x,y,chanlocs,ChannelsList,tim,Fa,scale,mx,my,...
-    a,b,width,height,fr,lat,figurename,reduction,FrMin,FrMax,contr,DEFAULT_COLORMAP,clabel,Rotation,xclabel)
-% Button down function for plot figure - displays single channel activity
-minx=min(x);
-miny=min(y);
-x=(x-minx+a)/(mx+2*a)+width/(2*mx);
-y=(y-miny+a)/(my+2*b)+height/(2*mx);
-ppl=[x' y'];
-cp=get(src,'CurrentPoint');
-cp2=get(src,'Position');
-pos=cp./cp2(3:4);
-dist=sum((ppl-repmat(pos,[size(ppl,1) ,1])).^2,2);
-[Y,k]=min(dist);
-alreg=abs(pos-ppl(k,:));
-if alreg(1)<=width/(2*mx) & alreg(2)<=height/(2*mx)
     F=figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
-    % imagesc(tim,Fa,squeeze(WT(k(1),fr,lat)));
+    
     colormap(DEFAULT_COLORMAP);
+    
     FigureExist = exist('F','var');
+    
     set(F,'WindowButtonDownFcn',{@changeGrid,FigureExist});
-    imagesc(tim,Fa,interp2(squeeze(WT(ChannelsList(k(1)),fr,lat)),4,'spline'));
+    % imagesc(tim,Fa,squeeze(WT(k(1),fr,lat)));
+    imagesc(tim,Fa,interp2(squeeze(avrChanWT(1,fr,lat)),4,'spline'));
     hold on;
     if contr && reduction==4
-        contour([tim(1):2^2:tim(end)],[Fa(1):Fa(end)],squeeze(WT(k(1),fr,lat)),'k');
+        contour([tMin:2^2:tMax],[FrMin:FrMax],squeeze(avrChanWT(1,fr,lat)),'k');
     elseif contr
-        contour([tim(1):reduction^2:tim(end)],[Fa(1):Fa(end)],squeeze(WT(k(1),fr,lat)),'k');
+        contour([tMin:reduction^2:tMax],[FrMin:FrMax],squeeze(avrChanWT(1,fr,lat)),'k');
     end
     caxis(scale);
     
@@ -520,33 +485,47 @@ if alreg(1)<=width/(2*mx) & alreg(2)<=height/(2*mx)
         YTick=[FrMin:20:FrMax];
     end
     
-    set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', XTick, 'YTick', YTick);
+    set(gca, 'XMinorTick','on', 'xgrid', 'on', 'YMinorTick','on', 'ygrid', 'on',...
+        'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', XTick, 'YTick', YTick);
     axis tight;
-    title(chanlocs(k(1)).labels,'FontSize',16,'FontWeight','bold');
+    title(figlabels,'FontSize',16,'FontWeight','bold');
     xlabel('ms','FontSize',12,'FontWeight','bold');
     ylabel('Hz','FontSize',12,'FontWeight','bold');
     peace=linspace(min(scale),max(scale),64);
     peace=peace(2)-peace(1);
     C = colorbar('peer',gca,'YTick',sort([0 scale]));
-    set(get(C,'xlabel'),'String',clabel,'Rotation',Rotation,'FontSize',12,'FontWeight','bold','Position',[xclabel 2*peace]);   
+    set(get(C,'xlabel'),'String',clabel,'Rotation',Rotation,'FontSize',12,...
+        'FontWeight','bold','Position',[xclabel 2*peace]);
+    
+    % load next condition
+    if strcmp(subj,'grand') && (cn < condN)
+        dataset = char(strcat (CommonPath,condgrands(cn+1),measure));
+        load (dataset);
+    elseif cn < condN
+        dataset = char(strcat (CommonPath,subj,'/',subj,'_',condgrands(cn+1),measure));
+        load (dataset);
+    end
+    
 end
 
+end
+
+% 1st click = display dotted grid
+% 2nd click = display no grid
+% 3rd click = display solid grid
 function changeGrid(F,event,FigureExist)
 
 persistent clickN
 
-try    
+try
+    
     while FigureExist        
-        n = get(gcbo,'Number');
-        h = findobj('type','figure');
-        fn = length(h);        
+        n = get(gcbo,'Number');        
         if isempty(clickN)
+            h = findobj('type','figure');
+            fn = length(h);
             clickN = zeros(1,fn);
             clickN(n) = 1;
-        elseif n>length(clickN)
-            temp = zeros(1,(n-length(clickN)));
-            clickN = cat(2,clickN,temp);
-            clickN(n) = clickN(n) + 1;
         else
             clickN(n) = clickN(n) + 1;
         end        
@@ -558,8 +537,11 @@ try
             set(gca, 'xgrid', 'on', 'ygrid', 'on','gridlinestyle', '-');
         end        
         waitforbuttonpress;        
-    end    
+    end
+    
 catch    
     pause(1);
     return    
+end
+
 end

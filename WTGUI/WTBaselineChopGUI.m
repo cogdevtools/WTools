@@ -12,8 +12,8 @@ classdef WTBaselineChopGUI
 
             evokedOscillations = (waveletTransformParamsExist && waveletTransformParams.EvokedOscillations) || ...
                 (baselineChopParamsExist && baselineChopParams.EvokedOscillations);
-            enableUV = fastif(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
-            enableBs = fastif(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
+            enableUV = WTUtils.ifThenElse(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
+            enableBs = WTUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
                 num2str(baselineChopParams.ChopMin), ...
@@ -25,7 +25,7 @@ classdef WTBaselineChopGUI
                 evokedOscillations };
             
             cbEnableBs = ['set(findobj(gcbf, ''userdata'', ''NoBC''),' ...
-                        '''enable'',' 'fastif(get(gcbo, ''value''), ''off'', ''on''));'];
+                        '''enable'',' 'WTUtils.ifThenElse(get(gcbo, ''value''), ''off'', ''on''));'];
             
             parameters = { ...
                 { 'style' 'text'     'string' 'Chop Ends:              Left' } ...

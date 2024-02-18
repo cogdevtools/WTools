@@ -65,7 +65,9 @@
 % 17 November 2006   Normalization by 1/f removed to main ERPWAVELAB program.
 % 21 November 2006   Wrong output in Induced measure corrected.
 
-function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, timeMin, timeMax, waveletType, chansToAnalyse, selection, normalization, epochsList, cwtMatrix)
+function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, timeMin, timeMax, ... 
+        waveletType, chansToAnalyse, selection, normalization, epochsList, cwtMatrix)
+        
     success = false;
     files = {};
 
@@ -294,7 +296,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                 end
                 
                 nEpochs = nEpochs-nFlatEpochs;
-                wType = fastif(evokedOscillations, ...
+                wType = WTUtils.ifThenElse(evokedOscillations, ...
                     WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
 
                 [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, wType, ...

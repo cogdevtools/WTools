@@ -17,7 +17,7 @@ classdef WTUtils
                 [valid, value] = WTValidations.strIsNumber(str);
             end
             if ~valid
-                WTException.badValue('Not a valid string representation of a number: %s', fastif(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of a number: %s', WTUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
@@ -29,21 +29,21 @@ classdef WTUtils
                 [valid, value] = WTValidations.strIsInt(str);
             end
             if ~valid
-                WTException.badValue('Not a valid string representation of an integer: %s', fastif(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of an integer: %s', WTUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
         function array = str2nums(str)
             [valid, array] = WTValidations.strIsNumberArray(str);
             if ~valid 
-                WTException.badValue('Not a valid string representation of numbers: %s', fastif(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of numbers: %s', WTUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
         function array = str2ints(str)
             [valid, array] =  WTValidations.strIsIntArray(str);
             if ~valid 
-                WTException.badValue('Not a valid string representation of integers: %s', fastif(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of integers: %s', WTUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
@@ -66,6 +66,14 @@ classdef WTUtils
                 else
                     func(args{:});
                 end
+            end
+        end
+        
+        function result = ifThenElse(condition, thenSet, elseSet) 
+            if any(logical(condition))
+                result = thenSet;
+            else
+                result = elseSet;
             end
         end
         
@@ -206,7 +214,7 @@ classdef WTUtils
                 wtLog.except(me);
             end
             if ~success 
-                wtLog.err('Failed to write text to file ''%s''', fastif(isempty(fullName), '<?>', fullName))
+                wtLog.err('Failed to write text to file ''%s''', WTUtils.ifThenElse(isempty(fullName), '<?>', fullName))
             end
         end
 
@@ -231,7 +239,7 @@ classdef WTUtils
                 success = true;
             catch me
                 wtLog.except(me);
-                wtLog.err('Failed to save workspace variables in file ''%s''', fastif(isempty(targetFile), '<?>', targetFile));
+                wtLog.err('Failed to save workspace variables in file ''%s''', WTUtils.ifThenElse(isempty(targetFile), '<?>', targetFile));
             end
         end
 
@@ -287,7 +295,7 @@ classdef WTUtils
                 end                
             catch me
                 success = false;
-                WTLog().except(me).err('Failed to load from file ''%s''',  fastif(ischar(fileName), fileName, '<?>'));
+                WTLog().except(me).err('Failed to load from file ''%s''',  WTUtils.ifThenElse(ischar(fileName), fileName, '<?>'));
             end
         end
 
@@ -347,14 +355,14 @@ classdef WTUtils
         function [selection, indexes] = stringsSelectDlg(prompt, list, single, confirm, varargin)
             WTValidations.mustBeALinearCellArrayOfNonEmptyString(list);
             selection = list;
-            indexes = fastif(length(list) == 1, 1, []);
+            indexes = WTUtils.ifThenElse(length(list) == 1, 1, []);
             confirm =  nargin > 3 && any(logical(confirm));
             
             if isempty(list) || (length(list) < 2 && ~confirm)
                 return
             end
 
-            mode = fastif(nargin > 2 && any(logical(single)), 'single', 'multiple');
+            mode = WTUtils.ifThenElse(nargin > 2 && any(logical(single)), 'single', 'multiple');
             prompt = strrep(prompt, '\n', newline);
             prompt = splitlines(prompt)';
 
@@ -413,7 +421,7 @@ classdef WTUtils
         function varargout = eeglabRun(logLevel, safeMode, varargin) 
             safeMode = any(logical(safeMode));
             varargout = cell(nargout,1);
-            cmdArgOfs = fastif(safeMode, 2, 1);
+            cmdArgOfs = WTUtils.ifThenElse(safeMode, 2, 1);
             wtLog = WTLog();
             warnState = warning;
             me = [];

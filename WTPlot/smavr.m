@@ -145,7 +145,7 @@ if ~nargin
     
     % CHECK if the data have been log-transformed
     logFlag = wtCheckEvokLog();
-    enable_uV = fastif(logFlag, 'off', 'on');
+    enable_uV = WTUtils.ifThenElse(logFlag, 'off', 'on');
 
     % SET defaultanswer0
     % SET color limits and GUI
