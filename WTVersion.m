@@ -16,7 +16,7 @@ classdef WTVersion
         end
 
         function val = getReleaseDateStr(o) 
-            val = char(o.ReleaseDate, 'Format', 'MMMM y');
+            val = char(datetime(o.ReleaseDate, 'Format', 'MMMM y'));
         end
     end
 end

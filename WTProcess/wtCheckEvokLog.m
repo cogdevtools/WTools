@@ -23,9 +23,9 @@ function [log, wtEvok, bsEvok, bsLog] = wtCheckEvokLog()
     end
     
     if baselineChopParams.exist()
-        % GET evok value after baseline correction
+        % Get evok value after baseline correction
         bsEvok = baselineChopParams.EvokedOscillations;
-        % GET log value after averaging
+        % Get log value after averaging
         bsLog = baselineChopParams.Log10Enable;
         log =  log || bsLog;
     end

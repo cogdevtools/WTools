@@ -1,0 +1,119 @@
+function success = wtSelectUpdateChannels(system)
+    success = false;
+    wtProject = WTProject();
+    wtLog = WTLog();
+    ioProc = wtProject.Config.IOProc;
+    channelsPrms = copy(wtProject.Config.Channels);
+
+    fileExt = ['*.' WTIOProcessor.getSystemChansLocationFileExtension(system)];
+    selectionFlt = fullfile(ioProc.ImportDir, fileExt);
+    [chanLocFile, ~, ~] = WTUtils.uiGetFiles(selectionFlt, ...
+        'Select channels location file', 'MultiSelect', 'off', WTLayout.getToolsDevicesDir());
+    if isempty(chanLocFile) 
+        wtLog.warn('No channel location file selected');
+        return
+    end
+
+    selectionFlt = fullfile(ioProc.ImportDir, ioProc.SplineFileTypeFlt);
+    [splineFile, ~, ~] = WTUtils.uiGetFiles(selectionFlt, ...
+        'Select spline file', 'MultiSelect', 'off', WTLayout.getToolsDevicesDir());
+    if isempty(splineFile) 
+        wtLog.warn('No spline file selected');
+        return
+    end
+
+    channelsPrms.ChannelsLocationFile = chanLocFile{1};
+    channelsPrms.ChannelsLocationFileType = 'autodetect';
+    channelsPrms.SplineFile = splineFile{1};
+    channelsLabels = {};
+    
+    if ~WTUtils.eeglabYesNoDlg('Cutting channels', 'Would you like to cut some channels?')
+        channelsPrms.CutChannels = {};
+    else
+        channelsLabels = getChannelsLabels(system, channelsPrms.ChannelsLocationFile);
+        if isempty(channelsLabels)
+            wtProject.notifyErr([], 'No channels found in ''%s''', channelsPrms.ChannelsLocationFile);
+            return
+        end
+        cutChannels = {};
+        while isempty(cutChannels)
+            [cutChannels, selected] = WTUtils.stringsSelectDlg('Select channels\nto cut:', channelsLabels, false, true);
+            if isempty(cutChannels)
+                if WTUtils.eeglabYesNoDlg('Confirm', 'No channels to cut selected: proceed?')
+                    break;
+                end
+            elseif length(channelsLabels) == length(cutChannels)
+                wtProject.notifyWrn([], 'You can''t cut all the channels!');
+                cutChannels = {};
+            else
+                channelsPrms.CutChannels = cutChannels;
+                channelsLabels = channelsLabels(setdiff(1:end,selected));
+            end
+        end
+    end
+
+    if ~WTUtils.eeglabYesNoDlg('Re-referencing channels', 'Would you like to re-reference?')
+        channelsPrms.ReReference = channelsPrms.ReReferenceNone;
+    else
+        choices = { 'Average reference', 'New reference electrodes' };
+        doneWithSelection = false;
+
+        while ~doneWithSelection
+            [~, selected] = WTUtils.stringsSelectDlg('Select re-reference', choices, true, true, 'ListSize', [220, 100]);
+            if isempty(selected)
+                if WTUtils.eeglabYesNoDlg('Confirm', 'No re-referencing selected: proceed?')
+                    channelsPrms.ReReference = channelsPrms.ReReferenceNone;
+                    doneWithSelection = true;
+                end
+            elseif selected == 1
+                channelsPrms.ReReference = channelsPrms.ReReferenceWithAverage;
+                channelsPrms.NewChannelsReference = {};
+                doneWithSelection = true;
+            else
+                if isempty(channelsLabels)
+                    channelsLabels = getChannelsLabels(system, channelsPrms.ChannelsLocationFile);
+                    if isempty(channelsLabels)
+                        wtProject.notifyErr([], 'No channels found in ''%s''', channelsPrms.ChannelsLocationFile);
+                        return
+                    end
+                end 
+                while ~doneWithSelection
+                    [refChannels, ~] = WTUtils.stringsSelectDlg('Select reference channels\n(cut channels are excluded):', channelsLabels, false, true);
+                    if isempty(refChannels)
+                        if WTUtils.eeglabYesNoDlg('Confirm', 'No channels for re-referencing selected: proceed?')
+                            channelsPrms.ReReference = channelsPrms.ReReferenceNone;
+                            doneWithSelection = true;
+                        end
+                    else
+                        channelsPrms.ReReference = channelsPrms.ReReferenceWithChannels;
+                        channelsPrms.NewChannelsReference = refChannels;
+                        doneWithSelection = true;
+                    end
+                end
+            end
+        end
+    end 
+
+    if ~channelsPrms.persist()
+        wtProject.notifyErr([], 'Failed to save channels parameters!');
+        return
+    end
+
+    wtProject.Config.Channels = channelsPrms;
+    success = true;
+end
+
+function chansLabels = getChannelsLabels(system, chanLocFile)
+    chansLabels = {};
+
+    [success, channelsLoc] = WTIOProcessor.readChannelsLocations(system, chanLocFile);
+    if ~success 
+        WTProject().notifyErr([], 'Failed to read channels location from ''%s''', chanLocFile); 
+        return
+    end
+
+    chansLabels = cellfun(@(x)(x.Label), channelsLoc, 'UniformOutput', false);
+    % The following applies to GSN-HydroCel-129.sfp but should not affect the other systems, so it's safe to filter...
+    % In the future fix this code so the filter applies only to the specific set of channels.
+    chansLabels = chansLabels(~cellfun(@isempty, regexp(chansLabels, '^(?!Fid).+$', 'match')));
+end 

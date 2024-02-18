@@ -1,4 +1,4 @@
-classdef WTConvertToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
+classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
@@ -12,7 +12,7 @@ classdef WTConvertToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     methods
-        function o = WTConvertToEEGLabCfg(ioProc)
+        function o = WTImportTypeCfg(ioProc)
             o@WTConfigStorage(ioProc, 'import2eegl_cfg.m');
             o.default();
         end
@@ -37,11 +37,11 @@ classdef WTConvertToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
                     o.EEGLabFlag = cells{4};
                 else 
                     o.default()
-                    WTLog().warn(['The import to EEGLab format parameters (%s) were set by a\n'...
+                    WTLog().warn(['The import type format parameters (%s) were set by a\n'...
                         'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

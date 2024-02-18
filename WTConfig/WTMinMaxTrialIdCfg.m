@@ -5,8 +5,8 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        MinTrialId uint32 {WTValidations.mustBeGTE(MinTrialId, 0, 1)} = NaN
-        MaxTrialId uint32 {WTValidations.mustBeGTE(MaxTrialId, 0, 1)} = NaN
+        MinTrialId uint32 {WTValidations.mustBeGTE(MinTrialId, 0, 1)}
+        MaxTrialId uint32 {WTValidations.mustBeGTE(MaxTrialId, 0, 1)}
     end
 
     methods
@@ -28,27 +28,30 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
             try
                 if length(cells) >= 2
                     % For backward compatibility
-                    o.MinTrialId = WTUtils.ifThenElseSet(ischar(cells{1}) && isempty(cells{1}), NaN, str2double(cells{1}));
-                    o.MaxTrialId = WTUtils.ifThenElseSet(ischar(cells{2}) && isempty(cells{2}), NaN, str2double(cells{2}));
-                    o.validate();
+                    o.MinTrialId = WTUtils.str2double(cells{1}, true);
+                    o.MaxTrialId = WTUtils.str2double(cells{2}, true);
+                    o.validate(true);
                 else 
                     o.default();
-                    WTLog().warn(['The min/max trial id parameters (%s) were set by a\n'...
+                    WTLog().warn(['The min/max trial id parameters (%s) were inconsistent or set by a\n'...
                         'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end
 
         function success = validate(o, throwExcpt) 
             success = true;
+            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+
             if ~isnan(o.MinTrialId) && ~isnan(o.MaxTrialId)
-                success = o.MaxTrialId >= o.MinTrialId;
-            end
-            if nargin > 1 && any(logical(throwExcpt)) 
-                WTLog().excpt('BadValue', 'Field MaxTrialId < MinTrialId');
+                if o.MaxTrialId < o.MinTrialId;
+                    WTUtils.throwOrLog(WTException.badValue('Field MaxTrialId < MinTrialId'), ~throwExcpt);
+                    success = false;
+                end
             end
         end
 

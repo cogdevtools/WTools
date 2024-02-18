@@ -1,56 +1,48 @@
 classdef WTConvertGUI
     
     methods (Static)
-        function success = sourceDataFormatSelect(convertToEEGLabData) 
-            WTUtils.mustBeA(convertToEEGLabData, ?WTConvertToEEGLabCfg)
-            success = false;
+        function success = selectImportType(convertToEEGLabData) 
+            WTValidations.mustBeA(convertToEEGLabData, ?WTImportTypeCfg);
             wtLog = WTLog();
-            
-            answer = { convertToEEGLabData.EEPFlag, ...
+            success = false;
+
+            answer = { ...
+                convertToEEGLabData.EEPFlag, ...
                 convertToEEGLabData.EGIFlag, ...
                 convertToEEGLabData.BRVFlag, ...
                 convertToEEGLabData.EEGLabFlag }; 
 
-            cbRadioButton1 = [ ...
-                'get(gcbf, ''userdata'');' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton1''), ''Value'', 1);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton2''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton3''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton4''), ''Value'', 0);' ];
+            systems = { ...
+                WTIOProcessor.SystemEEP, ...
+                WTIOProcessor.SystemEGI, ...
+                WTIOProcessor.SystemBRV, ...
+                WTIOProcessor.SystemEEGLab }; 
 
-            cbRadioButton2 = [ ...
-                'get(gcbf, ''userdata'');' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton1''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton2''), ''Value'', 1);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton3''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton4''), ''Value'', 0);' ];
+            enabled = repmat({'on'}, 1, length(systems));
 
-            cbRadioButton3 = [ ...
-                'get(gcbf, ''userdata'');' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton1''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton2''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton3''), ''Value'', 1);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton4''), ''Value'', 0);' ];
+            % EEP conversion is supported only on MS Windows platform
+            if ~ispc 
+                systems{1} = [systems{1} ' (available only on MS Windows)'];
+                enabled{1} = 'off';
+                answer{1,1} = 0;
+            end
 
-            cbRadioButton4 = [ ...
-                'get(gcbf, ''userdata'');' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton1''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton2''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton3''), ''Value'', 0);' ...
-                'set(findobj(gcbf, ''tag'', ''radiobutton4''), ''Value'', 1);' ];
+            if sum([answer{:}]) ~= 1
+                answer = {0, 1, 0, 0};
+            end
 
-            params = { ...
-                { 'style' 'text'        'string' 'Import segmented files from the following system:' } ...
-                { 'style' 'text'        'string' '' } ...
-                { 'style' 'radiobutton' 'tag'    'radiobutton1' 'string' 'EEP'    'value'  answer{1,1} 'callback' cbRadioButton1 } ...
-                { 'style' 'radiobutton' 'tag'    'radiobutton2' 'string' 'EGI'    'value'  answer{1,2} 'callback' cbRadioButton2 } ...
-                { 'style' 'radiobutton' 'tag'    'radiobutton3' 'string' 'BRV'    'value'  answer{1,3} 'callback' cbRadioButton3 } ...
-                { 'style' 'radiobutton' 'tag'    'radiobutton4' 'string' 'EEGLAB' 'value'  answer{1,4} 'callback' cbRadioButton4 } };
-
-            geometry = { 1 1 1 1 1 1 };
-
+            rb = arrayfun(@(i)sprintf('RB%d',i), 1:length(systems), 'UniformOutput', false);
+            cb = @(n)sprintf('for i=1:%d; set(findobj(gcbf, ''tag'', sprintf(''RB%%d'', i)), ''Value'', i==%d); end', length(rb), n);
+            geometry = repmat({1}, 1, 2+length(systems));
+            params = cell(1, 2+length(systems));
+            params{1} = { 'style' 'text' 'string' 'Import segmented files from the following system:' };
+            params{2} = { 'style' 'text' 'string' '' };
+            for i = 1:length(systems) 
+                params{2+i} = { 'style' 'radiobutton' 'tag' rb{i} 'string' systems{i} 'value' answer{1,i} 'callback' cb(i), 'enable', enabled{i} };
+            end
+            
             while true
-                [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params,'title', 'Import segmented EEG');
+                [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Import segmented EEG');
 
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted import configuration dialog');
@@ -61,7 +53,7 @@ classdef WTConvertGUI
                 if sum(cellfun(@(e) e, answer)) ~= 0
                     break
                 end
-                WTUtils.eeglabMsgDlg('Warning', 'You must select one EEG system among EEP, EGI, BRV, EEGLAB')
+                WTUtils.wrnDlg('Review parameter', 'You must select one EEG system among %s', char(join(systems, ' ')));
             end
 
             convertToEEGLabData.EEPFlag = answer{1,1};
@@ -72,7 +64,7 @@ classdef WTConvertGUI
         end
 
         function success = defineSamplingRate(samplingData) 
-            WTUtils.mustBeA(samplingData, ?WTSamplingCfg);
+            WTValidations.mustBeA(samplingData, ?WTSamplingCfg);
             success = false;
             wtLog = WTLog();
             
@@ -90,17 +82,17 @@ classdef WTConvertGUI
                     return
                 end
                 try
-                    samplingData.SamplingRate = str2double(answer{1,1});
+                    samplingData.SamplingRate = WTUtils.str2double(answer{1,1});
                     break
                 catch
-                    WTUtils.eeglabMsgDlg('Warning', 'Invalid sampling rate:  must be a float > 0');
+                    WTUtils.wrnDlg('Review parameter','Invalid sampling rate:  must be a float > 0');
                 end
             end
             success = true;
         end
 
         function success = defineTriggerLatency(egi2eeglData)
-            WTUtils.mustBeA(egi2eeglData, ?WTEGIToEEGLabCfg);
+            WTValidations.mustBeA(egi2eeglData, ?WTEGIToEEGLabCfg);
             success = false;
             wtLog = WTLog();
             
@@ -120,17 +112,17 @@ classdef WTConvertGUI
                     return
                 end
                 try
-                    egi2eeglData.TriggerLatency = str2double(answer{1,1});
+                    egi2eeglData.TriggerLatency = WTUtils.str2double(answer{1,1});
                     break
                 catch
-                    WTUtils.eeglabMsgDlg('Warning', 'Invalid trigger latency: must be a float >= 0');
+                    WTUtils.wrnDlg('Review parameter', 'Invalid trigger latency: must be a float >= 0');
                 end
             end
             success = true;
         end
 
         function success = defineTrialsRangeId(minMaxTrialIdData)
-            WTUtils.mustBeA(minMaxTrialIdData, ?WTMinMaxTrialIdCfg);
+            WTValidations.mustBeA(minMaxTrialIdData, ?WTMinMaxTrialIdCfg);
             success = false;
             wtLog = WTLog();
             
@@ -161,6 +153,7 @@ classdef WTConvertGUI
                 { 'style' 'text' 'string' 'Enter only min or max to process trials above/below a trial ID.' } ...
                 { 'style' 'text' 'string' 'Enter min/max positive integers to set the min/max trial ID to' } ...
                 { 'style' 'text' 'string' 'process.' } };
+
             geometry = { [1 0.5] [1 0.5] 1 1 1 1 };
             
             while true
@@ -170,13 +163,13 @@ classdef WTConvertGUI
                     return
                 end
                 try
-                    minId = WTUtils.ifThenElseSet(isempty(answer{1,1}), NaN, str2double(answer{1,1}));
-                    maxId = WTUtils.ifThenElseSet(isempty(answer{1,2}), NaN, str2double(answer{1,2}));
+                    minId = WTUtils.str2double(answer{1,1}, true);
+                    maxId = WTUtils.str2double(answer{1,2}, true);
                     minMaxTrialIdData.MinTrialId = minId;
                     minMaxTrialIdData.MaxTrialId = maxId;
-                    minMaxTrialIdData.validate();
+                    minMaxTrialIdData.validate(true);
                 catch
-                    WTUtils.eeglabMsgDlg('Warning', ['Invalid min/max trials id. Allowed values for [min,max] are: [<empty>,<empty>], ' ...
+                    WTUtils.wrnDlg('Review parameter',['Invalid min/max trials id. Allowed values for [min,max] are: [<empty>,<empty>], ' ...
                         '[int >= 0, <empty>], [<empty>, int >= 0 ], [min >= 0, max >= min]']);
                     continue
                 end
@@ -185,6 +178,49 @@ classdef WTConvertGUI
             success = true;
         end
 
+        function success = defineEpochLimitsAndFreqFilter(EpochLimitsAndFreqFilterData)
+            WTValidations.mustBeA(EpochLimitsAndFreqFilterData, ?WTEpochLimitsAndFreqFilterCfg);
+            success = false;
+            wtLog = WTLog();
+
+            answer = { ...
+                { sprintf(WTFormatter.FmtArrayStr, num2str(EpochLimitsAndFreqFilterData.EpochLimits)) }, ...
+                { fastif(isnan(EpochLimitsAndFreqFilterData.HighPassFilter), [], double2str(EpochLimitsAndFreqFilterData.HighPassFilter)) } ...
+                { fastif(isnan(EpochLimitsAndFreqFilterData.LowPassFilter), [], double2str(EpochLimitsAndFreqFilterData.LowPassFilter)) }};
+
+            params = { ...
+                { 'style' 'text' 'string' 'Epochs limits' } ...
+                { 'style' 'edit' 'string' answer{1,1} } ...
+                { 'style' 'text' 'string' 'High-pass filter' } ...
+                { 'style' 'edit' 'string' answer{1,2} }...
+                { 'style' 'text' 'string' 'Low-pass filter' } ...
+                { 'style' 'edit' 'string' answer{1,3} }};
+
+            geometry = { [1 1] [1 1]  [1 1] };
+
+            while true
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params,'title', 'Set epochs & band filter params');
+
+                if isempty(answer)
+                    wtLog.dbg('User quitted set epochs range and frequency filter configuration dialog');
+                    return 
+                end
+
+                try
+                    EpochLimitsAndFreqFilterData.EpochLimits = WTUtils.str2nums(answer{1,1});
+                    EpochLimitsAndFreqFilterData.HighPassFilter = WTUtils.str2double(answer{1,2}, true);
+                    EpochLimitsAndFreqFilterData.LowPassFiler = WTUtils.str2double(answer{1,2}, true);
+                    EpochLimitsAndFreqFilterData.validate(true)
+                catch me
+                    wtLog.except(me);
+                    WTUtils.wrnDlg('Review parameter','Invalid epochs range and/or filter frequencies: check the log for details');
+                    continue
+                end
+                break
+            end
+
+            success = true;
+        end
     end
 end
 

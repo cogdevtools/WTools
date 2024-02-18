@@ -30,7 +30,7 @@ classdef WTConditionsGrandCfg < WTConfigStorage & matlab.mixin.Copyable
                 o.ConditionsList = cnds;
                 o.ConditionsDiff = diff;
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

@@ -3,8 +3,10 @@ classdef WTGrandAverageGUI
     
     methods(Static)
 
-        function success = grandAverageParams(wtGrandAveragePrms, logFlag, evokFlag)
-            WTUtils.mustBeA(wtGrandAveragePrms, ?WTGrandAverageCfg);
+        function success = defineGrandAverageParams(wtGrandAveragePrms, logFlag, evokFlag)
+            WTValidations.mustBeA(wtGrandAveragePrms, ?WTGrandAverageCfg);
+            success = false;
+            wtLog = WTLog();
             
             useAllSubjects = wtGrandAveragePrms.UseAllSubjects;
             perSbjAvg = wtGrandAveragePrms.PerSubjectAgerage;

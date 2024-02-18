@@ -1,13 +1,13 @@
 classdef WTLog < handle
     
-    properties (Constant)
+    properties (Constant,Hidden)
         LevelErr = 1
         LevelWrn = 2
         LevelInf = 3
         LevelDbg = 4
     end
    
-    properties (Constant,Access=private)
+    properties (Constant,Hidden,Access=private)
         LoglevelStrs = {'ERROR','WARNING','INFO','DEBUG'}
     end
 
@@ -16,6 +16,7 @@ classdef WTLog < handle
         Context cell 
         HeaderOn logical
         StatusStack cell
+        FromCaller logical
     end
 
     methods (Static, Access=private)         
@@ -63,7 +64,9 @@ classdef WTLog < handle
         
         function msg(o, stream, level, fmt, varargin)
             if level <= o.getLogLevel() 
-                [module, func, line] = WTLog.stackInfo(4);
+                stackLevel = fastif(o.FromCaller, 5, 4);
+                [module, func, line] = WTLog.stackInfo(stackLevel);
+                o.FromCaller = false;
                 time = char(datetime('now','TimeZone','local','Format','d-MM-y HH:mm:ss.SSS'));
                 str = o.format(time, module, func, line, level, fmt, varargin{:});
                 fprintf(stream, str);
@@ -79,6 +82,7 @@ classdef WTLog < handle
                 o.StatusStack = {};
                 o.HeaderOn = true;
                 o.LogLevel = WTLog.LevelInf;
+                o.FromCaller = false;
                 singleton(o);
             else 
                 o = st;
@@ -110,6 +114,10 @@ classdef WTLog < handle
             end
         end
 
+        function o = fromCaller(o)
+            o.FromCaller = true;
+        end 
+
         function o = ctxReset(o) 
             o.Context = {};
         end
@@ -118,10 +126,11 @@ classdef WTLog < handle
             o.ctxReset();
             o.StatusStack = {};
             o.HeaderOn = true;
+            o.FromCaller = false;
         end
 
         function o = pushStatus(o) 
-            o.StatusStack = [o.StatusStack {{o.Context, o.HeaderOn}}];
+            o.StatusStack = [o.StatusStack {{o.Context, o.HeaderOn, o.FromCaller}}];
         end
 
         function o = popStatus(o, n)
@@ -131,7 +140,7 @@ classdef WTLog < handle
             nStack = length(o.StatusStack);
             n = min(n, nStack);
             if n > 0
-                [o.Context,  o.HeaderOn] = o.StatusStack{end-n+1}{:};
+                [o.Context,  o.HeaderOn, o.FromCaller] = o.StatusStack{end-n+1}{:};
                 o.StatusStack(end-n+1:end) = [];
             end
         end
@@ -161,17 +170,11 @@ classdef WTLog < handle
             end
         end
         
-        function excpt(o, type, fmt, varargin) 
-            o.err(fmt, varargin{:});
-            id = sprintf('WTOOLS:%s', type);
-            throw(MException(id, 'Unrecoverable error: check the log above...'));
-        end
-        
-        function o = mexcpt(o, MExcept, rethrow) 
-            msg = strrep(getReport(MExcept, 'extended'), '%', '%%');
-            o.err('%s\n', msg);
+        function o = except(o, excp, rethrow) 
+            msg = strrep(getReport(excp, 'extended'), '%', '%%');
+            o.msg(2, WTLog.LevelErr, '%s\n', msg);
             if nargin > 2 && rethrow
-                throw(MExcept);
+                excp.rethrow()
             end
         end
 
@@ -203,43 +206,6 @@ classdef WTLog < handle
                     o.dbg(fmt, varargin{:});
                 otherwise
                     o.info(fmt, varargin{:});
-            end
-        end
-
-        function [success, varargout] = evalinLog(o, cmd, inBase) 
-            success = false;
-            varargout = cell(1, nargout-1);
-            workspace = 'caller';
-            if nargin > 2 && inBase
-                workspace = 'base';
-            end
-            try
-                [varargout{:}] = evalin(workspace, cmd); 
-                success = true;
-            catch me
-                o.mexcpt(me);
-            end
-        end
-
-        function varargout = evalcLog(o, level, ctx, cmd)
-            varargout = cell(nargout,1);
-            evalcCmd = sprintf('evalc(''%s'')', strrep(cmd, '''', ''''''));
-            try
-                [log, varargout{:}] = evalin('caller', evalcCmd);
-            catch me
-                o.mexcpt(me, false);
-                o.excpt('evalin', 'Failed to exec ''%s''', evalcCmd);
-            end
-            log = strip(log,'right', newline);
-            if ~isempty(log)
-                o.pushStatus();
-                if ~isempty(ctx)
-                    o.ctxOn(ctx);
-                end
-                o.log(level, 'Follows log report of cmd: ''%s'' ...', cmd);
-                o.ctxOn().setHeaderOn(false);
-                o.log(level, log);
-                o.popStatus();
             end
         end
     end

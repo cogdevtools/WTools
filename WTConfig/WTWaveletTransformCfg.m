@@ -48,15 +48,15 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable
             end 
             try
                 if length(cells) >= 13 
-                    o.TimeMin = str2double(cells{1});
-                    o.TimeMax = str2double(cells{2});
-                    o.TimeRes = str2double(cells{3});
-                    o.FreqMin = str2double(cells{4});
-                    o.FreqMax = str2double(cells{5});
-                    o.FreqRes = str2double(cells{6});
-                    o.EdgePadding = str2double(cells{7});
-                    o.ChannelsList = str2num(cells{8});
-                    o.EpochsList = str2num(cells{9});
+                    o.TimeMin = WTUtils.str2double(cells{1});
+                    o.TimeMax = WTUtils.str2double(cells{2});
+                    o.TimeRes = WTUtils.str2double(cells{3});
+                    o.FreqMin = WTUtils.str2double(cells{4});
+                    o.FreqMax = WTUtils.str2double(cells{5});
+                    o.FreqRes = WTUtils.str2double(cells{6});
+                    o.EdgePadding = WTUtils.str2double(cells{7});
+                    o.ChannelsList = WTUtils.str2nums(cells{8});
+                    o.EpochsList = WTUtils.str2nums(cells{9});
                     o.LogarithmicTransform = cells{10};
                     o.EvokedOscillations = cells{11};
                     o.NormalizedWavelets = cells{12};
@@ -67,7 +67,7 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable
                         'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

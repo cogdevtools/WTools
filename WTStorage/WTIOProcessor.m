@@ -9,7 +9,7 @@ classdef WTIOProcessor < handle
         TempSubDir     = 'Tmp';
     end
 
-    properties(Constant)
+    properties(Constant, Hidden)
         WaveletsAnalisys         = ''
         WaveletsAnalisys_ITLC    = 'ITLC'
         WaveletsAnalisys_ITPC    = 'ITPC'
@@ -19,10 +19,12 @@ classdef WTIOProcessor < handle
         WaveletsAnalisys_WTav    = 'WTav'
         WaveletsAnalisys_Induced = 'Induced'
 
-        ChannelsLocationFileTypeFlt = '*.sfp'
-        SplineFileTypeFlt = '*.spl'
+        SystemEGI    = 'EGI'
+        SystemEEP    = 'EEP'
+        SystemEEGLab = 'EEGLab'
+        SystemBRV    = 'BRV'
 
-        ImportFileRe = '^(?<subject>\d+) export\.mat$'
+        SplineFileTypeFlt = '*.spl'
         SubjAnalysisSubDirRe  = '^\d+$'
         EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
     end
@@ -46,7 +48,7 @@ classdef WTIOProcessor < handle
             elseif nargin == 1
                 WTLog().err('Can''t read file ''%s''', fName);
             else
-                WTLog().err('Can''t read file ''%s'' or some content field(s) are missing: %s', fName, join(varargin{:},','));
+                WTLog().err('Can''t read file ''%s'' or some content field(s) are missing: %s', fName, char(join(varargin,',')));
             end
         end
 
@@ -62,9 +64,126 @@ classdef WTIOProcessor < handle
             fName = fullfile(dir, file);
             fileExist = isfile(fName);
             if shouldExist && ~fileExist 
-                WTLog().excpt('WTConfig:NotExistingPath', '"%s" is not a valid file path', fName);
+                WTException.notExistingPath('"%s" is not a valid file path', fName).throw();
             end
         end
+
+        function [subjects, sbjFiles] = getSbjsFromImportFiles(fileNameFmtRe, varargin)
+            match = regexp(varargin, fileNameFmtRe, 'once', 'names');
+            result = ~cellfun(@isempty, match);
+            sbjFiles = varargin(result);
+            subjects = cellfun(@(x){x.subject}, match(result));
+        end
+
+        function re = getSystemImportFileNameFmtRe(system) 
+            switch system
+                case WTIOProcessor.SystemEEP
+                    re = '^.+_(?<subject>\d+)\.cnt$';
+                case WTIOProcessor.SystemEEGLab
+                    re = '^.*(?<subject>\d+)\.set$';
+                case WTIOProcessor.SystemEGI
+                    re = '^(?<subject>\d+) .*\.mat$';
+                case WTIOProcessor.SystemBRV
+                    re = '^(?<subject>\d+) .*\.mat$';
+                otherwise
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+            end
+        end
+    end
+
+    methods(Static,Access=public)
+        function systems = getSystemTypes() 
+            systems = { ...
+                WTIOProcessor.SystemEGI, ...
+                WTIOProcessor.SystemEEP, ...
+                WTIOProcessor.SystemBRV, ...
+                WTIOProcessor.SystemEEGLab};
+        end
+
+        function filePath = getEEGLabRawFile(subjectFilePath)
+            [dir, name, ~] = fileparts(subjectFilePath);
+            filePath = fullfile(dir, [name '.fdt']);
+        end  
+
+        function filePath = getEEPRejectionFile(subjectFilePath)
+            [dir, name, ~] = fileparts(subjectFilePath);
+            filePath = fullfile(dir, [name 'fr.rej']);
+        end  
+
+        function extension = getSystemImportFileExtension(system)           
+            switch system
+                case WTIOProcessor.SystemEEP
+                    extension = 'cnt';
+                case WTIOProcessor.SystemEEGLab
+                    extension = 'set';
+                case WTIOProcessor.SystemEGI
+                    extension = 'mat';
+                case WTIOProcessor.SystemBRV
+                    extension = 'mat';
+                otherwise
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+            end
+        end
+
+        function fileNames = getSystemExtraImportFiles(system, subjectFilePath)           
+            switch system
+                case WTIOProcessor.SystemEEP
+                    fileNames = { WTIOProcessor.getEEPRejectionFile(subjectFilePath) };
+                case WTIOProcessor.SystemEEGLab
+                    fileNames = { WTIOProcessor.getEEGLabRawFile(subjectFilePath) };
+                case WTIOProcessor.SystemEGI
+                    fileNames = {};
+                case WTIOProcessor.SystemBRV
+                    fileNames = {};
+                otherwise
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+            end
+        end
+
+        function extension = getSystemChansLocationFileExtension(system) 
+            switch system
+                case WTIOProcessor.SystemEEP
+                    extension = 'ced';
+                case WTIOProcessor.SystemEEGLab
+                    extension = 'sfp';
+                case WTIOProcessor.SystemEGI
+                    extension = 'sfp';
+                case WTIOProcessor.SystemBRV
+                    extension = 'sfp';
+                otherwise
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+            end
+        end
+
+        function [success, chansLocations] = readChannelsLocations(system, fileName)
+            success = false;
+            chansLocations = {};
+
+            try
+                fullPath = fullfile(WTLayout.getToolsDevicesDir(), fileName);
+
+                if strcmp(system, WTIOProcessor.SystemEGI) || ...
+                   strcmp(system, WTIOProcessor.SystemEEGLab) || ...
+                   strcmp(system, WTIOProcessor.SystemBRV)
+                    [l, x, y, z] = textread(fullPath,'%s %n %n %n','delimiter', '\t');
+                elseif strcmp(system, WTIOProcessor.SystemEEP)
+                    [~, l, ~, ~, x, y, z, ~, ~, ~, ~, ~] = textread(fullPath, ...
+                        '%s %s %s %s %n %n %n %s %s %s %s %s', 'delimiter', '\t', 'headerlines', 1);
+                    l = cat(1,l, {'VEOG';'HEOG';'DIGI'});
+                else
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+                end
+
+                chansLocations = cell(1, length(l));
+                for i = 1:length(l)
+                    chansLocations{i} = struct('Label', l{i}, 'Location', [x(i) y(i) z(i)]);
+                end
+                success = true;
+            catch me
+                WTLog().except(me);
+                return
+            end
+        end        
     end
 
     methods(Access=private)
@@ -151,41 +270,18 @@ classdef WTIOProcessor < handle
             if nargin > 2 
                 filePath = [filePath extension];
             end
-        end
-
-        function [success, chansLocations] = readChannelsLocations(o, fileName)
-            success = false;
-            chansLocations = {};
-            try
-                fullPath = fullfile(WTLayout.getToolsSplinesDir(), fileName);
-                [l, x, y, z] = textread(fullPath,'%s %n %n %n','delimiter', '\t');
-                chansLocations = cell(1, length(l));
-                for i = 1:length(l)
-                    chn = struct('Label', l{i}, 'Location', [x(i) y(i) z(i)]);
-                    chansLocations{i} = chn;
-                end
-                success = true;
-            catch me
-                WTLog().mexcpt(me);
-                return
-            end
-        end
+        end  
 
         % In this case fileName can be either scalar or a cell array of strings
-        function [subjects, sbjFiles] = getSubjectsFromImportFiles(o, varargin)
-            subjects = {};
-            sbjFiles = {};
-            match = regexp(varargin, o.ImportFileRe, 'once', 'names');
-            for i = 1:length(match)
-                if ~isempty(match{i})
-                    sbjFiles = [sbjFiles varargin(i)];
-                    subjects = [subjects {match{i}.subject}];
-                end
-            end
+        function [subjects, sbjFiles] = getSubjectsFromImportFiles(o, system, varargin)
+            fileNameFmtRe = WTIOProcessor.getSystemImportFileNameFmtRe(system);
+            [subjects, sbjFiles] = WTIOProcessor.getSbjsFromImportFiles(fileNameFmtRe, varargin{:});
         end
 
-        function [subjFiles, subjects] = enumImportFiles(o) 
-            dirContent = dir(fullfile(o.ImportDir, '*.mat'));
+        function [subjFiles, subjects] = enumImportFiles(o, system) 
+            fileNameFmtRe =  WTIOProcessor.getSystemImportFileNameFmtRe(system);
+            extensionFlt = ['*.' WTIOProcessor.getSystemImportFileExtension(system)];
+            dirContent = dir(fullfile(o.ImportDir, extensionFlt));
             subjFiles = cell(length(dirContent), 1);
             subjects = cell(length(dirContent), 1);
             nValid = 0;
@@ -194,7 +290,7 @@ classdef WTIOProcessor < handle
                 if dirContent(i).isdir
                     continue
                 end
-                subject = o.getSubjectsFromImportFiles(dirContent(i).name);
+                subject = WTIOProcessor.getSbjsFromImportFiles(fileNameFmtRe, dirContent(i).name);
                 if ~isempty(subject)
                     nValid = nValid + 1;
                     subjFiles{nValid} = dirContent(i).name;
@@ -202,8 +298,10 @@ classdef WTIOProcessor < handle
                 end
             end
 
-            subjFiles = subjFiles(1:nValid);
-            subjects = subjects{1:nValid};
+            if nValid > 0
+                subjFiles = subjFiles(1:nValid);
+                subjects = subjects{1:nValid};
+            end
         end
 
         function [success, sbjDir] = makeAnalysisSubjectDir(o, subject)
@@ -211,35 +309,52 @@ classdef WTIOProcessor < handle
             success = WTUtils.mkdir(sbjDir);
         end
 
-        function [fullPath, filePath, fileName] = getImportFileForSubject(o, subject)
-            filePath = o.ImportDir;
-            fileName = strcat(subject, ' export.mat');
-            fullPath = fullfile(filePath, fileName);
-        end
-
         function [fullPath, filePath] = getImportFile(o, fileName)
             filePath = o.ImportDir;
             fullPath = fullfile(filePath, fileName);
         end
 
-        function [success, varargout] = loadImport(o, fileName, varargin)
+        function [success, varargout] = loadImport(o, system, fileName, varargin)
             varargout = cell(1, nargout-1);
-            fullPath = o.getImportFile(fileName);
-            [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+            [fullPath, filePath] = o.getImportFile(fileName);
+           
+            switch system
+                case WTIOProcessor.SystemEGI
+                    [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+                case WTIOProcessor.SystemEEGLab
+                    [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                case WTIOProcessor.SystemEEP
+                    [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadeep', fullPath, 'triggerfile', 'on');
+                case WTIOProcessor.SystemBRV
+                    [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadbva', fullPath);
+                otherwise
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+            end
         end
 
-        function [success, conditions, data] = getConditionsFromImport(o, fileName)
+        function [success, conditions, data] = getConditionsFromImport(o, system, fileName)
             conditions = {};
-            [success, data] = o.loadImport(fileName);
+            [success, data] = o.loadImport(system, fileName);
             if ~success 
                 return
             end
-            fieldNames = fieldnames(data);
-            result = regexp(fieldNames, o.EGIConditionSegmentFldRe, 'once', 'tokens');
-            match = result(~cellfun(@isempty, result));
-            cndSeg = cat(1, match{:});
-            conditions = unique(cndSeg(:,1));
-            success = ~isempty(conditions);
+            switch system
+                case WTIOProcessor.SystemEGI
+                    fieldNames = fieldnames(data);
+                    result = regexp(fieldNames, o.EGIConditionSegmentFldRe, 'once', 'tokens');
+                    match = result(~cellfun(@isempty, result));
+                    cndSeg = cat(1, match{:});
+                    conditions = unique(cndSeg(:,1));
+                    success = ~isempty(conditions);
+                case WTIOProcessor.SystemEEGLab
+                    conditions = sort(unique({ data.event.type }));
+                case WTIOProcessor.SystemEEP
+                    WTException.unsupported('Unsupported system: %s', system).throw();
+                case WTIOProcessor.SystemBRV
+                    conditions = sort(unique({ data.event.type }));
+                otherwise
+                    WTException.badArg('Unknown system: %s', fastif(ischar(system), system, '?')).throw();
+            end
         end
 
         function [fullPath, filePath, fileName] = getProcessedImportFile(o, filePrefix, subject)
@@ -266,7 +381,7 @@ classdef WTIOProcessor < handle
                 end
                 success = true;
             catch 
-                WTLog().mexcpt(me);
+                WTLog().except(me);
             end 
 
             if ~success 
@@ -287,11 +402,11 @@ classdef WTIOProcessor < handle
                     success = true;
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
             end
         end
 
-        function setName = getConditionSet(o, filePrefix, subject, condition)
+        function setName = getConditionSet(~, filePrefix, subject, condition)
             setName = strcat(filePrefix, '_', subject, '_', condition);
         end
 
@@ -319,7 +434,7 @@ classdef WTIOProcessor < handle
                 end
                 success = true;
             catch 
-                WTLog().mexcpt(me)
+                WTLog().except(me)
             end 
         end
 
@@ -354,7 +469,7 @@ classdef WTIOProcessor < handle
                     success = true;
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
             end
         end
 
@@ -402,7 +517,7 @@ classdef WTIOProcessor < handle
                     success = true;
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
             end
         end
 
@@ -445,7 +560,7 @@ classdef WTIOProcessor < handle
                     success = true;
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
             end
         end
 
@@ -498,7 +613,7 @@ classdef WTIOProcessor < handle
                     success = true;
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
             end
         end
 

@@ -26,7 +26,7 @@ classdef WTSubjectsGrandCfg < WTConfigStorage & matlab.mixin.Copyable
             try
                 o.SubjectsList = subjs;
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

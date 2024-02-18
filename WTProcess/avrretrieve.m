@@ -74,7 +74,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
                     if exist('subjects','var') % Necessary to make subjects working in the function workspace
                         subjN = size(subjects,2);
                     else
-                        subjgrand; % In case the user quit the wtSubjectsRebuild module after calling it
+                        subjgrand; % In case the user quit the wtRebuildSubjects module after calling it
                     end
                 else
                     subjgrand;
@@ -162,7 +162,7 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
             'labels={};' ...
             'labels=cat(1,labels,chanlocs(1,:).labels);' ...
             'labels=labels'';' ...
-            'chans=str2num(defaultanswer{1,1});' ...
+            'chans=WTUtils.str2nums(defaultanswer{1,1});' ...
             '[ChannelsList, ok] = listdlg(''PromptString'',''Select channels:'',''SelectionMode'',''multiple'',''ListString'',labels,''InitialValue'',chans);' ...
             'if ~ok,' ...
             'assignin(''caller'',''subjects'',subjects);' ...
@@ -226,10 +226,10 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
             temp{1,index}=answer{1,index-1};
         end
         answer=temp;
-        tMin=str2num(answer{1,2});
-        tMax=str2num(answer{1,3});
-        FrMin=str2num(answer{1,4});
-        FrMax=str2num(answer{1,5});
+        tMin=WTUtils.str2nums(answer{1,2});
+        tMax=WTUtils.str2nums(answer{1,3});
+        FrMin=WTUtils.str2nums(answer{1,4});
+        FrMax=WTUtils.str2nums(answer{1,5});
         indFr=answer{1,6};
         if answer{1,7}
             varargin={'evok'};

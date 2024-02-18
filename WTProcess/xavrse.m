@@ -1,33 +1,33 @@
 function xavrse(subj,tMin,tMax,FrMin,FrMax,varargin)
-%xavrse.m
-%Created by Eugenio Parise
-%CDC CEU 2013
-%Based on xavr.m Written by Morten Moerup (ERPWAVELABv1.1)
-%One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-%Plots the time-frequency activity of a frequency band with Standard Error bars on top.
-%Channels are plotted in the correct head position according to each channel
-%topographic location.
-%Datafile are located in the folder 'grand', already separated by
-%condition, baseline corrected and chopped.
-%Add 'evok' as last argument to plot evoked oscillations
-%(of course if they have been previously computed).
-%DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-%Interactive user interface needs inputgui.m from EEGLab.
+% xavrse.m
+% Created by Eugenio Parise
+% CDC CEU 2013
+% Based on xavr.m Written by Morten Moerup (ERPWAVELABv1.1)
+% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
+% Plots the time-frequency activity of a frequency band with Standard Error bars on top.
+% Channels are plotted in the correct head position according to each channel
+% topographic location.
+% Datafile are located in the folder 'grand', already separated by
+% condition, baseline corrected and chopped.
+% Add 'evok' as last argument to plot evoked oscillations
+% (of course if they have been previously computed).
+% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
+% Interactive user interface needs inputgui.m from EEGLab.
 %
-%Usage:
+% Usage:
 %
-%At present thgis function only works for grand average files, thus
-%subj='grand'
+% At present thgis function only works for grand average files, thus
+% subj='grand'
 %
-%xavrse(subj,tMin,tMax,FrMin,FrMax);
-%xavrse(subj,tMin,tMax,FrMin,FrMax,'evok');
+% xavrse(subj,tMin,tMax,FrMin,FrMax);
+% xavrse(subj,tMin,tMax,FrMin,FrMax,'evok');
 %
-%xavrse('grand',-200,1200,10,90); %to plot the grand average
+% xavrse('grand',-200,1200,10,90); %to plot the grand average
 %
-%xavrse('grand',-200,1200,10,90,'evok'); %to plot the grand
-%average of evoked oscillations
+% xavrse('grand',-200,1200,10,90,'evok'); %to plot the grand
+% average of evoked oscillations
 %
-%xavrse(); to run via GUI
+% xavrse(); to run via GUI
 
 if ~exist('inputgui.m','file')    
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
@@ -73,7 +73,7 @@ elseif ~strcmp(varargin,'evok')
     return    
 end
 
-%Make Config folder to store config files for gui working functions
+% Make Config folder to store config files for gui working functions
 if exist('PROJECTPATH','var')
     CommonPath = strcat (PROJECTPATH,'/');
     alreadyexistdir=strcat(CommonPath,'Config');
@@ -92,7 +92,7 @@ else
     pop_cfgfile = strcat('../Config/xavrse_cfg.m');
 end
 
-%Call gui only if no arguments were entered
+% Call gui only if no arguments were entered
 if ~nargin
     
     if ispc
@@ -112,9 +112,9 @@ if ~nargin
         cd (PROJECTPATH);
     end
     
-    %No more than 2 conditions can be plotted!!!
+    % No more than 2 conditions can be plotted!!!
     if ischar(filenames) %The user selected onlyone file
-        %skip the next control
+        % skip the next control
     elseif length(filenames)>2
         fprintf(2,'No more than 2 conditions can be plotted!!!\n');
         fprintf('\n');
@@ -135,16 +135,16 @@ if ~nargin
         return
     end
     
-    %CHECK if the data have been log-transformed
+    % CHECK if the data have been log-transformed
     logFlag = wtCheckEvokLog();
-    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+    enable_uV = fastif(logFlag, 'off', 'on');
 
-    %SET defaultanswer0
+    % SET defaultanswer0
     defaultanswer0={[],[],[],[],1};
     
     answersN=length(defaultanswer0);
     
-    %Load previously called parameters if existing
+    % Load previously called parameters if existing
     if exist(pop_cfgfile,'file')
         xavrse_cfg;
         try
@@ -183,13 +183,13 @@ if ~nargin
         return %quit on cancel button
     end
     
-    tMin=str2num(answer{1,1});
-    tMax=str2num(answer{1,2});
-    FrMin=str2num(answer{1,3});
-    FrMax=str2num(answer{1,4});
+    tMin=WTUtils.str2nums(answer{1,1});
+    tMax=WTUtils.str2nums(answer{1,2});
+    FrMin=WTUtils.str2nums(answer{1,3});
+    FrMax=WTUtils.str2nums(answer{1,4});
     allchan=answer{1,5};
     
-    %Find conditions to plot from the user selected files
+    % Find conditions to plot from the user selected files
     if ~iscell(filenames)
         filenames={filenames};
     end
@@ -197,7 +197,7 @@ if ~nargin
     condtoplot=cell(length(filenames),length(condgrands));
     condgrands=sort(condgrands);
     
-    %Clean filenames from measure and file extensions
+    % Clean filenames from measure and file extensions
     a=cell(length(filenames));
     for i=1:length(filenames)
         a{i}=strfind(filenames,measure);
@@ -224,13 +224,13 @@ if ~nargin
     condN = size(condgrands,2);    
 end
 
-%CHECK if difference and/or grand average files are up to date
-[diffConsistency grandConsistency]=check_diff_grand(filenames, condiff, subj, logFlag);
+% CHECK if difference and/or grand average files are up to date
+[diffConsistency grandConsistency]=wtCheckDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
 if ~diffConsistency || ~grandConsistency
     return
 end
 
-%Check the input is correct
+% Check the input is correct
 if tMin > tMax
     fprintf(2,'\nThe time window is  not valid!!!\n');
     fprintf('\n');
@@ -242,20 +242,20 @@ if FrMin > FrMax
     return
 end
 
-%Prompt the user to select the conditions to plot when using command line
-%function call
+% Prompt the user to select the conditions to plot when using command line
+% function call
 if ~exist('condtoplot','var')
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Taken from Luca Filippin's EGIWaveletPlot.m%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Taken from Luca Filippin's EGIWaveletPlot.m%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [condtoplot,ok] =listdlg('ListString', condgrands, 'SelectionMode', 'multiple', 'Name', 'Select Conditions',...
         'ListSize', [200, 200]);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     if ~ok
         return
     elseif ischar(filenames) %The user selected only one file
-        %skip the next control
+        % skip the next control
     elseif length(condtoplot)>2 %No more than 2 conditions can be plotted!!!
         fprintf(2,'No more than 2 conditions can be plotted!!!\n');
         fprintf('\n');
@@ -276,8 +276,8 @@ if strcmp(subj,'grand')
     else
         CommonPath = strcat ('../grand/');
     end    
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,condgrands(1),measure);
     load (char(firstCond),'-mat');    
 else    
@@ -286,8 +286,8 @@ else
     else
         CommonPath = strcat ('../');
     end    
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,subj,'/',subj,'_',condgrands(1),measure);
     load (char(firstCond),'-mat');    
 end
@@ -305,7 +305,7 @@ else
     frRes = 1;
 end
 
-%Adjust times and frequencies limits according with the data sampling
+% Adjust times and frequencies limits according with the data sampling
 temp=tMin;
 if tMin<min(tim)
     tMin=min(tim);
@@ -351,13 +351,13 @@ else
     end
 end
 
-%Calculate latency subset to plot and reduce time vector to speed up
-%plotting of individual channels
+% Calculate latency subset to plot and reduce time vector to speed up
+% plotting of individual channels
 reduction=10;
 lat=find(tim==tMin):reduction:find(tim==tMax);
 lat2=find(tim==tMin):find(tim==tMax);
 
-%Calculate frequency submset to plot
+% Calculate frequency submset to plot
 fr=find(Fa==FrMin):find(Fa==FrMax);
 if length(fr)==1
     frchar=num2str(FrMin);
@@ -365,7 +365,7 @@ else
     frchar=strcat(num2str(FrMin),'_',num2str(FrMax));
 end
 
-%Save the user input parameters in the Config folder
+% Save the user input parameters in the Config folder
 if ~nargin
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
     fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' %i};',...
@@ -374,7 +374,7 @@ if ~nargin
     rehash;    
 end
 
-%FIND channels to plot from gui
+% FIND channels to plot from gui
 if ~nargin && ~allchan
     labels={};
     labels=cat(1,labels,chanlocs(1,:).labels);
@@ -386,7 +386,7 @@ if ~nargin && ~allchan
         channelsN=length(ChannelsList);
     end
 else
-    %SET parameters
+    % SET parameters
     channelsN = size(WT,1);
     ChannelsList = 1:channelsN;
 end
@@ -441,7 +441,7 @@ set(h, 'Visible', 'off');
 H=zeros(1,length(ChannelsList));
 
 for cn = 1:condN    
-    %load conditions
+    % load conditions
     if strcmp(subj,'grand')
         dataset = char(strcat (CommonPath,condgrands(cn),measure));
         load (dataset,'-mat');
@@ -453,19 +453,19 @@ for cn = 1:condN
     chanlocs = chanlocs(ChannelsList);   
     
     for ch = 1:channelsN        
-        %Average frequencies
+        % Average frequencies
         WTch = squeeze(mean(WT(ChannelsList(ch),fr,lat),2));
         
-        %Compute SE
+        % Compute SE
         SEch = squeeze(mean(std(SS(ChannelsList(ch),fr,lat,:),0,4)./sqrt(size(SS,4)),2));
         
-        %Plot channels
+        % Plot channels
         if cn==1
             % Create axes for each channel
             h = axes('Position',[(x(ch)-minx+a)/(mx+2*a), (y(ch)-miny+a)/(my+2*b), width/mx, height/mx ]);
             H(ch)=gca;
-            %yl=ylim;
-            %text(0,(yl(1)-0.22),chanlocs(ch).labels,'FontSize',8,'FontWeight','bold');
+            % yl=ylim;
+            % text(0,(yl(1)-0.22),chanlocs(ch).labels,'FontSize',8,'FontWeight','bold');
             hold on;
             errorbar(H(ch),WTch,SEch,'b'); %blue line
         else
@@ -495,7 +495,7 @@ alreg=abs(pos-ppl(k,:));
 
 if alreg(1)<=width/(2*mx) && alreg(2)<=height/(2*mx)    
     F=figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');    
-    %Compute grid peace
+    % Compute grid peace
     if (tMax-tMin)/100<1
         grpc=10;
     elseif (tMax-tMin)/100<2
@@ -506,7 +506,7 @@ if alreg(1)<=width/(2*mx) && alreg(2)<=height/(2*mx)
         grpc=200;
     end    
     for cn = 1:condN        
-        %load conditions
+        % load conditions
         if strcmp(subj,'grand')
             dataset = char(strcat (CommonPath,condgrands(cn),measure));
             load (dataset,'-mat');
@@ -515,11 +515,11 @@ if alreg(1)<=width/(2*mx) && alreg(2)<=height/(2*mx)
             load (dataset,'-mat');
         end        
         chanlocs = chanlocs(ChannelsList);        
-        %Average frequencies
+        % Average frequencies
         WT = squeeze(mean(WT(ChannelsList(k(1)),fr,lat2),2));        
-        %Compute SE
+        % Compute SE
         SE = squeeze(mean(std(SS(ChannelsList(k(1)),fr,lat2,:),0,4)./sqrt(size(SS,4)),2));        
-        %Plot selected channel 
+        % Plot selected channel 
         if cn==1
             errorbar(WT,SE,'b'); %blue line
             hold on;
@@ -542,9 +542,9 @@ if alreg(1)<=width/(2*mx) && alreg(2)<=height/(2*mx)
         end        
     end    
     hold on;    
-    %1st click = display dashed grid
-    %2nd click = display no grid
-    %3rd click = display dotted grid
+    % 1st click = display dashed grid
+    % 2nd click = display no grid
+    % 3rd click = display dotted grid
     try
         while F
             w = waitforbuttonpress;

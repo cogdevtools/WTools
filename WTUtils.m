@@ -9,18 +9,49 @@ classdef WTUtils
     end
 
     methods (Static)
-        function is = isa(obj, metaClass)
-            if ~isa(metaClass, 'meta.class')
-                wtLog.excpt('BadValueType','Not a meta class');
+        function value = str2double(str, allowEmptyStr)
+            allowEmptyStr = nargin > 1 && any(logical(allowEmptyStr));
+            if allowEmptyStr
+                [valid, value] = WTValidations.strIsEmptyOrNumber(str);
+            else
+                [valid, value] = WTValidations.strIsNumber(str);
             end
-            is = isa(obj, metaClass.Name);
+            if ~valid
+                WTException.badValue('Not a valid string representation of a number: %s', fastif(ischar(str), str, '<?>')).throw();
+            end
         end
 
-        function mustBeA(obj, metaClass)
-            is = WTUtils.isa(obj, metaClass);
-            if ~is
-                wtLog.excpt('BadValueType','Bad value type: expected ''%s'', got ''%s''', ...
-                    metaClass.Name, class(obj));
+        function value = str2int(str, allowEmptyStr)
+            allowEmptyStr = nargin > 1 && any(logical(allowEmptyStr));
+            if allowEmptyStr
+                [valid, value] = WTValidations.strIsEmptyOrInt(str);
+            else 
+                [valid, value] = WTValidations.strIsInt(str);
+            end
+            if ~valid
+                WTException.badValue('Not a valid string representation of an integer: %s', fastif(ischar(str), str, '<?>')).throw();
+            end
+        end
+
+        function array = str2nums(str)
+            [valid, array] = WTValidations.strIsNumberArray(str);
+            if ~valid 
+                WTException.badValue('Not a valid string representation of numbers: %s', fastif(ischar(str), str, '<?>')).throw();
+            end
+        end
+
+        function array = str2ints(str)
+            [valid, array] =  WTValidations.strIsIntArray(str);
+            if ~valid 
+                WTException.badValue('Not a valid string representation of integers: %s', fastif(ischar(str), str, '<?>')).throw();
+            end
+        end
+
+        function throwOrLog(excpt, log)
+            if any(logical(log)) 
+                WTLog().fromCaller().err('Exception(%s): %s', excpt.identifier, getReport(excpt, 'extended'))
+            else
+                excpt.throwAsCaller()
             end
         end
 
@@ -37,35 +68,18 @@ classdef WTUtils
                 end
             end
         end
-
-        function value = ifThenElseSet(condition, thenValue, elseValue)
-            if any(logical(condition))
-                value = thenValue;
-            elseif nargin > 2
-                value = elseValue;
-            else 
-                value = {};
-            end
-        end
         
-        function [varargout] = ifThenElseDo(condition, thenDo, thenPrms, elseDo, elsePrms)
-            if any(logical(condition))
-                nOutArgs = nargout(thenDo);
-                if nOutArgs > 0
-                    [varargout{1:nOutArgs}] = thenDo(thenPrms{:});
-                else
-                    thenDo(thenPrms{:});
-                end
-            elseif nargin > 3
-                nOutArgs = nargout(thenDo);
-                if nOutArgs > 0
-                    [varargout{1:nOutArgs}] = elseDo(elsePrms{:});
-                else 
-                    elseDo(elsePrms{:});
-                end
-            else
-                varargout = {};
-            end
+        % returnValues() filters function output.
+        % func: must be a function reference
+        % params: a cell array containing the func() input arguments
+        % nOutput: the number of expected func() returned values
+        % varargin: a cell array of indexes that select which values 
+        %    returned by func() should be returned by returnValues
+        function varargout = returnValues(func, params, nOutput, varargin)
+            output = cell(1, nOutput);
+            [output{:}] = func(params{:});
+            varargout = cell(1, nargin-3);
+            [varargout{:}] = output{varargin{:}};
         end
 
         function cells = argsName(varargin) 
@@ -117,7 +131,7 @@ classdef WTUtils
                 d = dir(path);
                 absPath = fullfile(d(1).folder, d(1).name);
             elseif nargin < 2 || ~noException 
-                WTLog().excpt('WTUtils:NotExistingPath', 'Path ''%s'' does not exist', path);
+                WTException.notExistingPath('Path ''%s'' does not exist', path).throw();
             else
                 success = false;
             end
@@ -189,10 +203,10 @@ classdef WTUtils
                     success = true;
                 end
             catch me
-                wtLog.mexcpt(me);
+                wtLog.except(me);
             end
             if ~success 
-                wtLog.err('Failed to write text to file ''%s''', WTUtils.ifThenElseSet(isempty(fullName), '<?>', fullName))
+                wtLog.err('Failed to write text to file ''%s''', fastif(isempty(fullName), '<?>', fullName))
             end
         end
 
@@ -216,8 +230,8 @@ classdef WTUtils
                 evalin('caller', cmd);
                 success = true;
             catch me
-                wtLog.mexcpt(me);
-                wtLog.err('Failed to save workspace variables in file ''%s''', WTUtils.ifThenElseSet(isempty(targetFile), '<?>', targetFile));
+                wtLog.except(me);
+                wtLog.err('Failed to save workspace variables in file ''%s''', fastif(isempty(targetFile), '<?>', targetFile));
             end
         end
 
@@ -273,7 +287,7 @@ classdef WTUtils
                 end                
             catch me
                 success = false;
-                WTLog().mexcpt(me).err('Failed to load from file ''%s''',  WTUtils.ifThenElseSet(ischar(fileName), fileName, '<?>'));
+                WTLog().except(me).err('Failed to load from file ''%s''',  fastif(ischar(fileName), fileName, '<?>'));
             end
         end
 
@@ -331,19 +345,16 @@ classdef WTUtils
         end
 
         function [selection, indexes] = stringsSelectDlg(prompt, list, single, confirm, varargin)
-            if ~WTValidations.isALinearCellArrayOfNonEmptyString(list)
-                WTLog.expt('BadArg', 'Bad argument type or value: list');
-            end
-
+            WTValidations.mustBeALinearCellArrayOfNonEmptyString(list);
             selection = list;
-            indexes = WTUtils.ifThenElseSet(length(list) == 1, 1, []);
+            indexes = fastif(length(list) == 1, 1, []);
             confirm =  nargin > 3 && any(logical(confirm));
             
             if isempty(list) || (length(list) < 2 && ~confirm)
                 return
             end
 
-            mode = WTUtils.ifThenElseSet(nargin > 2 && any(logical(single)), 'single', 'multiple');
+            mode = fastif(nargin > 2 && any(logical(single)), 'single', 'multiple');
             prompt = strrep(prompt, '\n', newline);
             prompt = splitlines(prompt)';
 
@@ -386,10 +397,10 @@ classdef WTUtils
 
                 try
                     addpath(eeglabRoot);
-                    wtLog.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeglab nogui');
+                    WTEval.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeglab nogui');
                     found = true;
                 catch me
-                    wtLog.mexcpt(me);
+                    wtLog.except(me);
                 end
             end
 
@@ -402,7 +413,7 @@ classdef WTUtils
         function varargout = eeglabRun(logLevel, safeMode, varargin) 
             safeMode = any(logical(safeMode));
             varargout = cell(nargout,1);
-            cmdArgOfs = WTUtils.ifThenElseSet(safeMode, 2, 1);
+            cmdArgOfs = fastif(safeMode, 2, 1);
             wtLog = WTLog();
             warnState = warning;
             me = [];
@@ -410,10 +421,10 @@ classdef WTUtils
             
             try
                 if nargin < 3 % no argument, just run eeglab by default
-                    [varargout{cmdArgOfs:end}] = wtLog.evalcLog(logLevel, 'EEGLAB', 'eeglab');
+                    [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', 'eeglab');
                 else
                     cmdStr = sprintf('%s(varargin{2:length(varargin)});', varargin{1});
-                    [varargout{cmdArgOfs:end}] = wtLog.evalcLog(logLevel, 'EEGLAB', cmdStr);
+                    [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', cmdStr);
                 end
             catch me
                 wtLog.err('Failed to run eeglab command...');
@@ -423,13 +434,13 @@ classdef WTUtils
             if safeMode 
                 varargout{1} = isempty(me);
             elseif ~isempty(me)
-                wtLog.mexcpt(me, true);
+                wtLog.except(me, true);
             end
         end
 
         function varargout = eeglabInputMask(varargin)
             if ~WTUtils.eeglabDep('inputgui.m') 
-                WTLog().excpt('WTUtils:EEGLABDependency', 'Can''t find ''inputgui.m''');
+                WTException.eeglabDependency('Can''t find ''inputgui.m''').throw();
             end
             varargout = cell(nargout,1);
             [varargout{:}] = WTUtils().eeglabRun(WTLog.LevelDbg, false, 'inputgui', varargin{:});
@@ -476,7 +487,7 @@ classdef WTUtils
         % module: without trailing .m
         function [success, varargout] = readModule(dir, module, varargin) 
             if (nargin > 2 && nargout ~= (nargin - 1)) || (nargin == 2 && nargout ~= 2) || nargin < 2
-                WTLog().excpt('WTUtils:BadArgument', 'Input/output args number mismatch');
+                WTException.ioArgsMismatch('Input/output args number mismatch').throw();
             end
             success = true;
             varargout = cell(nargout-1,1);
@@ -493,7 +504,7 @@ classdef WTUtils
                     [varargout{:}] = ws.popToVars(varargin{:});
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end
             cd(cwd)
@@ -505,7 +516,7 @@ classdef WTUtils
             success = false;
             varargout = cell(nargout-1,1);
             if (nargin > 1 && nargin ~= nargout) || (nargin == 1 && nargout ~= 2) || nargin < 1
-                WTLog().excpt('WTUtils:BadArgument', 'Input/output args number mismatch');
+                WTException.ioArgsMismatch('Input/output args number mismatch').throw();
             elseif ~isfile(fname) 
                 WTLog().err('Not a file or not existing: "%s"', fname);
             else

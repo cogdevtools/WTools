@@ -1,31 +1,31 @@
 function chavr(subj, channels, tMin, tMax, FrMin, FrMax, scale, contr, varargin)
-%chavr.m
-%Created by Eugenio Parise
-%CDC CEU 2011
-%One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-%Plots the average time-frequency activity of the desired channels for an
-%individual subject or for the grand average.
-%Add 'evok' as last argument to plot evoked oscillations
-%(of course, if they have been previously computed).
-%DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-%Interactive user interface needs inputgui.m from EEGLab.
+% chavr.m
+% Created by Eugenio Parise
+% CDC CEU 2011
+% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
+% Plots the average time-frequency activity of the desired channels for an
+% individual subject or for the grand average.
+% Add 'evok' as last argument to plot evoked oscillations
+% (of course, if they have been previously computed).
+% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
+% Interactive user interface needs inputgui.m from EEGLab.
 %
-%Usage:
+% Usage:
 %
-%contr=0, no contours will be plotted; set to 1 to plot them.
+% contr=0, no contours will be plotted; set to 1 to plot them.
 %
-%chavr(subj, channels, tMin, tMax, FrMin, FrMax, scale, contr);
+% chavr(subj, channels, tMin, tMax, FrMin, FrMax, scale, contr);
 %
-%chavr('01',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],0);
-%to plot average of channels from a single subject
+% chavr('01',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],0);
+% to plot average of channels from a single subject
 %
-%chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1);
-%to plot average of channels from the grand average
+% chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1);
+% to plot average of channels from the grand average
 %
-%chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1,'evok');
-%to plot average of channels from the grand average of evoked oscillations
+% chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1,'evok');
+% to plot average of channels from the grand average of evoked oscillations
 %
-%chavr(); to run via GUI
+% chavr(); to run via GUI
 
 if ~exist('inputgui.m','file')
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
@@ -71,7 +71,7 @@ elseif ~strcmp(varargin,'evok')
     return
 end
 
-%Make Config folder to store config files for gui working functions
+% Make Config folder to store config files for gui working functions
 if exist('PROJECTPATH','var')
     CommonPath = strcat (PROJECTPATH,'/');
     alreadyexistdir=strcat(CommonPath,'Config');
@@ -90,13 +90,13 @@ else
     pop_cfgfile = strcat('../Config/chavr_cfg.m');
 end
 
-%Call gui only if no arguments were entered
+% Call gui only if no arguments were entered
 if ~nargin
     [filenames, pathname, filterindex]=uigetfile({ '*-avWT.mat'; '*-evWT.mat' },'Select files to plot','MultiSelect','on');
     if ~pathname
         return %quit on cancel button
     end
-    %Find subject/grand folder from the path
+    % Find subject/grand folder from the path
     if ispc
         sla='\';
     else
@@ -115,12 +115,12 @@ if ~nargin
         return
     end
     
-    %CHECK if the data have been log-transformed
+    % CHECK if the data have been log-transformed
     logFlag = wtCheckEvokLog();
-    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+    enable_uV = fastif(logFlag, 'off', 'on');
 
-    %SET defaultanswer0
-    %SET color limits and GUI
+    % SET defaultanswer0
+    % SET color limits and GUI
     if logFlag
         defaultanswer0={[],[],[],[],'[-10.0    10.0]',1};
         Scale='Scale (�x% change)';
@@ -131,16 +131,16 @@ if ~nargin
     
     answersN=length(defaultanswer0);
     
-    %Load previously called parameters if existing
+    % Load previously called parameters if existing
     if exist(pop_cfgfile,'file')
         chavr_cfg;
         try
             defaultanswer=defaultanswer;
             defaultanswer{1,answersN};
             
-            %Reset default scale if needed (e.g. the user changed from uV
-            %to log or vice versa) and if the scale is symmetric
-            scale=str2num(defaultanswer{1,5});
+            % Reset default scale if needed (e.g. the user changed from uV
+            % to log or vice versa) and if the scale is symmetric
+            scale=WTUtils.str2nums(defaultanswer{1,5});
             if (abs(scale(1))==abs(scale(2))) && (logFlag && (scale(2)<3)) || (~logFlag && (scale(2)>=3))
                 defaultanswer{1,5}=defaultanswer0{1,5};
             end
@@ -177,14 +177,14 @@ if ~nargin
         return %quit on cancel button
     end
     
-    tMin=str2num(answer{1,1});
-    tMax=str2num(answer{1,2});
-    FrMin=str2num(answer{1,3});
-    FrMax=str2num(answer{1,4});
-    scale=str2num(answer{1,5});
+    tMin=WTUtils.str2nums(answer{1,1});
+    tMax=WTUtils.str2nums(answer{1,2});
+    FrMin=WTUtils.str2nums(answer{1,3});
+    FrMax=WTUtils.str2nums(answer{1,4});
+    scale=WTUtils.str2nums(answer{1,5});
     contr=answer{1,6};
     
-    %Find conditions to plot from the user selected files
+    % Find conditions to plot from the user selected files
     if ~iscell(filenames)
         filenames={filenames};
     end
@@ -192,7 +192,7 @@ if ~nargin
     condtoplot=cell(length(filenames),length(condgrands));
     condgrands=sort(condgrands);
     
-    %Clean filenames from measure and file extensions
+    % Clean filenames from measure and file extensions
     a=cell(length(filenames));
     for i=1:length(filenames)
         a{i}=strfind(filenames,measure);
@@ -220,13 +220,13 @@ if ~nargin
     
 end
 
-%CHECK if difference and/or grand average files are up to date
-[diffConsistency grandConsistency]=check_diff_grand(filenames, condiff, subj, logFlag);
+% CHECK if difference and/or grand average files are up to date
+[diffConsistency grandConsistency]=wtCheckDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
 if ~diffConsistency || ~grandConsistency
     return
 end
 
-%Check the input is correct
+% Check the input is correct
 if tMin > tMax
     fprintf(2,'\nThe time window is not valid!!!\n');
     fprintf('\n');
@@ -243,15 +243,15 @@ if scale(1) >= scale(2)
     return
 end
 
-%Prompt the user to select the conditions to plot when using command line
-%function call
+% Prompt the user to select the conditions to plot when using command line
+% function call
 if ~exist('condtoplot','var')
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Taken from Luca Filippin's EGIWaveletPlot.m%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Taken from Luca Filippin's EGIWaveletPlot.m%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [condtoplot,ok] =listdlg('ListString', condgrands, 'SelectionMode', 'multiple', 'Name', 'Select Conditions',...
         'ListSize', [200, 200]);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     if ~ok
         return
@@ -272,8 +272,8 @@ if strcmp(subj,'grand')
     else
         CommonPath = strcat ('../grand/');
     end
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,condgrands(1),measure);
     load (char(firstCond));
 else
@@ -282,8 +282,8 @@ else
     else
         CommonPath = strcat ('../');
     end
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,subj,'/',subj,'_',condgrands(1),measure);
     load (char(firstCond));
 end
@@ -298,7 +298,7 @@ else
     frRes = 1;
 end
 
-%Adjust times and frequencies limits according with the data sampling
+% Adjust times and frequencies limits according with the data sampling
 temp=tMin;
 if tMin<min(tim)
     tMin=min(tim);
@@ -344,8 +344,8 @@ else
     end
 end
 
-%Calculate latency subset to plot and reduce time to speed up
-%plotting
+% Calculate latency subset to plot and reduce time to speed up
+% plotting
 if timeRes==1
     reduction=4;
 elseif timeRes==2
@@ -355,10 +355,10 @@ else
 end
 lat=find(tim==tMin):reduction:find(tim==tMax);
 
-%Calculate frequency submset to plot
+% Calculate frequency submset to plot
 fr=find(Fa==FrMin):find(Fa==FrMax);
 
-%Save the user input parameters in the Config folder
+% Save the user input parameters in the Config folder
 if ~nargin
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
     fprintf(fid, 'defaultanswer={''%s'' ''%s'' ''%s'' ''%s'' ''[%s]'' %i};',...
@@ -367,7 +367,7 @@ if ~nargin
     rehash;
 end
 
-%FIND channels to process from gui
+% FIND channels to process from gui
 if ~nargin
     labels={};
     labels=cat(1,labels,chanlocs(1,:).labels);
@@ -380,7 +380,7 @@ if ~nargin
     end
 end
 
-%set figure parameters for current Matlab and EEGLAB version and color axis measure
+% set figure parameters for current Matlab and EEGLAB version and color axis measure
 [DEFAULT_COLORMAP, clabel, Rotation, xclabel] = wtSetFigure(enable_uV);
 
 fprintf('\n');
@@ -398,7 +398,7 @@ for cn=1:condN
     else
         figurename=char(strcat(filename,'Subj',subj,'_',condgrands(cn),measure));
     end
-    %Add channels found from gui
+    % Add channels found from gui
     if ~nargin
         for i=1:chanN
             avrChanWT = avrChanWT + WT(chan(i),:,:);
@@ -407,7 +407,7 @@ for cn=1:condN
             end
         end
     else
-        %FIND channels to process from commandline
+        % FIND channels to process from commandline
         chanN=length(channels);
         for ch = 1:chanN
             actualchan = channels(ch);
@@ -424,7 +424,7 @@ for cn=1:condN
                 fprintf('\n');
                 return
             end
-            %Add channels from commandline
+            % Add channels from commandline
             avrChanWT = avrChanWT + WT(chan,:,:);
             if cn==1
                 avrchlabels=cat(1,avrchlabels,char(actualchan));
@@ -432,7 +432,7 @@ for cn=1:condN
         end
     end
     
-    %Average channels
+    % Average channels
     avrChanWT = avrChanWT/chanN;
     
     if cn==1
@@ -457,7 +457,7 @@ for cn=1:condN
     FigureExist = exist('F','var');
     
     set(F,'WindowButtonDownFcn',{@changeGrid,FigureExist});
-    %imagesc(tim,Fa,squeeze(WT(k(1),fr,lat)));
+    % imagesc(tim,Fa,squeeze(WT(k(1),fr,lat)));
     imagesc(tim,Fa,interp2(squeeze(avrChanWT(1,fr,lat)),4,'spline'));
     hold on;
     if contr && reduction==4
@@ -497,7 +497,7 @@ for cn=1:condN
     set(get(C,'xlabel'),'String',clabel,'Rotation',Rotation,'FontSize',12,...
         'FontWeight','bold','Position',[xclabel 2*peace]);
     
-    %load next condition
+    % load next condition
     if strcmp(subj,'grand') && (cn < condN)
         dataset = char(strcat (CommonPath,condgrands(cn+1),measure));
         load (dataset);
@@ -510,9 +510,9 @@ end
 
 end
 
-%1st click = display dotted grid
-%2nd click = display no grid
-%3rd click = display solid grid
+% 1st click = display dotted grid
+% 2nd click = display no grid
+% 3rd click = display solid grid
 function changeGrid(F,event,FigureExist)
 
 persistent clickN

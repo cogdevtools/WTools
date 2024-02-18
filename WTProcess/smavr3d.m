@@ -148,7 +148,7 @@ if ~nargin
 
     % CHECK if the data have been log-transformed
     [logFlag] = wtCheckEvokLog();
-    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+    enable_uV = fastif(logFlag, 'off', 'on');
 
     % SET defaultanswer0
     % SET color limits and GUI
@@ -171,7 +171,7 @@ if ~nargin
             
             % Reset default scale if needed (e.g. the user changed from uV
             % to log or vice versa) and if the scale is symmetric
-            scale=str2num(defaultanswer{1,3});
+            scale=WTUtils.str2nums(defaultanswer{1,3});
             if (abs(scale(1))==abs(scale(2))) && (logFlag && (scale(2)<3)) || (~logFlag && (scale(2)>=3))
                 defaultanswer{1,3}=defaultanswer0{1,3};
             end
@@ -203,9 +203,9 @@ if ~nargin
         return % quit on cancel button
     end
     
-    tMintMax=str2num(answer{1,1});
-    FrMinFrMax=str2num(answer{1,2});
-    scale=str2num(answer{1,3});
+    tMintMax=WTUtils.str2nums(answer{1,1});
+    FrMinFrMax=sWTUtils.tr2num(answer{1,2});
+    scale=WTUtils.str2nums(answer{1,3});
     
     if length(tMintMax)>2 || length(FrMinFrMax)>2
         fprintf(2,'\nsmavr3d cannot plot scalp map series!!!\n');
@@ -251,7 +251,7 @@ if ~nargin
 end
 
 % CHECK if difference and/or grand average files are up to date
-[diffConsistency grandConsistency]=check_diff_grand(filenames, condiff, subj, logFlag);
+[diffConsistency grandConsistency]=wtCheckDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
 if ~diffConsistency || ~grandConsistency
     return
 end

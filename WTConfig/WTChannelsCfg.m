@@ -60,7 +60,7 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
                 o.NewChannelsReference = newRefChns;
                 o.CutChannels = cutChns;
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

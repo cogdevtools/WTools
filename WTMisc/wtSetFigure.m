@@ -14,11 +14,11 @@ function [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(uV)
         DEFAULT_COLORMAP = 'jet';    
         vers = version;
         indp = find(vers == '.');
-        if str2double(vers(indp(1)+1)) > 1 
+        if WTUtils.str2double(vers(indp(1)+1)) > 1 
             vers = [ vers(1:indp(1)) '0' vers(indp(1)+1:end) ]; 
         end
         indp = find(vers == '.');
-        VERS = str2double(vers(1:indp(2)-1));    
+        VERS = WTUtils.str2double(vers(1:indp(2)-1));    
     end
 
     if strcmp(uV,'on')

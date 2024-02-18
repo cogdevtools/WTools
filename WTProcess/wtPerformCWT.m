@@ -39,7 +39,7 @@ function success = wtPerformCWT()
     end
 
     if interactive
-        if ~selectUpdateSubjects() || ~selectUpdateConditions()
+        if ~selectUpdateSubjectsGrand() || ~selectUpdateConditionsGrand()
             return
         end
         if ~setUpdateTransformPrms(timeRange, maxFreq, maxChans)
@@ -195,7 +195,7 @@ function success = wtPerformCWT()
     success = true;
 end
 
-function success = selectUpdateSubjects() 
+function success = selectUpdateSubjectsGrand() 
     success = false;
     wtProject = WTProject();
 
@@ -224,7 +224,7 @@ function success = selectUpdateSubjects()
     success = true;
 end
 
-function success = selectUpdateConditions() 
+function success = selectUpdateConditionsGrand() 
     success = false;
     wtProject = WTProject();
 
@@ -282,7 +282,7 @@ function success = setUpdateTransformPrms(timeRange, maxFreq, maxChans)
      % Check if log was already run after averaging and if so disable the option here
      [~, ~, ~, bsLogEnabled] = wtCheckEvokLog();
 
-    if ~WTTransformGUI.cwtParams(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
+    if ~WTTransformGUI.defineCWTParams(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
         return
     end
 

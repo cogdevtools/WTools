@@ -2,7 +2,7 @@ classdef WTLayout
     properties (Constant, Access=private)
         ResourcesSubDir = 'WTResources'
         PicturesSubDir = 'WTPictures'
-        SplineSubDir = 'WTSplines'
+        DevicesSubDir = 'WTDevices'
     end
 
     methods (Static)
@@ -15,8 +15,8 @@ classdef WTLayout
             d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir, WTLayout.PicturesSubDir);
         end
 
-        function d = getToolsSplinesDir() 
-            d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir, WTLayout.SplineSubDir);
+        function d = getToolsDevicesDir() 
+            d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir, WTLayout.DevicesSubDir);
         end
     end
 end

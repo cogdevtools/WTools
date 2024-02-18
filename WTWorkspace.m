@@ -1,21 +1,21 @@
 classdef WTWorkspace < handle
 
     properties (Access=private)
-        wsStack
+        WSStack
     end
 
     methods (Access=private)
 
         function push(o, s)
-            o.wsStack = [o.wsStack;{s}];
+            o.WSStack = [o.WSStack;{s}];
         end
         
         function e = pop(o)
-            if size(o.wsStack, 2) == 0
-                WTLog().excpt('WTWorkspace', 'Empty stack');
+            if size(o.WSStack, 2) == 0
+                WTException.workspaceErr('Empty stack').throw();
             end
-            c = o.wsStack(end); 
-            o.wsStack(end) = [];
+            c = o.WSStack(end); 
+            o.WSStack(end) = [];
             e = c{1};
         end
 
@@ -32,7 +32,7 @@ classdef WTWorkspace < handle
 
     methods 
         function o = WTWorkspace()
-            o.wsStack = {};
+            o.WSStack = {};
         end
 
         function pushBase(o, clear) 
@@ -77,7 +77,7 @@ classdef WTWorkspace < handle
 
         function varargout = popToVars(o, varargin) 
             if nargin ~= nargout+1 
-                WTLog().excpt('WTWorkspace', 'Input/output args number mismatch');
+                WTException.ioArgsMismatch('Input/output args number mismatch').throw();
             end
             if nargin == 1 
                 return
@@ -88,7 +88,7 @@ classdef WTWorkspace < handle
                 try
                     varargout{i} = ws(varargin{i});
                 catch
-                    WTLog().excpt('WTWorkspace', 'Key not found: %s', varargin{i});
+                    WTException.workspaceErr('Key not found: %s', varargin{i}).throw();
                 end
             end
         end

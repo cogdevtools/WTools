@@ -36,15 +36,15 @@ classdef WTGlobalPlotsCfg < WTConfigStorage & matlab.mixin.Copyable
                 return
             end 
             try
-                o.TimeMin = str2double(cells{1});
-                o.TimeMax = str2double(cells{2});
-                o.FreqMin = str2double(cells{3});
-                o.FreqMax = str2double(cells{4});
-                o.Scale = str2double(cells{5});
-                o.Contours = str2double(cells{6});
-                o.AllChannels = str2double(cells{7});
+                o.TimeMin = WTUtils.str2double(cells{1});
+                o.TimeMax = WTUtils.str2double(cells{2});
+                o.FreqMin = WTUtils.str2double(cells{3});
+                o.FreqMax = WTUtils.str2double(cells{4});
+                o.Scale = WTUtils.str2double(cells{5});
+                o.Contours = WTUtils.str2double(cells{6});
+                o.AllChannels = WTUtils.str2double(cells{7});
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

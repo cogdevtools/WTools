@@ -1,5 +1,5 @@
 classdef WTSplashScreen < hgsetget
-    %SplashScreen  create a splashscreen
+    % WTSplashScreen  create a splashscreen
     %
     %   s = SplashScreen(title,imagefile) creates a splashscreen using
     %   the specified image. The title is the name of the window as shown
@@ -453,7 +453,7 @@ if ischar( str )
         end
     elseif all( ismember( str, '1234567890.,; []' ) )
         % Try the '[0 0 1]' thing first
-        col = str2num( str ); %#ok<ST2NM>
+        col = str2nums( str ); %#ok<ST2NM>
         if numel(col) == 3
             % Conversion worked, so just check for silly values
             col(col<0) = 0;

@@ -1,53 +1,53 @@
 function smavr(subj,tMintMax,FrMinFrMax,scale,varargin)
-%smavr.m
-%Created by Eugenio Parise
-%CDC CEU 2011
-%A small portion of code has been taken from pop_topoplot.m EEGLab fuction.
-%One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-%It plots 2D scalpmaps/scalpmap series of wavelet transformed EEG channels (for each condition).
-%It uses topoplot function from EEGLab, so EEGLab must be installed and
-%included in Matlab path.
-%It can plot a single timepoint, the average of a time window, a series of time points, as well as a
-%single frequency, an averaged frequency band or a series of frequencies.
+% smavr.m
+% Created by Eugenio Parise
+% CDC CEU 2011
+% A small portion of code has been taken from pop_topoplot.m EEGLab fuction.
+% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
+% It plots 2D scalpmaps/scalpmap series of wavelet transformed EEG channels (for each condition).
+% It uses topoplot function from EEGLab, so EEGLab must be installed and
+% included in Matlab path.
+% It can plot a single timepoint, the average of a time window, a series of time points, as well as a
+% single frequency, an averaged frequency band or a series of frequencies.
 %
-%WARNING: it is not possible to plot simultaneously a time and a frequency series
-%(e.g. tMintMax=[0:50:350],FrMinFrMax=[5:15]), either the time or the frequency
-%series must be a single number (e.g. tMintMax=300) or a 2 numbers vector
-%(e.g. FrMinFrMax=[10 50]). tMintMax and FrMinFrMax cannot be
-%simultaneously more than 3 numbers.
-%DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-%Interactive user interface needs inputgui.m from EEGLab.
+% WARNING: it is not possible to plot simultaneously a time and a frequency series
+% (e.g. tMintMax=[0:50:350],FrMinFrMax=[5:15]), either the time or the frequency
+% series must be a single number (e.g. tMintMax=300) or a 2 numbers vector
+% (e.g. FrMinFrMax=[10 50]). tMintMax and FrMinFrMax cannot be
+% simultaneously more than 3 numbers.
+% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
+% Interactive user interface needs inputgui.m from EEGLab.
 %
-%Add 'evok' as last argument to compute scalp maps of evoked
-%oscillations (of course, if they have been previously computed).
+% Add 'evok' as last argument to compute scalp maps of evoked
+% oscillations (of course, if they have been previously computed).
 %
-%Usage:
+% Usage:
 %
-%smavr(subj,tMintMax,FrMinFrMax,scale);
+% smavr(subj,tMintMax,FrMinFrMax,scale);
 %
-%smavr('01',800,15,[-0.2 0.2]); %to plot a single subject,
-%at 800 ms and at 15 Hz
+% smavr('01',800,15,[-0.2 0.2]); %to plot a single subject,
+% at 800 ms and at 15 Hz
 %
-%smavr('05',[240 680],5,[-0.2 0.2]); %to plot a single subject,
-%average between 240 and 680 ms at 5 Hz
+% smavr('05',[240 680],5,[-0.2 0.2]); %to plot a single subject,
+% average between 240 and 680 ms at 5 Hz
 %
-%smavr('grand',350,[10 60],[-0.2 0.2]); %to plot the grand average,
-%average between at 350 ms in the 10 to 60 Hz averaged band
+% smavr('grand',350,[10 60],[-0.2 0.2]); %to plot the grand average,
+% average between at 350 ms in the 10 to 60 Hz averaged band
 %
-%smavr('grand',[100 400],[10 60],[-0.2 0.2]); %to plot the grand average,
-%average between 100 and 400 ms in the 10 to 60 Hz averaged band
+% smavr('grand',[100 400],[10 60],[-0.2 0.2]); %to plot the grand average,
+% average between 100 and 400 ms in the 10 to 60 Hz averaged band
 %
-%smavr('grand',[100 400],[7:12],[-0.2 0.2]); %to plot the grand average,
-%average between 100 and 400 ms at 7, 8, 9, 10, 11, 12 Hz
+% smavr('grand',[100 400],[7:12],[-0.2 0.2]); %to plot the grand average,
+% average between 100 and 400 ms at 7, 8, 9, 10, 11, 12 Hz
 %
-%smavr('grand',[100:100:500],[7 12],[-0.2 0.2]); %to plot the grand average,
-%average at 100, 200, 300, 400, 500 ms in the 7 to 12 Hz averaged band
+% smavr('grand',[100:100:500],[7 12],[-0.2 0.2]); %to plot the grand average,
+% average at 100, 200, 300, 400, 500 ms in the 7 to 12 Hz averaged band
 %
-%smavr('grand',[100:100:500],[7 12],[-0.2 0.2],'evok'); %to plot the grand average,
-%average at 100, 200, 300, 400, 500 ms in the 7 to 12 Hz averaged band, of
-%evoked oscillations
+% smavr('grand',[100:100:500],[7 12],[-0.2 0.2],'evok'); %to plot the grand average,
+% average at 100, 200, 300, 400, 500 ms in the 7 to 12 Hz averaged band, of
+% evoked oscillations
 %
-%smavr(); to run via GUI
+% smavr(); to run via GUI
 
 if ~exist('topoplot.m','file')
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
@@ -97,7 +97,7 @@ elseif ~strcmp(varargin,'evok')
     return
 end
 
-%Make Config folder to store config files for gui working functions
+% Make Config folder to store config files for gui working functions
 if exist('PROJECTPATH','var')
     CommonPath = strcat (PROJECTPATH,'/');
     alreadyexistdir=strcat(CommonPath,'Config');
@@ -116,14 +116,14 @@ else
     pop_cfgfile = strcat('../Config/smavr_cfg.m');
 end
 
-%Call gui only if no arguments were entered
+% Call gui only if no arguments were entered
 if ~nargin
     [filenames, pathname, filterindex]=uigetfile({ '*-avWT.mat'; '*-evWT.mat' },...
         'Select files to plot','MultiSelect','on');
     if ~pathname
         return %quit on cancel button
     end
-    %Find subject/grand folder from the path
+    % Find subject/grand folder from the path
     if ispc
         sla='\';
     else
@@ -143,12 +143,12 @@ if ~nargin
         return
     end
     
-    %CHECK if the data have been log-transformed
+    % CHECK if the data have been log-transformed
     logFlag = wtCheckEvokLog();
-    enable_uV = WTUtils.ifThenElseSet(logFlag, 'off', 'on');
+    enable_uV = fastif(logFlag, 'off', 'on');
 
-    %SET defaultanswer0
-    %SET color limits and GUI
+    % SET defaultanswer0
+    % SET color limits and GUI
     if logFlag
         defaultanswer0={'[    ]','[    ]','[-10.0    10.0]',1,1,0};
         Scale='Scale (�x% change)';
@@ -159,15 +159,15 @@ if ~nargin
     
     answersN=length(defaultanswer0);
     
-    %Load previously called parameters if existing
+    % Load previously called parameters if existing
     if exist(pop_cfgfile,'file')
         smavr_cfg;
         try
             defaultanswer=defaultanswer;
             defaultanswer{1,answersN};
-            %Reset default scale if needed (e.g. the user changed from uV
-            %to log or vice versa) and if the scale is symmetric
-            scale=str2num(defaultanswer{1,3});
+            % Reset default scale if needed (e.g. the user changed from uV
+            % to log or vice versa) and if the scale is symmetric
+            scale=WTUtils.str2nums(defaultanswer{1,3});
             if (abs(scale(1))==abs(scale(2))) && (logFlag && (scale(2)<3)) || (~logFlag && (scale(2)>=3))
                 defaultanswer{1,3}=defaultanswer0{1,3};
             end
@@ -204,9 +204,9 @@ if ~nargin
         return %quit on cancel button
     end
     
-    tMintMax=str2num(answer{1,1});
-    FrMinFrMax=str2num(answer{1,2});
-    scale=str2num(answer{1,3});
+    tMintMax=WTUtils.str2nums(answer{1,1});
+    FrMinFrMax=WTUtils.str2nums(answer{1,2});
+    scale=WTUtils.str2nums(answer{1,3});
     periphelectr=answer{1,4};
     contours=answer{1,5};
     labels=answer{1,6};
@@ -218,7 +218,7 @@ if ~nargin
         return
     end
     
-    %Find conditions to plot from the user selected files
+    % Find conditions to plot from the user selected files
     if ~iscell(filenames)
         filenames={filenames};
     end
@@ -226,7 +226,7 @@ if ~nargin
     condtoplot=cell(length(filenames),length(condgrands));
     condgrands=sort(condgrands);
     
-    %Clean filenames from measure and file extensions
+    % Clean filenames from measure and file extensions
     a=cell(length(filenames));
     for i=1:length(filenames)
         a{i}=strfind(filenames,measure);
@@ -253,13 +253,13 @@ if ~nargin
     condN = size(condgrands,2);
 end
 
-%CHECK if difference and/or grand average files are up to date
-[diffConsistency grandConsistency]=check_diff_grand(filenames, condiff, subj, logFlag);
+% CHECK if difference and/or grand average files are up to date
+[diffConsistency grandConsistency]=wtCheckDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
 if ~diffConsistency || ~grandConsistency
     return
 end
 
-%Check the input is correct
+% Check the input is correct
 if isempty(tMintMax) || tMintMax(1) > tMintMax(end)
     fprintf(2,'\nThe time window is  not valid!!!\n');
     fprintf('\n');
@@ -276,15 +276,15 @@ if scale(1) >= scale(2)
     return
 end
 
-%Prompt the user to select the conditions to plot when using command line
-%function call
+% Prompt the user to select the conditions to plot when using command line
+% function call
 if ~exist('condtoplot','var')
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Taken from Luca Filippin's EGIWaveletPlot.m%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Taken from Luca Filippin's EGIWaveletPlot.m%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [condtoplot,ok] =listdlg('ListString', condgrands, 'SelectionMode', 'multiple', 'Name', 'Select Conditions',...
         'ListSize', [200, 200]);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if ~ok
         return
     else
@@ -299,8 +299,8 @@ if strcmp(subj,'grand')
     else
         CommonPath = strcat ('../grand/');
     end
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,condgrands(1),measure);
     load (char(firstCond));
 else
@@ -309,8 +309,8 @@ else
     else
         CommonPath = strcat ('../');
     end
-    %load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-    %(see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
+    % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
+    % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
     firstCond = strcat (CommonPath,subj,'/',subj,'_',condgrands(1),measure);
     load (char(firstCond));
 end
@@ -322,7 +322,7 @@ else
     frRes = 1;
 end
 
-%Adjust times and frequencies limits according to the data sampling
+% Adjust times and frequencies limits according to the data sampling
 tMin=tMintMax(1);
 if tMin<min(tim)
     tMin=min(tim);
@@ -380,7 +380,7 @@ if length(FrMinFrMax)>=2
     end
 end
 
-%Calculate latency subset to plot
+% Calculate latency subset to plot
 if length(tMintMax)>2
     newtimeres=(tMintMax(2)-tMintMax(1));
     if newtimeres<timeRes
@@ -401,7 +401,7 @@ else
     tTemp=[tMin];
 end
 
-%Calculate frequency subset to plot
+% Calculate frequency subset to plot
 if length(FrMinFrMax)>2
     newfrres=(FrMinFrMax(2)-FrMinFrMax(1));
     if newfrres<frRes
@@ -422,8 +422,8 @@ else
     FrTemp=[FrMin];
 end
 
-%Check the user is not trying to create time and frequency scalpmaps at the
-%same time (if so exit), and set the number of scalpmap to create.
+% Check the user is not trying to create time and frequency scalpmaps at the
+% same time (if so exit), and set the number of scalpmap to create.
 if length(tMintMax)>2 && length(FrMinFrMax)>2
     fprintf(2,'\nYou cannot plot scalp map series in time and frequency at the same time!!!\n');
     fprintf(2,'Please, choose to plot either a time or a frequency scalp map series.\n');
@@ -437,7 +437,7 @@ else
     subplotN=1;
 end
 
-%Save the user input parameters in the Config folder
+% Save the user input parameters in the Config folder
 if ~nargin
     fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
     if length(tMintMax)<=2 && length(FrMinFrMax)<=2
@@ -502,55 +502,55 @@ for cn=1:condN
         figurename=char(strcat(filename,'Subj',subj,'_',condgrands(cn),'_',latchar,'ms','_',frchar,'Hz',measure));
     end
     
-    %Average along times
+    % Average along times
     if length(tMintMax)<3
         WT=mean(WT(:,:,lat),3);
     end
-    %Average along frequencies
+    % Average along frequencies
     if length(FrMinFrMax)<3
         WT=mean(WT(:,fr,:),2);
     end
     
-    %Create the main figure
+    % Create the main figure
     h = figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Taken from pop_topoplot.m%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Taken from pop_topoplot.m%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%
     curfig = get(0, 'currentfigure');
     SIZEBOX = 200; %modified from its original value
     rowcols(2) = ceil(sqrt(subplotN));
     rowcols(1) = ceil(subplotN/rowcols(2));
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    %Matrix of indices of scalpmaps
+    % Matrix of indices of scalpmaps
     subplotS=zeros(rowcols);
     subplotS(1)=1;
     for i=1:size(subplotS,1)
         for j=1:size(subplotS,2)
             if i==1 && j==1
-                %do nothing
+                % do nothing
             elseif i>1 && j-1==0
-                %increment the value of the first cell of a row based
-                %on the last cell on the previous row
+                % increment the value of the first cell of a row based
+                % on the last cell on the previous row
                 subplotS(i,j)=subplotS(i-1,size(subplotS,2))+1;
             else
-                %increment the next cell on the same row
+                % increment the next cell on the same row
                 subplotS(i,j)=subplotS(i,j-1)+1;
             end
         end
     end
-    %Flip the order of the rows, because Matlab starts counting from the
-    %bottom of the figures.
+    % Flip the order of the rows, because Matlab starts counting from the
+    % bottom of the figures.
     subplotS=flipdim(subplotS,1);
     
     for i=1:subplotN
         
         subplot(rowcols(1),rowcols(2),i);
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %Taken from pop_topoplot.m%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % %%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Taken from pop_topoplot.m%
+        % %%%%%%%%%%%%%%%%%%%%%%%%%%
         if subplotN > 1
             if mod(i, rowcols(1)*rowcols(2)) == 1
                 curfig = h;
@@ -560,7 +560,7 @@ for cn=1:condN
                 set(h,'Position', [posx posy  SIZEBOX*rowcols(2)  SIZEBOX*rowcols(1)]);
             end
         end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % %%%%%%%%%%%%%%%%%%%%%%%%%%
         
         if size(WT,3)>1
             topoplot(WT(:,:,lat(i)), chanlocs, 'electrodes', labels, 'maplimits',...
@@ -593,7 +593,7 @@ for cn=1:condN
         
     end
     
-    %load next condition
+    % load next condition
     if strcmp(subj,'grand') && (cn < condN)
         dataset = char(strcat (CommonPath,condgrands(cn+1),measure));
         load (dataset);
@@ -604,15 +604,15 @@ for cn=1:condN
     
 end
 
-%PopUp the clicked scalp map
+% PopUp the clicked scalp map
 function showSingleScalpmap(h2,event,rowcols,subplotS,subplotN,figurename,...
     WT,fr,Fa,lat,tim,chanlocs,scale,periphelectr,contours,labels,enable_uV)
 
 cp=get(h2,'CurrentPoint'); %get the clicked point on the figure
 cp2=get(h2,'Position'); %get the figure size
 
-%Ideally devide the figure in a grid, each cell containing a scalpmap.
-%Find a vector of boundaries between the rows of the figure
+% Ideally devide the figure in a grid, each cell containing a scalpmap.
+% Find a vector of boundaries between the rows of the figure
 xratio=cp2(4)/rowcols(1);
 xbound=zeros(1,rowcols(1)+1);
 xbound(1)=0;
@@ -620,7 +620,7 @@ for k=2:length(xbound)
     xbound(k)=xbound(k-1)+xratio;
 end
 
-%Find a vector of boundaries between the colons of the figure
+% Find a vector of boundaries between the colons of the figure
 yratio=cp2(3)/rowcols(2);
 ybound=zeros(1,rowcols(2)+1);
 ybound(1)=0;
@@ -628,7 +628,7 @@ for k=2:length(ybound)
     ybound(k)=ybound(k-1)+yratio;
 end
 
-%Find which row has been clicked
+% Find which row has been clicked
 x=0;
 i=1;
 while xbound(i)<cp(2)
@@ -636,7 +636,7 @@ while xbound(i)<cp(2)
     i=i+1;
 end
 
-%Find which colon has been clicked
+% Find which colon has been clicked
 y=0;
 i=1;
 while ybound(i)<cp(1)
@@ -644,14 +644,14 @@ while ybound(i)<cp(1)
     i=i+1;
 end
 
-%Define which scalpmap has been clicked
+% Define which scalpmap has been clicked
 i=subplotS(x,y);
 
 if i>subplotN
     return %exit when an empty region of the figure has been clicked
 end
 
-%Draw the clicked scalpmap
+% Draw the clicked scalpmap
 figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
 [DEFAULT_COLORMAP, clabel, Rotation, xclabel] = wtSetFigure(enable_uV);
 if size(WT,3)>1

@@ -13,9 +13,9 @@ function success = wtConvert()
         return
     end
     
-    convertToEEGLabData = copy(wtProject.Config.ConvertToEEGLab);
+    convertToEEGLabData = copy(wtProject.Config.ImportType);
 
-    if ~WTConvertGUI.sourceDataFormatSelect(convertToEEGLabData)
+    if ~WTConvertGUI.selectImportType(convertToEEGLabData)
         return
     end
 
@@ -24,16 +24,16 @@ function success = wtConvert()
         return
     end
 
-    wtProject.Config.ConvertToEEGLab = convertToEEGLabData;
+    wtProject.Config.ImportType = convertToEEGLabData;
 
     if convertToEEGLabData.EEPFlag 
-        eep2eegl;
+        wtEEPToEEGLab;
     elseif convertToEEGLabData.EGIFlag 
         wtEGIToEEGLab;
     elseif convertToEEGLabData.BRVFlag 
-        brv2eegl;
+        wtBRVToEEGLab;
     elseif convertToEEGLabData.EEGLabFlag 
-        wtEGIToEEGLab;
+        wtEEGLabToEEGLab;
     end
     success = true;
 end

@@ -24,9 +24,9 @@ classdef WTSamplingCfg < WTConfigStorage & matlab.mixin.Copyable
                 return
             end
             try
-                o.SamplingRate = str2double(cells{1});
+                o.SamplingRate = WTUtils.str2double(cells{1});
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

@@ -10,13 +10,14 @@ classdef WTFormatter
     end
 
     methods(Static)
+
         function txt = StringCellsField(fieldName, cells)
             try
                 quoted = WTUtils.quoteMany(cells{:});
                 content = char(join(quoted, ' '));
                 txt = sprintf('%s = { %s };', fieldName, content);
             catch me
-                WTLog().mexcpt(me, false);
+                WTLog().except(me, false);
                 txt = '';
             end   
         end
@@ -34,7 +35,7 @@ classdef WTFormatter
                 fmt = ['%s = { ' repmat('%d ', 1, length(cells)) '};'];
                 txt = sprintf(fmt, fieldName, cells{:});
             catch me
-                WTLog().mexcpt(me, false);
+                WTLog().except(me, false);
                 txt = '';
             end   
         end
@@ -54,7 +55,7 @@ classdef WTFormatter
                 fmt = ['%s = { ' contentFmt{1} ' };'];
                 txt = sprintf(fmt, fieldName, contentVal{:});
             catch me
-                WTLog().mexcpt(me, false);
+                WTLog().except(me, false);
                 txt = '';
             end
         end

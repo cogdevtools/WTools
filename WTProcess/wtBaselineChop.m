@@ -44,7 +44,7 @@ function success = wtBaselineChop()
     end
 
     if isempty(subjects)
-        wtProject.notifyWrn([], 'No subjects to process!'); 
+        wtLog.warn('User selected no subjects to process!'); 
         return
     end
 
@@ -53,7 +53,7 @@ function success = wtBaselineChop()
     end
 
     if isempty(conditions)
-        wtProject.notifyWrn([], 'No conditions to process!'); 
+        wtLog.warn('User selected no conditions to process!'); 
         return
     end
 
@@ -61,7 +61,7 @@ function success = wtBaselineChop()
     
     while true
         if interactive 
-            if ~WTBaselineChopGUI.baselineChopParams(waveletTransformParams, baselineChopParams)
+            if ~WTBaselineChopGUI.defineBaselineChopParams(waveletTransformParams, baselineChopParams)
                 return
             end
         elseif ~baselineChopParams.validate()
@@ -69,7 +69,7 @@ function success = wtBaselineChop()
             return
         end
 
-        measure = WTUtils.ifThenElseSet(baselineChopParams.EvokedOscillations, ...
+        measure = fastif(baselineChopParams.EvokedOscillations, ...
                     WTIOProcessor.WaveletsAnalisys_evWT, ...
                     WTIOProcessor.WaveletsAnalisys_avWT);
 

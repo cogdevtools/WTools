@@ -2,12 +2,12 @@
 classdef WTDifferenceGUI
     
     methods(Static)
-        function success = differenceParams(differencePrms, conditionsGrandPrms, logFlag, evokFlag)
+        function success = defineDifferenceParams(differencePrms, conditionsGrandPrms, logFlag, evokFlag)
             success = false;
             wtLog = WTLog();
 
-            WTUtils.mustBeA(differencePrms, ?WTDifferenceCfg)
-            WTUtils.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
+            WTValidations.mustBeA(differencePrms, ?WTDifferenceCfg)
+            WTValidations.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
             evokFlag = any(logical(evokFlag));
             logFlag = any(logical(logFlag));
 
@@ -118,7 +118,7 @@ classdef WTDifferenceGUI
                 end
 
             catch me
-                wtLog.mexcpt(me)
+                wtLog.except(me)
                 return
             end
 

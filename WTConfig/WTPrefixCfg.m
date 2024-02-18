@@ -26,7 +26,7 @@ classdef WTPrefixCfg < WTConfigStorage & matlab.mixin.Copyable
             try
                 o.FilesPrefix = pfx;
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

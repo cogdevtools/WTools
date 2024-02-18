@@ -9,8 +9,10 @@ classdef WTConfig < matlab.mixin.Copyable
         ConditionsGrand WTConditionsGrandCfg
         GrandAverage WTGrandAverageCfg
         BaselineChop WTBaselineChopCfg
-        ConvertToEEGLab WTConvertToEEGLabCfg
+        ImportType WTImportTypeCfg
         EGIToEEGLab WTEGIToEEGLabCfg
+        BRVToEEGLab WTBRVToEEGLabCfg
+        EEPToEEGLab WTEEPToEEGLabCfg
         WaveletTransform WTWaveletTransformCfg
         Statistics WTStatisticsCfg
         Difference WTDifferenceCfg
@@ -33,8 +35,10 @@ classdef WTConfig < matlab.mixin.Copyable
             o.ConditionsGrand.default();
             o.GrandAverage.default();
             o.BaselineChop.default();
-            o.ConvertToEEGLab.default();
+            o.ImportType.default();
             o.EGIToEEGLab.default();
+            o.BRVToEEGLab.default();
+            o.EEPToEEGLab.default();
             o.WaveletTransform.default();
             o.Statistics.default();
             o.Difference.default();
@@ -87,12 +91,20 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.BaselineChop.getFileName());
                 return
             end
-            if o.ConvertToEEGLab.exist() && ~o.ConvertToEEGLab.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.ConvertToEEGLab.getFileName());
+            if o.ImportType.exist() && ~o.ImportType.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ImportType.getFileName());
                 return
             end
             if o.EGIToEEGLab.exist() && ~o.EGIToEEGLab.load()
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.EGIToEEGLab.getFileName());
+                return
+            end
+            if o.BRVToEEGLab.exist() && ~o.BRVToEEGLab.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.BRVToEEGLab.getFileName());
+                return
+            end
+            if o.EEPToEEGLab.exist() && ~o.EEPToEEGLab.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.EEPToEEGLab.getFileName());
                 return
             end
             if o.Statistics.exist() && ~o.Statistics.load()
@@ -131,8 +143,10 @@ classdef WTConfig < matlab.mixin.Copyable
             cp.GrandAverage = copy(o.GrandAverage);
             cp.ConditionsGrand = copy(o.ConditionsGrand);
             cp.BaselineChop = copy(o.BaselineChop);
-            cp.ConvertToEEGLab = copy(o.ConvertToEEGLab);
+            cp.ImportType = copy(o.ImportType);
             cp.EGIToEEGLab = copy(o.EGIToEEGLab);
+            cp.BRVToEEGLab = copy(o.BRVToEEGLab);
+            cp.EEPToEEGLab = copy(o.EEPToEEGLab);
             cp.WaveletTransform = copy(o.WaveletTransform);
             cp.Statistics = copy(o.Statistics);
             cp.Difference = copy(o.Difference);
@@ -154,8 +168,10 @@ classdef WTConfig < matlab.mixin.Copyable
             o.ConditionsGrand = WTConditionsGrandCfg(ioProc);
             o.GrandAverage = WTGrandAverageCfg(ioProc);
             o.BaselineChop = WTBaselineChopCfg(ioProc);
-            o.ConvertToEEGLab = WTConvertToEEGLabCfg(ioProc);
+            o.ImportType = WTImportTypeCfg(ioProc);
             o.EGIToEEGLab = WTEGIToEEGLabCfg(ioProc);
+            o.BRVToEEGLab = WTBRVToEEGLabCfg(ioProc);
+            o.EEPToEEGLab = WTEEPToEEGLabCfg(ioProc);
             o.WaveletTransform = WTWaveletTransformCfg(ioProc);
             o.Statistics = WTStatisticsCfg(ioProc);
             o.Difference = WTDifferenceCfg(ioProc);

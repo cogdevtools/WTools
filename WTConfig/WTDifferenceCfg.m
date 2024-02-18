@@ -44,7 +44,7 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
                         'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
                 success = false;
             end 
         end

@@ -1,6 +1,6 @@
 classdef WTConfigStorage < matlab.mixin.Copyable
 
-    properties(Access=private)
+    properties(Access=protected)
         IOProc WTIOProcessor
         DataFileName char
     end

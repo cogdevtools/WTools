@@ -76,10 +76,10 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         return
     end
     
-    WTUtils.mustBeA(cwtParams, ?WTWaveletTransformCfg)
+    WTValidations.mustBeA(cwtParams, ?WTWaveletTransformCfg)
 
     if ~WTValidations.isALinearCellArrayOfString(selection)
-        wtLog.excpt('BadArgType', 'Bad argument type: cell expected cell array of strings, got %s', class(selection));
+        WTException.badArgType('expected cell array of strings, got %s', class(selection)).throw();
     end 
 
     % The other params should be checked here: there are too many of them BTW...
@@ -91,7 +91,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     evokedOscillations = cwtParams.EvokedOscillations;
 
     dt = cwtParams.TimeRes;
-    fb = cwtParams.WaveletsCycles/2;
+    fb = double(cwtParams.WaveletsCycles)/2;
     Fs = EEG.srate/dt;
     X = double(EEG.data);
     chanlocs = EEG.chanlocs;
@@ -147,7 +147,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             end
             t = cputime;
             if strcmp(waveletType,'Gabor (stft)')
-                WT(k,:,:,:) = gabortf(squeeze(X(j,:,:)),Fa, Fs, fb,timeMin:dt:timeMax);
+                WT(k,:,:,:) = gabortf(squeeze(X(j,:,:)), Fa, Fs, fb,timeMin:dt:timeMax);
             else
                 WT(k,:,:,:) = fastwavelet(squeeze(X(j,:,:)), scales, waveletType,fb, timeMin:dt:timeMax);
             end
@@ -294,7 +294,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                 end
                 
                 nEpochs = nEpochs-nFlatEpochs;
-                wType = WTUtils.ifThenElseSet(evokedOscillations, ...
+                wType = fastif(evokedOscillations, ...
                     WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
 
                 [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, wType, ...

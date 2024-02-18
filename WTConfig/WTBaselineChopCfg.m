@@ -36,13 +36,14 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
             end 
             try
                 if length(cells) >= 7 
-                    o.ChopMin = str2double(cells{1});
-                    o.ChopMax = str2double(cells{2});
-                    o.BaselineMin = str2double(cells{3});
-                    o.BaselineMax = str2double(cells{4});
+                    o.ChopMin = WTUtils.str2double(cells{1});
+                    o.ChopMax = WTUtils.str2double(cells{2});
+                    o.BaselineMin = WTUtils.str2double(cells{3});
+                    o.BaselineMax = WTUtils.str2double(cells{4});
                     o.Log10Enable = cells{5};
                     o.NoBaselineCorrection = cells{6};
                     o.EvokedOscillations = cells{7};
+                    o.validate(true);
                     return
                 else
                     o.default();
@@ -50,21 +51,24 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
                         'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
-                WTLog().mexcpt(me);
+                WTLog().except(me);
+                o.default();
                 success = false;
             end
         end
 
-        function success = validate(o)
-            success = false;
+        function success = validate(o, throwExcpt)
+            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+            success = true;
 
             if o.ChopMin > o.ChopMax 
-                return
+                WTUtils.throwOrLog(WTException.badValue('Field ChopMax < ChopMin'), ~throwExcpt);
+                success = false;
             end
             if ~o.NoBaselineCorrection && o.BaselineMin > o.BaselineMax
-                return
+                WTUtils.throwOrLog(WTException.badValue('Field BaselineMax < BaselineMin'), ~throwExcpt);
+                success = false;
             end
-            success = true;
         end
 
         function success = persist(o)

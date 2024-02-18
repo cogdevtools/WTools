@@ -1,19 +1,19 @@
 classdef WTBaselineChopGUI
     
     methods(Static)
-        function success = baselineChopParams(waveletTransformParams, baselineChopParams)
+        function success = defineBaselineChopParams(waveletTransformParams, baselineChopParams)
             success = false;
 
-            WTUtils.mustBeA(waveletTransformParams, ?WTWaveletTransformCfg)
-            WTUtils.mustBeA(baselineChopParams, ?WTBaselineChopCfg)
+            WTValidations.mustBeA(waveletTransformParams, ?WTWaveletTransformCfg);
+            WTValidations.mustBeA(baselineChopParams, ?WTBaselineChopCfg);
 
             waveletTransformParamsExist = waveletTransformParams.exist();
             baselineChopParamsExist = baselineChopParams.exist();
 
             evokedOscillations = (waveletTransformParamsExist && waveletTransformParams.EvokedOscillations) || ...
                 (baselineChopParamsExist && baselineChopParams.EvokedOscillations);
-            enableUV = WTUtils.ifThenElseSet(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
-            enableBs = WTUtils.ifThenElseSet(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
+            enableUV = fastif(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
+            enableBs = fastif(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
                 num2str(baselineChopParams.ChopMin), ...
@@ -45,7 +45,6 @@ classdef WTBaselineChopGUI
                 { 'style' 'checkbox' 'value' answer{1,7} 'string' 'Evoked Oscillations' } };
             
             geometry = { [1 0.5 0.5 0.5] [1 0.5 0.5 0.5] [1 1 1 1] 1 1 1 };
-            warnDlg = @(msg)WTUtils.wrnDlg('Review parameter', msg);
 
             while true
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set baseline and edges chopping parameters');
@@ -53,47 +52,32 @@ classdef WTBaselineChopGUI
                 if isempty(answer)
                     return % quit on cancel button
                 end
-                
-                chopMin = str2double(answer{1,1});
-                chopMax = str2double(answer{1,2});
-                baselineMin = str2double(answer{1,3});
-                baselineMax = str2double(answer{1,4});
-                bog10Enable = answer{1,5};
-                noBaseline = answer{1,6};
-                evokedOscillation = answer{1,7};
 
-                if noBaseline
-                    baselineMin = 0;
-                    answer{1,3} = [];
-                    baselineMax = 0;
-                    answer{1,4} = [];
-                end
+                try
+                    baselineChopParams.ChopMin = WTUtils.str2double(answer{1,1});
+                    baselineChopParams.ChopMax = WTUtils.str2double(answer{1,2});
+                    baselineChopParams.Log10Enable = answer{1,5};
+                    baselineChopParams.NoBaselineCorrection = answer{1,6};
+                    baselineChopParams.EvokedOscillations = answer{1,7};
 
-                if ~isfinite(chopMin) || ~isfinite(chopMax) || chopMin > chopMax
-                    warnDlg('The chopping window is not valid!');
+                    if baselineChopParams.NoBaselineCorrection
+                        % Update baseline window only if baseline correction was selected, 
+                        % otherwise retains previous values for convenience.
+                        answer{1,3} = [];
+                        answer{1,4} = [];
+                    else
+                        baselineChopParams.BaselineMin = WTUtils.str2double(answer{1,3});
+                        baselineChopParams.BaselineMax = WTUtils.str2double(answer{1,4});
+                    end
+                    baselineChopParams.validate(true);
+                catch me
+                    wtLog.except(me);
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
                     continue
                 end
-
-                if ~noBaseline && (~isfinite(baselineMin) || ~isfinite(baselineMax) || baselineMin > baselineMax)
-                    warnDlg('The baseline window is not valid!');
-                    continue
-                end
-
                 break
             end
 
-            baselineChopParams.ChopMin = chopMin;
-            baselineChopParams.ChopMax = chopMax;
-
-            % Update baseline window only if baseline correction was selected, or retain previous values for convenience
-            if ~noBaseline 
-                baselineChopParams.BaselineMin = baselineMin;
-                baselineChopParams.BaselineMax = baselineMax;
-            end
-            
-            baselineChopParams.Log10Enable = bog10Enable;
-            baselineChopParams.NoBaselineCorrection = noBaseline;
-            baselineChopParams.EvokedOscillations = evokedOscillation;
             success = true;
         end
     end

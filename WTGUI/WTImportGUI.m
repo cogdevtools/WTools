@@ -2,12 +2,12 @@
 classdef WTImportGUI
     
     methods(Static)
-        function [subjects, subjFileNames] = importedSubjectsSelect() 
+        function [subjects, subjFileNames] = selectImportedSubjects(system) 
             ioProc = WTProject().Config.IOProc;
             wtLog = WTLog();
             subjects = [];
 
-            subjFileNames = ioProc.enumImportFiles();
+            subjFileNames = ioProc.enumImportFiles(system);
             if isempty(subjFileNames) 
                 WTUtils.eeglabMsgDlg('Warning', 'No import files found');
                 return
@@ -19,7 +19,7 @@ classdef WTImportGUI
                 return
             end
 
-            [subjects, subjFileNames] = ioProc.getSubjectsFromImportFiles(subjFileNames{:});
+            [subjects, subjFileNames] = ioProc.getSubjectsFromImportFiles(system, subjFileNames{:});
             if isempty(subjects)
                 wtLog.warn('No subject numbers could be found');
                 return
