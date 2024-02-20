@@ -80,7 +80,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemEEP
                     re = '^.+_(?<subject>\d+)\.cnt$';
                 case WTIOProcessor.SystemEEGLab
-                    re = '^.*(?<subject>\d+)\.set$';
+                    re = '^([^0-9]|\d+[^0-9]+)*(?<subject>\d+)\.set$';
                 case WTIOProcessor.SystemEGI
                     re = '^(?<subject>\d+) .*\.mat$';
                 case WTIOProcessor.SystemBRV
@@ -363,8 +363,9 @@ classdef WTIOProcessor < handle
             fullPath = fullfile(filePath, fileName);
         end
 
-        function [success, EEG] = loadProcessedImport(o, filePrefix, subject, updateALLEEG)
+        function [success, EEG, ALLEEG] = loadProcessedImport(o, filePrefix, subject, updateALLEEG)
             success = false;
+            ALLEEG = [];
             EEG = [];
             
             try
@@ -376,7 +377,7 @@ classdef WTIOProcessor < handle
                 else
                     [ALLEEG, ~, ~, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false);
                     EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
-                    [~, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
+                    [ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
                     EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
                 end
                 success = true;

@@ -24,13 +24,14 @@ classdef WTEpochLimitsAndFreqFilterCfg < matlab.mixin.Copyable
             if ~isempty(o.EpochLimits) && o.EpochLimits(0) >= o.EpochLimits(1)
                 WTUtils.throwOrLog(WTException.badValue('Field EpochLimits[2] < EpochLimits[1]'), ~throwExcpt);
                 success = false;
-            end
-
-            if ~isnan( o.LowPassFilter) && ~isnan(o.HighPassFilter) && o.LowPassFilter >= o.HighPassFilter
-                WTUtils.throwOrLog(WTException.badValue('Field HighPassFilter <= LowPassFilter'), ~throwExcpt);
                 return
             end
-            success = true;
+
+            if ~isnan(o.LowPassFilter) && ~isnan(o.HighPassFilter) && o.LowPassFilter >= o.HighPassFilter
+                WTUtils.throwOrLog(WTException.badValue('Field HighPassFilter <= LowPassFilter'), ~throwExcpt);
+                success = false;
+                return
+            end
         end
     end
 end

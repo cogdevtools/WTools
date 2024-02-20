@@ -59,10 +59,23 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
                 o.ReReference = reRef{1};
                 o.NewChannelsReference = newRefChns;
                 o.CutChannels = cutChns;
+                o.validate(true);
             catch me
                 WTLog().except(me);
                 success = false;
             end 
+        end
+
+        function success = validate(o, throwExcpt) 
+            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+            success = true;
+
+            chansIntersect = intersect(o.CutChannels, o.NewChannelsReference);
+            if ~isempty(chansIntersect)
+                WTUtils.throwOrLog(WTException.badValue('Reference channels list contains cut channel(s): %s', ...
+                    char(join(chansIntersect))), ~throwExcpt);
+                success = false;
+            end
         end
 
         function success = persist(o)

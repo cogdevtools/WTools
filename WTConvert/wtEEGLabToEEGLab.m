@@ -74,7 +74,7 @@ function wtEEGLabToEEGLab()
     for sbj = 1:nSubjects 
         subject = subjects{sbj};
         subjFileName = subjectFileNames{sbj}; 
-        wtLog.info('Processing import file %s', subjFileName);
+        wtLog.info('Processing import file ''%s''', subjFileName);
 
         [success, ALLEEG, ~, ~] =  WTUtils.eeglabRun(WTLog.LevelDbg, true);
         if ~success 
@@ -116,35 +116,9 @@ function wtEEGLabToEEGLab()
             EEG.nbchan = size(EEG.data, 1);
         end
 
-        try 
-            switch channelsPrms.ReReference
-                case channelsPrms.ReReferenceWithAverage
-                    wtLog.info('Re-referencing with average...');
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, []);
-                case channelsPrms.ReReferenceWithChannels
-                    wtLog.info('Re-referencing with channels...');
-                    chansIntersect = intersect(channelsPrms.CutChannels, channelsPrms.NewChannelsReference);
-                    if ~isempty(chansIntersect)
-                        wtProject.notifyErr([], 'Reference channels contains cut channel(s): %s', char(join(chansIntersect)));
-                        wtLog.popStatus();
-                        return
-                    end
-                    newRef = [];
-                    for ch = 1:length(channelsPrms.NewChannelsReference)
-                        actualChan = char(channelsPrms.NewChannelsReference(ch));
-                        chanLabels = cat(1, {}, EEG.chanlocs(1,:).labels);
-                        chanIdx = find(strcmp(chanLabels, actualChan));
-                        newRef = cat(1, newRef, chanIdx);         
-                    end
-                    
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, newRef ,'keepref','on');
-                otherwise
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
-                        { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType });
-            end
-        catch me
-            wtLog.except(me);
-            wtProject.notifyErr([], 'Failed to perform channels re-referencing for subject ''%s''', subject);
+        [success, EEG] = wtReReferenceChannels(system, EEG);
+        if ~success
+            wtProject.notifyErr([], 'Failed to perform channels re-reference for subject ''%s''', subject);
             wtLog.popStatus();
             return
         end
@@ -168,38 +142,10 @@ function wtEEGLabToEEGLab()
             return
         end
 
-        [success, EEG] = ioProc.loadProcessedImport(outFilesPrefix, subject);
-        if ~success 
-            wtProject.notifyErr([], 'Failed to load processed import for subject ''%s''', subject);
+        if ~wtExtractConditions(subject)
             wtLog.popStatus();
             return
         end
-
-        wtLog.info('Processing conditions...');
-        wtLog.pushStatus().ctxOn().setHeaderOn(false);
-
-        for cnd = 1:nConditions
-            condition = conditions{cnd};
-            wtLog.info('Condition ''%s''', condition);
-
-            try
-                cndSet = ioProc.getConditionSet(outFilesPrefix, subject, condition);
-                [cndFileFullPath, ~, ~] = ioProc.getConditionFile(outFilesPrefix, subject, condition);
-
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_selectevent', ...
-                    EEG,  'type', { condition }, 'deleteevents', 'on', 'deleteepochs', 'on', 'invertepochs', 'off');
-                [ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
-                    ALLEEG, EEG, 1, 'setname', cndSet, 'savenew', cndFileFullPath, 'gui', 'off');
-                [ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
-                    ALLEEG, EEG, cnd+1, 'retrieve', 1, 'study', 0);
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);  
-            catch me
-                wtLog.except(me);
-                wtProject.notifyErr([], 'Failed to process/save condition ''%s'' for subject ''%s''', condition, subject);
-                wtLog.popStatus(2);
-                return
-            end      
-        end  
 
         wtLog.popStatus();
     end

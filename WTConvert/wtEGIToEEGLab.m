@@ -79,7 +79,7 @@ function wtEGIToEEGLab()
     for sbj = 1:nSubjects 
         subject = subjects{sbj};
         subjFileName = subjectFileNames{sbj}; 
-        wtLog.info('Processing import file %s', subjFileName);
+        wtLog.info('Processing import file ''%s''', subjFileName);
 
         [success, ALLEEG, EEG, ~] =  WTUtils.eeglabRun(WTLog.LevelDbg, true);
         if ~success 
@@ -93,7 +93,6 @@ function wtEGIToEEGLab()
             fileToImport = ioProc.getImportFile(subjFileName);
             deleteFileToImport = false;
         catch
-            wtLog.info('Import file needs trial adjustment...');
             [success, data] = filterAndRenameDataFields(subjFileName); 
             if ~success 
                 wtLog.popStatus();
@@ -103,7 +102,7 @@ function wtEGIToEEGLab()
             fileToImport = ioProc.getTemporaryFile();
             deleteFileToImport = true;
 
-            if ~WTUtils.saveTo([], tempFileName, '-struct', 'data')
+            if ~WTUtils.saveTo([], fileToImport, '-struct', 'data')
                 wtProject.notifyErr([], 'Failed to save temporary data file with trial ajustments (%s)', subjFileName)
                 wtLog.popStatus();
                 return
@@ -127,53 +126,34 @@ function wtEGIToEEGLab()
 
         [success, ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
             ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
-
         if ~success 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
             wtLog.popStatus();
             return   
         end
         
-        try
-            if channelsPrms.ReReference ~= channelsPrms.ReReferenceNone
-                EEG = restoreCzChannel(EEG, channelsPrms);
+        if channelsPrms.ReReference ~= channelsPrms.ReReferenceNone
+            [success, EEG] = restoreCzChannel(EEG, channelsPrms);
+            if ~success 
+                wtLog.popStatus();
+                return
             end
+        end
 
-            if ~isempty(channelsPrms.CutChannels)
-                wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
-                EEG.nbchan = size(EEG.data, 1);
+        if ~isempty(channelsPrms.CutChannels)
+            wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
+            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            if ~success 
+                wtProject.notifyErr([], 'Failed cut channels');
+                wtLog.popStatus();
+                return   
             end
+            EEG.nbchan = size(EEG.data, 1);
+        end
 
-            switch channelsPrms.ReReference
-                case channelsPrms.ReReferenceWithAverage
-                    wtLog.info('Re-referencing with average...');
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, []);
-                case channelsPrms.ReReferenceWithChannels
-                    wtLog.info('Re-referencing with channels...');
-                    chansIntersect = intersect(channelsPrms.CutChannels, channelsPrms.NewChannelsReference);
-                    if ~isempty(chansIntersect)
-                        wtProject.notifyErr([], 'Reference channels contains cut channel(s): %s', char(join(chansIntersect)));
-                        wtLog.popStatus();
-                        return
-                    end
-                    newRef = [];
-                    for ch = 1:length(channelsPrms.NewChannelsReference)
-                        actualChan = char(channelsPrms.NewChannelsReference(ch));
-                        chanLabels = cat(1, {}, EEG.chanlocs(1,:).labels);
-                        chanIdx = find(strcmp(chanLabels, actualChan));
-                        newRef = cat(1, newRef, chanIdx);         
-                    end
-                    
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, newRef ,'keepref','on');
-                otherwise
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
-                        { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
-                        'delete', 1, 'delete', 1, 'delete', 1, 'delete', 129);
-            end
-        catch me
-            wtLog.except(me);
-            wtProject.notifyErr([], 'Failed to perform channels adjustment for subject ''%s''', subject);
+        [success, EEG] = wtReReferenceChannels(system, EEG);
+        if ~success
+            wtProject.notifyErr([], 'Failed to perform channels re-reference for subject ''%s''', subject);
             wtLog.popStatus();
             return
         end
@@ -197,40 +177,10 @@ function wtEGIToEEGLab()
             return
         end
 
-        [success, EEG] = ioProc.loadProcessedImport(outFilesPrefix, subject);
-        if ~success 
-            wtProject.notifyErr([], 'Failed to load processed import for subject ''%s''', subject);
+        if ~wtExtractConditions(subject)
             wtLog.popStatus();
             return
         end
-        
-        wtLog.info('Processing conditions...');
-        wtLog.pushStatus().ctxOn().setHeaderOn(false);
-
-        for cnd = 1:nConditions
-            condition = conditions{cnd};
-            wtLog.info('Condition ''%s''', condition);
-
-            try
-                cndSet = ioProc.getConditionSet(outFilesPrefix, subject, condition);
-                [cndFileFullPath, ~, ~] = ioProc.getConditionFile(outFilesPrefix, subject, condition);
-
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_selectevent', ...
-                    EEG,  'type', { condition }, 'deleteevents', 'on', 'deleteepochs', 'on', 'invertepochs', 'off');
-                [ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
-                    ALLEEG, EEG, 1, 'setname', cndSet, 'savenew', cndFileFullPath, 'gui', 'off');
-                [ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_newset', ...
-                    ALLEEG, EEG, cnd+1, 'retrieve', 1, 'study', 0);
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);  
-            catch me
-                wtLog.except(me);
-                wtProject.notifyErr([], 'Failed to process/save condition ''%s'' for subject ''%s''', condition, subject);
-                wtLog.popStatus(2);
-                return
-            end      
-        end  
-
-        wtLog.popStatus();
     end
 
     wtLog.popStatus();
@@ -294,69 +244,86 @@ end
 
 function [success, dataOut] = filterAndRenameDataFields(subjFileName)
     wtProject = WTProject();
+    wtLog = WTLog();
     ioProc = wtProject.Config.IOProc;
     dataOut = struct();
 
-    [success, data] = ioProc.loadImport(WTIOProcessor.SystemEGI, subjFileName);
-    if ~success 
-        wtProject.notifyErr([], 'Failed to read subject data from %s', subjFileName);
-        return
-    end
+    try
+        wtLog.info('Import file needs trial adjustment...');
 
-    ioProc = wtProject.IOProc;
-    selectedConditions = wtProject.Config.ConditionsList;
-    minMaxTrialIdPrms = wtProject.Config.MinMaxTrialId;
-    minMaxTrialIdPrms = minMaxTrialIdPrms.interpret();
-
-    dataOut = struct();
-    allTrials = minMaxTrialIdPrms.allTrials();
-    minTrial = minMaxTrialIdPrms.MinTrialId;
-    maxTrial = minMaxTrialIdPrms.MaxTrialId;
-
-    data = orderfields(data);
-    dataFields = fieldnames(data);
-    % find the <condition>_Segment<#> fields
-    reResult = regexp(dataFields, ioProc.EGIConditionSegmentFldRe, 'once', 'tokens');
-    selected = ~cellfun(@isempty, reResult); 
-    selectedIdxs = find(selected);
-    % extract conditions name
-    matches = reResult(selection);
-    cndSeg = cat(1, matches{:});  % {{'cnd'}, {'seg'}}
-    conditions = unique(cndSeg(:,1));
-    % create a counters for each condition
-    counters = cell2struct(repmat({zeros(1)}, 1, length(conditions)), conditions, 2);
-    
-    for i = 1:length(selectedIdxs)
-        fldIdx = idxs(i);
-        cndName = reResult{fldIdx}{1};
-        if ~any(strcmp(cndName, selectedConditions)) % ignore unselected conditions
-            continue
+        [success, data] = ioProc.loadImport(WTIOProcessor.SystemEGI, subjFileName);
+        if ~success 
+            wtProject.notifyErr([], 'Failed to read subject data from %s', subjFileName);
+            return
         end
-        segNum = WTUtils.str2double(reResult{fldIdx}{2});
-        if ~allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of rangre
-            % not sure why when allTrials we should rename fields...
-            continue
-        end
-        cndName = reResult{fldIdx}{1};
-        newSegNum = counters.(fldName)+1;
-        counters.(cndName) = newSegNum;
-        newFieldName = [cndName '_Segment' num2str(newSegNum)];
-        dataOut.(newFieldName) = data.(dataFields{fldIdx});
-    end
 
-    invariantFields = char(dataFields(~selected));
-    dataOut.(invariantFields) = data.(invariantFields);
+        ioProc = wtProject.IOProc;
+        selectedConditions = wtProject.Config.ConditionsList;
+        minMaxTrialIdPrms = wtProject.Config.MinMaxTrialId;
+        minMaxTrialIdPrms = minMaxTrialIdPrms.interpret();
+
+        dataOut = struct();
+        allTrials = minMaxTrialIdPrms.allTrials();
+        minTrial = minMaxTrialIdPrms.MinTrialId;
+        maxTrial = minMaxTrialIdPrms.MaxTrialId;
+
+        data = orderfields(data);
+        dataFields = fieldnames(data);
+        % find the <condition>_Segment<#> fields
+        reResult = regexp(dataFields, ioProc.EGIConditionSegmentFldRe, 'once', 'tokens');
+        selected = ~cellfun(@isempty, reResult); 
+        selectedIdxs = find(selected);
+        % extract conditions name
+        matches = reResult(selection);
+        cndSeg = cat(1, matches{:});  % {{'cnd'}, {'seg'}}
+        conditions = unique(cndSeg(:,1));
+        % create a counters for each condition
+        counters = cell2struct(repmat({zeros(1)}, 1, length(conditions)), conditions, 2);
+        
+        for i = 1:length(selectedIdxs)
+            fldIdx = idxs(i);
+            cndName = reResult{fldIdx}{1};
+            if ~any(strcmp(cndName, selectedConditions)) % ignore unselected conditions
+                continue
+            end
+            segNum = WTUtils.str2double(reResult{fldIdx}{2});
+            if ~allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of rangre
+                % not sure why when allTrials we should rename fields...
+                continue
+            end
+            cndName = reResult{fldIdx}{1};
+            newSegNum = counters.(fldName)+1;
+            counters.(cndName) = newSegNum;
+            newFieldName = [cndName '_Segment' num2str(newSegNum)];
+            dataOut.(newFieldName) = data.(dataFields{fldIdx});
+        end
+
+        invariantFields = char(dataFields(~selected));
+        dataOut.(invariantFields) = data.(invariantFields);
+    catch me
+        wtLog.except(me);
+        wtProject.notifyErr([], 'Failed to perform trial ajustments (%s)', subjFileName);
+        success = false;
+    end
 end
 
 
 % Restore reference back (as if EEG was loaded with pop_importegimat.m, it was cut)
-function EEG = restoreCzChannel(EEG, channelsPrms) 
-    WTLog().info('Restoring Cz channel to apply re-referencing...');
-    ref = zeros(1, size(EEG.data, 2), size(EEG.data, 3)); 
-    EEG.data = cat(1, EEG.data, ref);
-    EEG.nbchan = size(EEG.data, 1);
-    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
-    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG,  'load', ...
-        { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
-        'delete', 1, 'delete', 1, 'delete', 1);
+function [success, EEG] = restoreCzChannel(EEG, channelsPrms) 
+    success = true;
+    
+    try
+        WTLog().info('Restoring Cz channel before re-referencing...');
+        ref = zeros(1, size(EEG.data, 2), size(EEG.data, 3)); 
+        EEG.data = cat(1, EEG.data, ref);
+        EEG.nbchan = size(EEG.data, 1);
+        EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+        EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG,  'load', ...
+            { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
+            'delete', 1, 'delete', 1, 'delete', 1);
+    catch me
+        wtLog.except(me);
+        wtProject.notifyErr([], 'Failed to restore Cz channel');
+        success = false;
+    end
 end
