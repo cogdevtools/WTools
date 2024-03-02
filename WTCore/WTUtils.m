@@ -322,6 +322,12 @@ classdef WTUtils
             mb = msgbox(text, strcat('[WTools] ', title), interpreter);
             uiwait(mb);
         end
+        
+        function choice = askDlg(title, fmt, fmtArgs, options, defaultOption)
+            [interpreter, text] = WTUtils.setDlgMsg(14, fmt, fmtArgs{:});
+            interpreter.Default = defaultOption;
+            choice = questdlg(text, strcat('[WTools] ', title), options{:}, interpreter);
+        end
 
         function msgBoxIf(cnd, title, fmt, varargin)
             if cnd 

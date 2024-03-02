@@ -255,17 +255,30 @@ function success = selectUpdateConditionsGrand()
 end
 
 function [success, timeRange, maxFreq, maxChans] = getTransformDomain() 
+    success = false;
+    timeRange = [];
+    maxFreq = 0;
+    maxChans = 0;
+    
     wtProject = WTProject();
+    subjectsPrms = wtProject.Config.Subjects;
+    conditionsPrms = wtProject.Config.Conditions;
+    
+    if numel(subjectsPrms.SubjectsList) == 0
+        wtProject.notifyErr([],'Empty subjects list');
+        return
+    end
+
+    if numel(conditionsPrms.ConditionsList) == 0
+        wtProject.notifyErr([],'Empty conditions list');
+        return
+    end
 
     [success, EEG] = wtProject.Config.IOProc.loadCondition(wtProject.Config.Prefix.FilesPrefix, ...
-        wtProject.Config.Subjects.SubjectsList{1}, ...
-        wtProject.Config.Conditions.ConditionsList{1}, ...
-        false);
+        subjectsPrms.SubjectsList{1}, conditionsPrms.ConditionsList{1}, false);
+
     if ~success 
         wtProject.notifyErr([],'Can''t determine CWT transform domain');
-        timeRange = [];
-        maxFreq = 0;
-        maxChans = 0;
         return 
     end
 

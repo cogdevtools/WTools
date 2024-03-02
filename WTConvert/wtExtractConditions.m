@@ -45,4 +45,6 @@ function success = wtExtractConditions(subject)
             return
         end      
     end 
+    
+    wtLog.popStatus();
 end

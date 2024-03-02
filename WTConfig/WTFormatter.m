@@ -6,6 +6,7 @@ classdef WTFormatter
         FmtIntStr     = '''%d'''
         FmtFloat      = '%f'
         FmtFloatStr   = '''%f'''
+        FmtArray      = '[%s]'
         FmtArrayStr   = '''[%s]'''  
     end
 

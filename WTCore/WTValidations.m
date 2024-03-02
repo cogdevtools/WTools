@@ -151,39 +151,68 @@ classdef WTValidations
                 (isa(v, 'string') && v == "");
         end
 
-        function is = isLinearArray(v, minLen, maxLen)
-            sz = size(v);
-            is = isvector(v) && (isempty(v) || ...
-                (length(sz) == 2 && (sz(1) == 1 || sz(2) == 1))) || ...
-                (nargin > 1 && length(v) >= minLen) || ...
-                (nargin > 2 && length(v) <= maxLen);
+        % minLen and/or maxLen can be < 0 => ignore them
+        function is = isLinearArray(v, minLen, maxLen, allowEmpty)
+            is = ismatrix(v); 
+            if ~is 
+                return
+            end
+            is = nargin > 3 && any(logical(allowEmpty)) && isempty(v);
+            if is 
+                return
+            end
+            is = isvector(v);
+            if ~is || nargin < 2
+                return 
+            end
+            ne = numel(v);
+            is = ne >= minLen;
+            if ~is || nargin < 3
+                return
+            end
+            is = maxLen < 0 || ne <= maxLen;
         end
 
-        function is = isLinearCellArray(v, minLen, maxLen)
+        % minLen and/or maxLen can be < 0 => ignore them
+        function is = isLinearCellArray(v, minLen, maxLen, allowEmpty)
+            is = iscell(v); 
+            if ~is
+                return
+            end
+            is = nargin > 3 && any(logical(allowEmpty)) && isempty(v);
+            if is 
+                return
+            end
             sz = size(v);
-            is = iscell(v) && (isempty(v) || ...
-                (length(sz) == 2 && (sz(1) == 1 || sz(2) == 1))) || ...
-                (nargin > 1 && length(v) >= minLen) || ...
-                (nargin > 2 && length(v) <= maxLen);
+            is = length(sz) == 2 && (sz(1) == 1 || sz(2) == 1);
+            if ~is || nargin < 2
+                return 
+            end
+            ne = numel(v);
+            is = ne >= minLen;
+            if ~is || nargin < 3
+                return
+            end
+            is = maxLen < 0 || ne <= maxLen;
         end
 
-        function is = isALimitedLinearCellArrayOfString(v, minLen, maxLen)
-            is = WTValidations.isLinearCellArray(v, minLen, maxLen) && ...
+        function is = isALimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmpty)
+            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmpty) && ...
                 all(cellfun(@WTValidations.isStrOrChar, v));
         end
 
         function is = isALinearCellArrayOfString(v)
-            is = WTValidations.isLinearCellArray(v) && ...
+            is = WTValidations.isLinearCellArray(v, 0, -1, 1) && ...
                 all(cellfun(@WTValidations.isStrOrChar, v));
         end 
 
-        function is = isALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen)
-            is = WTValidations.isLinearCellArray(v, minLen, maxLen) && ...
+        function is = isALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmpty)
+            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmpty) && ...
                 ~any(cellfun(@WTValidations.isEmptyStrOrChar, v));
         end
 
         function is = isALinearCellArrayOfNonEmptyString(v)
-            is = WTValidations.isLinearCellArray(v) && ...
+            is = WTValidations.isLinearCellArray(v, 0, -1, 1) && ...
                ~any(cellfun(@WTValidations.isEmptyStrOrChar, v));
         end
 
@@ -238,16 +267,13 @@ classdef WTValidations
         end
 
         function mustBeALimitedLinearArray(v, minLen, maxLen, allowEmpty)
-            if nargin > 3 && any(logical(allowEmpty)) && ismatrix(v) && isempty(v)
-                return
-            end
-            if ~WTValidations.isLinearArray(v, minLen, maxLen) 
+            if ~WTValidations.isLinearArray(v, minLen, maxLen, allowEmpty)
                 WTException.badValue('Value must be a linear array of the expected length').throw();
             end 
         end
 
-        function mustBeALimitedLinearCellArrayOfString(v, minLen, maxLen)
-            if ~WTValidations.isALimitedLinearCellArrayOfString(v, minLen, maxLen)
+        function mustBeALimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmpty)
+            if ~WTValidations.isALimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmpty) 
                 WTException.badValue('Value must be a linear cell array of string or char and of the expected length').throw();
             end 
         end 
@@ -258,8 +284,8 @@ classdef WTValidations
             end 
         end 
 
-        function mustBeALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen)
-            if ~WTValidations.isALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen)
+        function mustBeALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmpty)
+            if ~WTValidations.isALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmpty)
                 WTException.badValue('Value must be a linear cell array of non empty string or char and of the expected length').throw();
             end
         end

@@ -25,8 +25,9 @@ classdef WTIOProcessor < handle
         SystemBRV    = 'BRV'
 
         SplineFileTypeFlt = '*.spl'
-        SubjAnalysisSubDirRe  = '^\d+$'
+        SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTUtils.ifThenElse(ispc, '\\','/'));
         EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
+        BaselineCorrectedFileNameRe = '^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+).mat$'
     end
 
     properties(SetAccess=private,GetAccess=public)
@@ -153,6 +154,21 @@ classdef WTIOProcessor < handle
                 otherwise
                     WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
+        end
+
+        function [subject, condition, wType] = splitBaselineCorrectedFileName(fileName)
+            subject = [];
+            condition = [];
+            wType = [];
+            match =regexp(fileName, WTIOProcessor.BaselineCorrectedFileNameRe, 'once', 'names');
+            if isempty(match)
+                return
+            end
+            if isfield(match, 'subject')
+                subject = match.subject;
+            end
+            condition = match.condition;
+            wType = match.measure;
         end
 
         function [success, chansLocations] = readChannelsLocations(system, fileName)
@@ -494,10 +510,7 @@ classdef WTIOProcessor < handle
                     WTLog().err('Unknown file type %s', wType);
                     return
             end
-            extension = '.mat';
-            if any(logical(perSubject)) 
-                extension = '.ss';
-            end
+            extension = WTUtils.ifThenElse(any(logical(perSubject)), '.ss', '.mat');
             fileName = strcat(condition, '_bc-', wType, extension);
             filePath = fullfile(o.AnalysisDir, o.GrandAvgSubDir);
             fullPath = fullfile(filePath, fileName);
@@ -625,6 +638,27 @@ classdef WTIOProcessor < handle
             if ~isempty(fullPath)
                 [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
+        end
+
+        function subject = getSubjectFromPath(o, path) 
+            [analysisDir, subjectSubDir] = WTUtils.splitPath(path, 1);
+            analysisAbsPath = WTUtils.getAbsPath(analysisDir);
+            subject = [];
+            if ~strcmp(analysisAbsPath, o.AnalysisDir) 
+                return
+            end
+            match = regexp(subjectSubDir, o.SubjAnalysisSubDirRe, 'once', 'names');
+            if isempty(match)
+                return
+            end
+            subject = match.subject;
+        end
+
+        function is = isGrandAvgDir(o, path)
+            [analysisDir, grandAvgSubDir] = WTUtils.splitPath(path, 1);
+            analysisAbsPath = WTUtils.getAbsPath(analysisDir);
+            is = strcmp(analysisAbsPath, o.AnalysisDir) && ...
+                 strcmp(grandAvgSubDir, o.GrandAvgSubDir);
         end
 
         function subjects = getAnalysedSubjects(o)

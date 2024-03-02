@@ -1,4 +1,4 @@
-classdef WTEEPToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochLimitsAndFreqFilterCfg
+classdef WTEEPToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochsAndFreqFiltersCfg
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
@@ -7,12 +7,12 @@ classdef WTEEPToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochLim
     methods
         function o = WTEEPToEEGLabCfg(ioProc)
             o@WTConfigStorage(ioProc, 'eep2eegl_cfg.m');
-            o@WTEpochLimitsAndFreqFilterCfg();
+            o@WTEpochsAndFreqFiltersCfg();
             o.default();
         end
 
         function default(o)  
-            default@WTEpochLimitsAndFreqFilterCfg(o);
+            default@WTEpochsAndFreqFiltersCfg(o);
         end
 
         function success = load(o) 
@@ -37,7 +37,7 @@ classdef WTEEPToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochLim
         end
 
         function success = validate(o, throwExcpt) 
-            success = validate@WTEpochLimitsAndFreqFilterCfg(o, throwExcpt);
+            success = validate@WTEpochsAndFreqFiltersCfg(o, throwExcpt);
         end
 
         function success = persist(o)

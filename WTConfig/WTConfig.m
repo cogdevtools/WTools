@@ -17,12 +17,17 @@ classdef WTConfig < matlab.mixin.Copyable
         Statistics WTStatisticsCfg
         Difference WTDifferenceCfg
         MinMaxTrialId WTMinMaxTrialIdCfg
-        GlobalPlots WTGlobalPlotsCfg
         Sampling WTSamplingCfg
+        AveragePlots WTAvgPlotsCfg
+        AverageStdErrPlots WTAvgStdErrPlotsCfg
+        ChannelsAveragePlots WTChansAvgPlotsCfg
+        ChannelsAverageStdErrPlots WTChansAvgStdErrPlotsCfg
+        ScalpMapPlots WTScalpMapPlotsCfg
+        ThreeDimensionsScalpMapPlots WT3DScalpMapPlotsCfg
     end
 
     properties(SetAccess=private,GetAccess=public)
-        IOProc
+        IOProc  
     end
 
     methods(Access=private)
@@ -43,8 +48,13 @@ classdef WTConfig < matlab.mixin.Copyable
             o.Statistics.default();
             o.Difference.default();
             o.MinMaxTrialId.default();
-            o.GlobalPlots.default();
             o.Sampling.default();
+            o.AveragePlots.default();
+            o.AverageStdErrPlots.default();
+            o.ChannelsAveragePlots.default();
+            o.ChannelsAverageStdErrPlots.default();
+            o.ScalpMapPlots.default();
+            o.ThreeDimensionsScalpMapPlots.default();
         end
 
         function success = load(o) 
@@ -119,12 +129,32 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.MinMaxTrialId.getFileName());
                 return
             end
-            if o.GlobalPlots.exist() && ~o.GlobalPlots.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.GlobalPlots.getFileName());
-                return
-            end
             if o.Sampling.exist() &&  ~o.Sampling.load()
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.Sampling.getFileName());
+                return
+            end
+            if o.AveragePlots.exist() && ~o.AveragePlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.AveragePlots.getFileName());
+                return
+            end
+            if o.AverageStdErrPlots.exist() && ~o.AverageStdErrPlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.AverageStdErrPlots.getFileName());
+                return
+            end
+            if o.ChannelsAveragePlots.exist() && ~o.ChannelsAveragePlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ChannelsAveragePlots.getFileName());
+                return
+            end
+            if o.ChannelsAverageStdErrPlots.exist() && ~o.ChannelsAverageStdErrPlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ChannelsAverageStdErrPlots.getFileName());
+                return
+            end
+            if o.ScalpMapPlots.exist() && ~o.ScalpMapPlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ScalpMapPlots.getFileName());
+                return
+            end
+            if o.ThreeDimensionsScalpMapPlots.exist() && ~o.ThreeDimensionsScalpMapPlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ThreeDimensionsScalpMapPlots.getFileName());
                 return
             end
             success = true;
@@ -151,8 +181,13 @@ classdef WTConfig < matlab.mixin.Copyable
             cp.Statistics = copy(o.Statistics);
             cp.Difference = copy(o.Difference);
             cp.MinMaxTrialId = copy(o.MinMaxTrialId);
-            cp.GlobalPlots = copy(o.GlobalPlots);
             cp.Sampling = copy(o.Sampling);
+            cp.AveragePlots = copy(o.AveragePlots);
+            cp.AverageStdErrPlots = copy(o.AverageStdErrPlots);
+            cp.ChannelsAveragePlots = copy(o.ChannelsAveragePlots);
+            cp.ChannelsAverageStdErrPlots = copy(o.ChannelsAverageStdErrPlots);
+            cp.ScalpMapPlots = copy(o.ScalpMapPlots);
+            cp.ThreeDimensionsScalpMapPlots = copy(o.ThreeDimensionsScalpMapPlots);
         end
      end
 
@@ -176,8 +211,13 @@ classdef WTConfig < matlab.mixin.Copyable
             o.Statistics = WTStatisticsCfg(ioProc);
             o.Difference = WTDifferenceCfg(ioProc);
             o.MinMaxTrialId = WTMinMaxTrialIdCfg(ioProc);
-            o.GlobalPlots = WTGlobalPlotsCfg(ioProc);
             o.Sampling = WTSamplingCfg(ioProc);
+            o.AveragePlots = WTAvgPlotsCfg(ioProc);
+            o.AverageStdErrPlots = WTAvgStdErrPlotsCfg(ioProc);
+            o.ChannelsAveragePlots = WTChansAvgPlotsCfg(ioProc);
+            o.ChannelsAverageStdErrPlots = WTChansAvgStdErrPlotsCfg(ioProc);
+            o.ScalpMapPlots = WTScalpMapPlotsCfg(ioProc);
+            o.ThreeDimensionsScalpMapPlots = WT3DScalpMapPlotsCfg(ioProc);
         end
         
         function name = getName(o) 

@@ -179,7 +179,7 @@ classdef WTConvertGUI
         end
 
         function success = defineEpochLimitsAndFreqFilter(EpochLimitsAndFreqFilterData)
-            WTValidations.mustBeA(EpochLimitsAndFreqFilterData, ?WTEpochLimitsAndFreqFilterCfg);
+            WTValidations.mustBeA(EpochLimitsAndFreqFilterData, ?WTEpochsAndFreqFiltersCfg);
             success = false;
             wtLog = WTLog();
 

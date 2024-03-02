@@ -24,7 +24,9 @@ function varargout = wtools(varargin)
     % Edit the above text to modify the response to help wtools
     % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
     % Begin initialization code - DO NOT EDIT
-    wtInit();
+    if ~wtInit()
+        varargin = [varargin 'force-close'];
+    end
     gui_Singleton = 1;
     gui_State = struct('gui_Name',       mfilename, ...
                        'gui_Singleton',  gui_Singleton, ...
@@ -97,7 +99,7 @@ function varargout = wtools(varargin)
         
             if ~forceClose && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))
                 if showSplash       
-                    wtSplash()
+                    wtSplash();
                 end
                 if ~isempty(bgColor) && ~isempty(fgColor)
                     wtChangeGUIColors(hObject, bgColor, fgColor)
@@ -333,12 +335,12 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('GlobalPlots');
+        wtLog.ctxOn('AveragePlots');
         try
             wtPlotAverage();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show plots');
+            WTProject().notifyErr([], 'Failed to show average plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -357,7 +359,7 @@ function varargout = wtools(varargin)
             chavr();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show plots');
+            WTProject().notifyErr([], 'Failed to show channels average plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -376,7 +378,7 @@ function varargout = wtools(varargin)
             xavrse();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show plots');
+            WTProject().notifyErr([], 'Failed to show average with stderr plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -395,7 +397,7 @@ function varargout = wtools(varargin)
             chavrse();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show plots');
+            WTProject().notifyErr([], 'Failed to show channels average with stderr plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -414,7 +416,7 @@ function varargout = wtools(varargin)
             smavr();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show plots');
+            WTProject().notifyErr([], 'Failed to show scalp map plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -433,7 +435,7 @@ function varargout = wtools(varargin)
             smavr3d();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show plots');
+            WTProject().notifyErr([], 'Failed to show 3D scalp map plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -532,6 +534,11 @@ function varargout = wtools(varargin)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
+            return
+        end
+        option = WTUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
+        unlock(hObject, handles);
+        if strcmp(option, 'Continue')
             return
         end
         % Hint: delete(hObject) closes the figure

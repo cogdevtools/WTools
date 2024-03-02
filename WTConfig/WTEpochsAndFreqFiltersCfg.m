@@ -1,4 +1,4 @@
-classdef WTEpochLimitsAndFreqFilterCfg < matlab.mixin.Copyable
+classdef WTEpochsAndFreqFiltersCfg < matlab.mixin.Copyable
 
     properties
         EpochLimits(1,:) single {mustBeFinite, WTValidations.mustBeALimitedLinearArray(EpochLimits, 2, 2, 1)}
@@ -7,7 +7,7 @@ classdef WTEpochLimitsAndFreqFilterCfg < matlab.mixin.Copyable
     end
 
     methods
-        function o = WTEpochLimitsAndFreqFilterCfg()
+        function o = WTEpochsAndFreqFiltersCfg()
             o.default();
         end
 

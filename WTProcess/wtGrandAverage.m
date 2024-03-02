@@ -38,6 +38,7 @@ function wtGrandAverage(subjects, conditions)
     baselineChopPrms = wtProject.Config.BaselineChop;
     if ~baselineChopPrms.exist() 
         wtProject.notifyWrn([], 'Perform baseline correction & edges chopping before...');
+        return
     end 
 
     if length(subjectsGrandPrms.SubjectsList) < 2 
@@ -61,7 +62,7 @@ function wtGrandAverage(subjects, conditions)
             subjects = subjectsGrandPrms.SubjectsList;
         end
         if empty(conditions)
-            conditions = [{conditionsGrandPrms.ConditionsList{:}}, {conditionsGrandPrms.ConditionsDiff{:}}];
+            conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
         end
     else
         grandAveragePrms = copy(grandAveragePrms);
@@ -87,7 +88,7 @@ function wtGrandAverage(subjects, conditions)
             end
         end
 
-        conditions = cat(2, conditionsGrandPrms.ConditionsList, conditionsGrandPrms.ConditionsDiff);
+        conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
 
         if length(conditions) > 1
             conditions = WTUtils.stringsSelectDlg('Select conditions:', conditions, false, false);

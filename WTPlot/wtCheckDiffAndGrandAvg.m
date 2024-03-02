@@ -4,7 +4,7 @@
 % Function that controls whether data are up to date and ready for grandaverage (i.e. n>1) 
 
 function [diffConsistency, grandAvgConsistency] = wtCheckDiffAndGrandAvg(fileNames, chkGrandAvg)
-    chkGrandAvg = nargin < 2 || any(logical(chkAverage));
+    chkGrandAvg = nargin < 2 || any(logical(chkGrandAvg));
     diffConsistency = 1;
     grandAvgConsistency = 1;
     

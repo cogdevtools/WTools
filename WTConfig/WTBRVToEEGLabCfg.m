@@ -1,4 +1,4 @@
-classdef WTBRVToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochLimitsAndFreqFilterCfg
+classdef WTBRVToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochsAndFreqFiltersCfg
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
@@ -7,12 +7,12 @@ classdef WTBRVToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochLim
     methods
         function o = WTBRVToEEGLabCfg(ioProc)
             o@WTConfigStorage(ioProc, 'brv2eegl_cfg.m');
-            o@WTEpochLimitsAndFreqFilterCfg();
+            o@WTEpochsAndFreqFiltersCfg();
             o.default();
         end
 
         function default(o)  
-            default@WTEpochLimitsAndFreqFilterCfg(o);
+            default@WTEpochsAndFreqFiltersCfg(o);
         end
 
         function success = load(o) 
@@ -37,7 +37,7 @@ classdef WTBRVToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochLim
         end
 
         function success = validate(o, throwExcpt) 
-            success = validate@WTEpochLimitsAndFreqFilterCfg(o, throwExcpt);
+            success = validate@WTEpochsAndFreqFiltersCfg(o, throwExcpt);
         end
 
         function success = persist(o)

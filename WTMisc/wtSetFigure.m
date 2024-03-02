@@ -3,14 +3,14 @@
 % CDC CEU 2011
 % Auxiliary function for plotting.
 
-function [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(uV)
+function [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(logFlag)
     % Fetch info from icadefs.m
     icadefs;
     DEFAULT_COLORMAP;
     VERS;
 
     % For older version of EEGLAB with no info in icadefs.m
-    if ~exist('DEFAULT_COLORMAP','var') || ~exist('VERS','var')    
+    if ~exist('DEFAULT_COLORMAP', 'var') || ~exist('VERS', 'var')    
         DEFAULT_COLORMAP = 'jet';    
         vers = version;
         indp = find(vers == '.');
@@ -21,7 +21,7 @@ function [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(uV)
         VERS = WTUtils.str2double(vers(1:indp(2)-1));    
     end
 
-    if strcmp(uV,'on')
+    if ~logFlag
         cLabel = '\muV';
         rotation = 0;
     else
