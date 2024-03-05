@@ -6,7 +6,7 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
     channelsPrms = wtProject.Config.Channels;
 
     wtLog.info('Managing channels re-reference...');
-    wtLog.pushStatus().ctxOn().setHeaderOn(false);
+    wtLog.pushStatus().contextOn().HeaderOn = false;
 
     try
         switch channelsPrms.ReReference

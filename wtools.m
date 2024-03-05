@@ -63,9 +63,10 @@ function varargout = wtools(varargin)
         % hObject    handle to figure
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
+        wtAppConf = WTAppConf();
         wtLog = WTLog();
+        showSplash = wtAppConf.ShowSplashScreen;
         forceClose = false;
-        showSplash = true;
         bgColor = [];
         fgColor = [];
         
@@ -97,6 +98,7 @@ function varargout = wtools(varargin)
                 i = i+1;
             end
         
+
             if ~forceClose && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))
                 if showSplash       
                     wtSplash();
@@ -176,7 +178,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('NewProject');
+        wtLog.contextOn('NewProject');
         try
             wtNewProject();
             updateProjectName(hObject, handles);
@@ -197,7 +199,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('OpenProject');
+        wtLog.contextOn('OpenProject');
         try
             wtOpenProject();
             updateProjectName(hObject, handles);
@@ -218,7 +220,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('Import');
+        wtLog.contextOn('Import');
         try
             wtConvert();
         catch me
@@ -237,7 +239,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('SubjectManager');
+        wtLog.contextOn('SubjectManager');
         try
             wtRebuildSubjects();
             updateTotalSubjects(hObject, handles);
@@ -257,7 +259,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('TimeFreqAnalysis');
+        wtLog.contextOn('TimeFreqAnalysis');
         try
             wtPerformCWT();
             updateTotalSubjects(hObject, handles);
@@ -277,7 +279,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('BaselineChop');
+        wtLog.contextOn('BaselineChop');
         try
             wtBaselineChop();
         catch me
@@ -296,7 +298,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('ConditionsDifference');
+        wtLog.contextOn('ConditionsDifference');
         try
             wtDifference();
         catch me
@@ -315,7 +317,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('SubjectsGrandAverage');
+        wtLog.contextOn('SubjectsGrandAverage');
         try
             wtGrandAverage();
             updateTotalSubjects(hObject, handles)
@@ -335,7 +337,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('AveragePlots');
+        wtLog.contextOn('AveragePlots');
         try
             wtPlotAverage();
         catch me
@@ -354,7 +356,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('ChannelsPlots');
+        wtLog.contextOn('ChannelsPlots');
         try
             chavr();
         catch me
@@ -373,7 +375,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('GlobalPlotsWithStdError');
+        wtLog.contextOn('GlobalPlotsWithStdError');
         try
             xavrse();
         catch me
@@ -392,7 +394,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('ChannelsPlotsWithStdError');
+        wtLog.contextOn('ChannelsPlotsWithStdError');
         try
             chavrse();
         catch me
@@ -411,7 +413,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('ScalpMapPlots');
+        wtLog.contextOn('ScalpMapPlots');
         try
             smavr();
         catch me
@@ -430,7 +432,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('3DScalpMapPlots');
+        wtLog.contextOn('3DScalpMapPlots');
         try
             smavr3d();
         catch me
@@ -449,7 +451,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('Statistics');
+        wtLog.contextOn('Statistics');
         try
             avrretrieve();
             updateTotalSubjects(hObject, handles);
@@ -469,7 +471,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.ctxOn('Help');
+        wtLog.contextOn('Help');
         try
             web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
         catch me
@@ -484,7 +486,7 @@ function varargout = wtools(varargin)
         % hObject    handle to ProjectEdit (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        level = WTLog().getLogLevel();
+        level = WTAppConf().DefaultStdLogLevel;
         set(hObject, 'Value', level);
         guidata(hObject, handles);
     
@@ -493,12 +495,13 @@ function varargout = wtools(varargin)
         % hObject    handle to LogLevelPopupMenu (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
+        wtLog = WTLog();
         if ~lock(hObject, handles)
-            level = WTLog().getLogLevel();
-            set(hObject, 'Value', level);
+            set(hObject, 'Value', wtLog.StdLogLevel);
+            guidata(hObject, handles);
             return
         end
-        WTLog().setLogLevel(hObject.Value);
+        wtLog.StdLogLevel = hObject.Value;
         unlock(hObject, handles);
     
     % --- Executes during object creation, after setting all properties.
@@ -507,7 +510,7 @@ function varargout = wtools(varargin)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
         wtLog = WTLog();
-        wtLog.ctxOn('Init');
+        wtLog.contextOn('Init');
         try
             WTSession().open();
         catch me

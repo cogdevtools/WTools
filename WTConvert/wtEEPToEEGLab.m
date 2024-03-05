@@ -17,7 +17,7 @@
 function wtEEPToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().ctxOn('EEPToEEGLab');
+    wtLog.pushStatus().contextOn('EEPToEEGLab');
 
     if ~wtProject.checkIsOpen()
         wtLog.popStatus();

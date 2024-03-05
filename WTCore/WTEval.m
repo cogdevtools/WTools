@@ -33,10 +33,10 @@ classdef WTEval
             if ~isempty(log)
                 wtLog.pushStatus();
                 if ~isempty(ctx)
-                    wtLog.ctxOn(ctx);
+                    wtLog.contextOn(ctx);
                 end
                 wtLog.log(level, 'Follows log report of cmd: ''%s'' ...', cmd);
-                wtLog.ctxOn().setHeaderOn(false);
+                wtLog.contextOn().HeaderOn = false;
                 wtLog.log(level, log);
                 wtLog.popStatus();
             end

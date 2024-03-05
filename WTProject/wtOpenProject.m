@@ -27,6 +27,15 @@ function success = wtOpenProject
         return
     end
 
+    wtAppConf = WTAppConf();
+
+    if wtAppConf.ProjectLog
+        ioProc = wtProject.Config.IOProc;
+        wtLog = WTLog();
+        [~, opened] = wtLog.openStream(ioProc.getLogFile(wtProject.Config.getName()));
+        wtLog.MuteStdStreams = WTUtils.ifThenElse(opened, wtAppConf.MuteStdLog, false);
+    end
+    
     if WTUtils.eeglabYesNoDlg('Update import', 'Do you want to import new data files?')
         wtImportData();
     end

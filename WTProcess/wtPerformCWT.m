@@ -69,7 +69,7 @@ function success = wtPerformCWT()
     for i = 1:subjectsCount
         for j = 1:conditionsCount
             wtLog.info('Processing subject/condition: %d/%d', i, j);
-            wtLog.pushStatus().ctxOn('Subj(%d)/Cond(%d)', i, j);
+            wtLog.pushStatus().contextOn('Subj(%d)/Cond(%d)', i, j);
             doItOnce = i == 1 && j == 1;
 
             [success, EEG] = ioProc.loadCondition(prefixParams.FilesPrefix, subjects{i}, conditions{j});
@@ -317,7 +317,7 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
 
     % Calculate CWT at each frequency.
     wtLog.info('Computing Morlet complex wavelets...');
-    wtLog.pushStatus().ctxOn('Complex Wavelets').setHeaderOn(false);
+    wtLog.pushStatus().contextOn('Complex Wavelets').HeaderOn = false;
 
     for iFreq=1:(length(scales))
         wtLog.dbg('Generating wavelet at frequency = %i Hz', scales(iFreq));

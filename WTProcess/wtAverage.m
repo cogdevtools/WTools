@@ -67,7 +67,7 @@
 
 function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, timeMin, timeMax, ... 
         waveletType, chansToAnalyse, selection, normalization, epochsList, cwtMatrix)
-        
+
     success = false;
     files = {};
 
@@ -121,7 +121,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
 
     wtLog = WTLog();
     wtLog.info('Transforming & averaging (subject/condition ''%s/%s'')...', subject, condition);
-    wtLog.pushStatus().ctxOn('Transform & Average').setHeaderOn(false);
+    wtLog.pushStatus().contextOn('Transform & Average').HeaderOn = false;
     
     selected = @(value)(any(cellfun(@(y)(strcmp(y,value)), selection)));
     ITPCSelected = selected(WTIOProcessor.WaveletsAnalisys_ITPC);

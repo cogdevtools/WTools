@@ -1,6 +1,7 @@
 classdef WTIOProcessor < handle
 
     properties(Constant,Access=private)
+        LogSubDir      = 'Logs'
         ConfigSubDir   = 'Config';
         ImportSubDir   = 'Import';
         WaveletsSubDir = 'Wavelets';
@@ -32,6 +33,7 @@ classdef WTIOProcessor < handle
 
     properties(SetAccess=private,GetAccess=public)
         RootDir char
+        LogDir char
         ConfigDir char
         ImportDir char
         AnalysisDir char
@@ -205,6 +207,7 @@ classdef WTIOProcessor < handle
     methods(Access=private)
         function default(o)
             o.RootDir = '';
+            o.LogDir = '';
             o.ConfigDir = '';
             o.ImportDir = '';
             o.AnalysisDir = '';
@@ -220,6 +223,7 @@ classdef WTIOProcessor < handle
         function success = setRootDir(o, rootDir, mustExist) 
             success = false;
             o.RootDir = WTUtils.getAbsPath(rootDir);
+            o.LogDir = fullfile(o.RootDir, o.LogSubDir);
             o.ConfigDir = fullfile(o.RootDir, o.ConfigSubDir);
             o.ImportDir = fullfile(o.RootDir, o.ImportSubDir);
             o.AnalysisDir = fullfile(o.RootDir, o.AnalysisSubDir);
@@ -256,6 +260,13 @@ classdef WTIOProcessor < handle
 
         function defined = rootDirDefined(o) 
             defined = ~isempty(o.RootDir);
+        end
+
+        function [fullPath, filePath] = getLogFile(o, prefix)
+            time = char(datetime('now','TimeZone','local','Format', 'yyyyMMdd.HHmmss'));
+            fileName = sprintf('%s.%s.log', prefix, time);
+            filePath = o.LogDir;
+            fullPath = fullfile(filePath, fileName);
         end
 
         function configFile = getConfigFile(o, fName) 
@@ -450,7 +461,7 @@ classdef WTIOProcessor < handle
                     EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
                 end
                 success = true;
-            catch 
+            catch me
                 WTLog().except(me)
             end 
         end

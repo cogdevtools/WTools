@@ -22,7 +22,7 @@
 function wtEEGLabToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().ctxOn('EEGLabToEEGLab');
+    wtLog.pushStatus().contextOn('EEGLabToEEGLab');
 
     if ~wtProject.checkIsOpen()
         wtLog.popStatus();

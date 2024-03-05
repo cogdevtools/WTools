@@ -132,7 +132,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     end
     
     wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', sprintf('subject %s', subject)));
-    wtLog.pushStatus().setHeaderOn(false);
+    wtLog.pushStatus().HeaderOn = false;
     wtWorspace = WTWorkspace();
     wtWorspace.pushBase()
 
@@ -145,7 +145,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
         height = 0.1;
 
         for cnd = 1:nConditionsToPlot
-            wtLog.ctxOn().info('Condition %s', conditionsToPlot{cnd});
+            wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = loadDataToPlot(subject, conditionsToPlot{cnd}, measure);
             if ~success
                 return
@@ -207,7 +207,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             set(hAxes, 'Visible', 'off');
 
             for chn = 1:nChannelsToPlot  
-                wtLog.ctxOn().dbg('Channel %s', channelsToPlot{chn});
+                wtLog.contextOn().dbg('Channel %s', channelsToPlot{chn});
                 % Create axes for each channel: original below...modified
                 % hAxes = axes('Position',[(x(chn) - xMin + xAirToEdge)/(xM + 2 * xAirToEdge), ...
                 %     (y(chn) - yMin + xAirToEdge) / (yMin + 2 * yAirToEdge), width / xM, height / xM ]);
@@ -219,9 +219,9 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
                 axis('off');
                 text(0, 0, channelsLocations(chn).labels, 'FontSize', 8, 'FontWeight', 'bold');
                 hold('off');   
-                wtLog.ctxOff();     
+                wtLog.contextOff();     
             end
-            wtLog.ctxOff();
+            wtLog.contextOff();
         end
     catch me
         wtWorspace.popToBase();

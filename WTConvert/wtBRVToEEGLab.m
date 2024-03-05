@@ -20,7 +20,7 @@
 function wtBRVToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().ctxOn('BRVToEEGLab');
+    wtLog.pushStatus().contextOn('BRVToEEGLab');
 
     if ~wtProject.checkIsOpen()
         wtLog.popStatus();

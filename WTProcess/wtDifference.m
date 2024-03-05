@@ -32,7 +32,7 @@ function wtDifference(subjects)
 
     if ~wtProject.Config.SubjectsGrand.exist() || ...
        ~wtProject.Config.WaveletTransform.exist()
-        wtProject.notifyInf([], 'Wavelet transformation needs to be performed first!');
+        wtProject.notifyWrn([], 'Wavelet transformation needs to be performed first!');
         return
     end
 
@@ -172,7 +172,7 @@ function wtDifference(subjects)
                 WTIOProcessor.WaveletsAnalisys_avWT);
 
     wtLog.info('Computing difference between conditions...');
-    wtLog.pushStatus().ctxOn();
+    wtLog.pushStatus().contextOn();
 
     for s = 1:nSubjects
         correction = 0;

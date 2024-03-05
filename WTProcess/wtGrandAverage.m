@@ -108,7 +108,7 @@ function wtGrandAverage(subjects, conditions)
                 WTIOProcessor.WaveletsAnalisys_avWT);
 
     wtLog.info('Computing grand average...');
-    wtLog.pushStatus().ctxOn();
+    wtLog.pushStatus().contextOn();
 
     for cnd = 1:nConditions
         for sbj = 1:nSubjects

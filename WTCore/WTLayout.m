@@ -19,5 +19,9 @@ classdef WTLayout
         function d = getToolsDevicesDir() 
             d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir, WTLayout.DevicesSubDir);
         end
+
+        function d = getResourcesDir() 
+            d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir);
+        end
     end
 end

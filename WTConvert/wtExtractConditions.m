@@ -20,7 +20,7 @@ function success = wtExtractConditions(subject)
     end
     
     wtLog.info('Processing conditions...');
-    wtLog.pushStatus().ctxOn().setHeaderOn(false);
+    wtLog.pushStatus().contextOn().HeaderOn = false;
 
     for cnd = 1:nConditions
         condition = conditions{cnd};
@@ -45,6 +45,6 @@ function success = wtExtractConditions(subject)
             return
         end      
     end 
-    
+
     wtLog.popStatus();
 end

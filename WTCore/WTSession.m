@@ -15,8 +15,8 @@ classdef WTSession < handle
         end
 
         function restoreContext(o)
-            o.Workspace.popToBase(true)
-            path(o.PathsContext)
+            o.Workspace.popToBase(true);
+            path(o.PathsContext);
         end
     end
 
@@ -39,8 +39,12 @@ classdef WTSession < handle
             o.SessionOpen = true;
             o.prepareContext();
             wtLog = WTLog();
-            wtLog.reset();
-            wtLog.info('Starting WTools...');
+            wtAppConf = WTAppConf();
+            wtAppConf.load();
+            wtLog.ColorizeMessages = wtAppConf.ColorizedLog;
+            wtLog.UsrLogLevel = wtAppConf.ProjectLogLevel;
+            wtLog.StdLogLevel = wtAppConf.DefaultStdLogLevel;
+            wtLog.info('Starting WTools session...');
             WTProject();
         end
 
@@ -49,12 +53,15 @@ classdef WTSession < handle
                 return
             end
             o.SessionOpen = false;
+            wtAppConf = WTAppConf();
             wtProject = WTProject();
             wtLog = WTLog();
-            wtLog.info('Closing WTools...');
+            wtAppConf.persist();
+            wtLog.info('Closing WTools session...');
+            wtAppConf.clear()
             wtProject.clear();
             wtLog.clear();
-            o.restoreContext()
+            o.restoreContext();
         end
     end
 

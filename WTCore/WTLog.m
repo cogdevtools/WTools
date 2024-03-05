@@ -8,16 +8,35 @@ classdef WTLog < handle
     end
    
     properties (Constant,Hidden,Access=private)
-        LoglevelStrs = {'ERROR','WARNING','INFO','DEBUG'}
+        % string index must correspond to the relative level code value
+        LevelStrs = {'ERROR','WARNING','INFO','DEBUG'}
+    end
+
+    properties (Hidden,SetAccess=private,GetAccess=public)
+        FileName char
     end
 
     properties (Access=private)
-        LogLevel uint8
         Context cell 
-        HeaderOn logical
         StatusStack cell
-        FromCaller logical
+        FromCaller(1,1) logical
+        Stream(1,1) double
     end
+
+    properties (Hidden,Access=public)
+        HeaderOn(1,1) logical
+        ColorizeMessages(1,1) logical
+        MuteStdStreams(1,1) logical
+        StdLogLevel(1,1) uint8
+        UsrLogLevel(1,1) uint8
+    end
+
+    properties (Hidden,Dependent)
+        LogLevel(1,1) uint8
+        StdLogLevelStr char
+        UsrLogLevelStr char
+        LogLevelStr char
+    end 
 
     methods (Static, Access=private)         
         function [module,func,line] = stackInfo(level) 
@@ -31,14 +50,20 @@ classdef WTLog < handle
             func = caller.name;
             line = caller.line;
         end
+
+        function print(stream, msg)
+            try
+                fprintf(stream, msg);
+            catch
+            end
+        end
     end
 
     methods (Access=private)   
-        function msgout = format(o, time, module, func, line, lvl, fmt, varargin) 
-            level = WTLog.LoglevelStrs{lvl};
-            headerOn = o.isHeaderOn();
+        function msgout = format(o, time, module, func, line, level, fmt, varargin) 
+            level = WTLog.LevelStrs{level};
             header = '';
-            if headerOn
+            if o.HeaderOn
                 ctx = o.Context(~cellfun(@isempty, o.Context));
                 jctx = {''};
                 if ~isempty(ctx)
@@ -52,7 +77,7 @@ classdef WTLog < handle
             indent = (length(o.Context)+1)*2;
             padding = repelem(' ', indent);
             separator = ['\n', padding];
-            if headerOn
+            if o.HeaderOn
                 toks = [{header}, toks];
             else
                 toks{1} = [padding, toks{1}];
@@ -62,14 +87,45 @@ classdef WTLog < handle
             msgout = msgout{1};
         end
         
-        function msg(o, stream, level, fmt, varargin)
-            if level <= o.getLogLevel() 
-                stackLevel = WTUtils.ifThenElse(o.FromCaller, 5, 4);
-                [module, func, line] = WTLog.stackInfo(stackLevel);
-                o.FromCaller = false;
-                time = char(datetime('now','TimeZone','local','Format','d-MM-y HH:mm:ss.SSS'));
-                str = o.format(time, module, func, line, level, fmt, varargin{:});
-                fprintf(stream, str);
+        function msg(o, stdStream, level, fmt, varargin)
+            logToUsrStream = level <= o.UsrLogLevel && o.Stream > 2;
+            logToStdStream = level <= o.StdLogLevel && ~o.MuteStdStreams;
+            if ~(logToUsrStream || logToStdStream)
+                return
+            end
+            stackLevel = 4;
+            if o.FromCaller
+                stackLevel = 5;
+            end
+            [module, func, line] = WTLog.stackInfo(stackLevel);
+            o.FromCaller = false;
+            time = char(datetime('now','TimeZone','local','Format','d-MM-y HH:mm:ss.SSS'));
+            str = o.format(time, module, func, line, level, fmt, varargin{:});
+            if logToUsrStream
+                WTLog.print(o.Stream, str);
+            end
+            if ~logToStdStream
+                return
+            end
+            if ~o.ColorizeMessages
+                WTLog.print(stdStream, str);
+                return
+            end
+            if stdStream == 2
+                WTLog.print(stdStream, str);
+                return
+            end
+            switch level
+                case WTLog.LevelErr
+                    cprintf('*red', str);
+                case WTLog.LevelInf
+                    cprintf('text', str);
+                case WTLog.LevelWrn
+                    cprintf([1,0.5,0], str);
+                case WTLog.LevelDbg
+                    cprintf('blue', str);
+                otherwise
+                    cprintf('text', str);
             end
         end
     end
@@ -81,19 +137,19 @@ classdef WTLog < handle
                 o.Context = {};
                 o.StatusStack = {};
                 o.HeaderOn = true;
-                o.LogLevel = WTLog.LevelInf;
+                o.StdLogLevel = WTLog.LevelInf;
+                o.UsrLogLevel = WTLog.LevelInf;
                 o.FromCaller = false;
+                o.ColorizeMessages = false;
+                o.MuteStdStreams = false;
+                o.Stream = -1;
                 singleton(o);
             else 
                 o = st;
             end
          end
 
-        function ctx = getCtx(o) 
-            ctx = o.Context;
-        end
-
-        function o = ctxOn(o, ctx, varargin) 
+        function o = contextOn(o, ctx, varargin) 
             if nargin == 1
                 ctx = '';
             elseif nargin >= 2
@@ -102,7 +158,7 @@ classdef WTLog < handle
             o.Context = [o.Context;{strtrim(ctx)}];
         end
 
-        function o = ctxOff(o, n)
+        function o = contextOff(o, n)
             if nargin == 1 
                 n = 1;
             end
@@ -118,12 +174,12 @@ classdef WTLog < handle
             o.FromCaller = true;
         end 
 
-        function o = ctxReset(o) 
+        function o = contextReset(o) 
             o.Context = {};
         end
 
         function o = reset(o)
-            o.ctxReset();
+            o.contextReset();
             o.StatusStack = {};
             o.HeaderOn = true;
             o.FromCaller = false;
@@ -145,31 +201,35 @@ classdef WTLog < handle
             end
         end
 
-        function headerOn = isHeaderOn(o)
-            headerOn = o.HeaderOn;
-        end
-
-        function headerOn = setHeaderOn(o, on)
-            headerOn = o.HeaderOn;
-            o.HeaderOn = any(logical(on));
-        end
-        
-        function logLevel = getLogLevel(o)
-            logLevel = o.LogLevel;
-        end
-
-        function logLevel = getLogLevelStr(o)
-            logLevel = WTLog.logLevelStrs{o.LogLevel};
-        end
-
-        function logLevel = setLogLevel(o, lvl)
-            logLevel = o.LogLevel;
-            if lvl >= WTLog.LevelErr && lvl <= WTLog.LevelDbg
-                logLevel = lvl;
-                o.LogLevel = logLevel;
+        function o = set.UsrLogLevel(o, level)
+            if level >= WTLog.LevelErr && level <= WTLog.LevelDbg
+                o.UsrLogLevel = level;
             end
         end
+
+        function level = get.UsrLogLevelStr(o)
+            level = WTLog.LevelStrs{o.UsrLogLevel};
+        end
         
+        function o = set.StdLogLevel(o, level)
+            if level >= WTLog.LevelErr && level <= WTLog.LevelDbg
+                o.StdLogLevel = level;
+            end
+        end
+
+        function level = get.StdLogLevelStr(o)
+            level = WTLog.LevelStrs{o.StdLogLevel};
+        end
+
+
+        function level = get.LogLevel(o)
+            level = min(o.StdLogLevel, o.UsrLogLevel);
+        end
+
+        function level = get.LogLevelStr(o)
+            level = WTLog.LevelStrs{o.LogLevel};
+        end
+
         function o = except(o, excp, rethrow) 
             msg = strrep(getReport(excp, 'extended'), '%', '%%');
             o.msg(2, WTLog.LevelErr, '%s\n', msg);
@@ -208,11 +268,46 @@ classdef WTLog < handle
                     o.info(fmt, varargin{:});
             end
         end
+
+        function o = closeStream(o)
+            try
+                if o.Stream > 2 
+                    fclose( o.Stream);
+                end
+            catch
+            end
+            o.FileName = '';
+            o.Stream = -1;
+        end
+
+        function [o, success] = openStream(o, logFile)
+            success = false;
+            o.closeStream();
+            dirPath = fileparts(logFile);
+            [ok, ~] = mkdir(dirPath);
+            if ok
+                o.Stream = fopen(logFile, 'a+', 'n', 'UTF-8');
+                o.FileName = logFile;
+                success = true;
+            end
+        end
     end
 
     methods(Static)
+        function level = logLevelCode(lvlStr)
+            level = find(cellfun(@(x)strcmp(x, lvlStr), WTLog.LevelStrs));
+        end
+
+        function levelStr = logLevelStr(lvlCode)
+            levelStr = '';
+            if lvlCode >= WTLog.LevelErr && lvlCode <= WTLog.LevelDbg
+                levelStr = WTLog.LevelStrs{lvlCode};
+            end
+        end
+
         function clear()
-            singleton();
+            o = singleton();
+            o.closeStream();
             munlock('singleton');
         end
     end

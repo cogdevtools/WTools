@@ -114,7 +114,7 @@ function success = wtBaselineChop()
         baselineMaxIdx = find(data.tim == baselineChopParams.BaselineMax);
     end
 
-    wtLog.pushStatus().ctxOn().setHeaderOn(false);
+    wtLog.pushStatus().contextOn().HeaderOn = false;
 
     for s = 1:length(subjects)
         for c = 1:length(conditions)
