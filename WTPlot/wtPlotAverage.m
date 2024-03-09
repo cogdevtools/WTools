@@ -31,6 +31,7 @@
 % Now isempty(subject) => grand average
 %     isempty(conditionsToPlot) => all conditions
 %     isempty(channelsToPlot) => all channels
+
 function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
     success = false;
     wtProject = WTProject();
@@ -130,70 +131,88 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
         wtProject.notifyWrn([], "Plotting aborted due to empty channels selection");
         return
     end
-    
+
+    nChannelsToPlot = numel(channelsToPlot);
     wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     wtWorspace = WTWorkspace();
     wtWorspace.pushBase()
 
-    try
-        nChannelsToPlot = numel(channelsToPlot);
-        timeRange = [plotsPrms.TimeMin plotsPrms.TimeMax];
-        freqRange = [plotsPrms.FreqMin plotsPrms.FreqMax];
-        [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(logFlag);
-        width = 0.1;
-        height = 0.1;
+    % This callback function called when the master condition figure is closed, will perform the
+    % close of all open subplot related to the master figure
+    function closeReqCb(hObject, event)
+        arrayfun(@(subPlot)subPlot.CloseRequestFcn(subPlot, event), hObject.UserData.OpenSubPlots);
+        delete(hObject);
+    end
 
-        for cnd = 1:nConditionsToPlot
+    try
+        % Create struct to store all the useful params used here and by the callbacks
+        prms = struct();
+        prms.timeIdxs = timeIdxs;
+        prms.freqIdxs = freqIdxs;
+        prms.downsampleFactor = downsampleFactor;
+        prms.channelsToPlotIdxs = channelsToPlotIdxs;
+        prms.plotsPrms = copy(plotsPrms);
+        prms.width = 0.1;
+        prms.height = 0.1;
+        [prms.defaultColorMap,  prms.cLabel,  prms.rotation,  prms.xcLabel] = wtSetFigure(logFlag);
+
+        for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = loadDataToPlot(subject, conditionsToPlot{cnd}, measure);
             if ~success
                 return
             end 
 
-            figureName = WTUtils.ifThenElse(grandAverage, ...
-                char(strcat(prefixPrms.FilesPrefix, conditionsToPlot{cnd}, measure)), ...
-                char(strcat(prefixPrms.FilesPrefix, 'Subj', subject, '_', conditionsToPlot{cnd}, measure)));
+            prms.figureName = WTUtils.ifThenElse(grandAverage, ...
+                char(strcat(prefixPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
+                char(strcat(prefixPrms.FilesPrefix,'.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
-            if logFlag % convert the data back to non-log scale straight in percent change        
-                data.WT = 100 * (10.^data.WT - 1);        
-            end
-
-            channelsLocations = data.chanlocs(channelsToPlotIdxs);
-            
-            x = zeros(1, nChannelsToPlot);
-            y = zeros(1, nChannelsToPlot);
-            count = 1;
+            % convert the data back to non-log scale straight in percent change in case logFlag is set
+            prms.WT = WTUtils.ifThenElse(logFlag, 100 * (10.^data.WT - 1), data.WT);
+            prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
+            prms.x = [];
+            prms.y = [];
 
             for k = 1:nChannelsToPlot
-                if ~isempty(channelsLocations(k).radius)
-                    x(count) = sin(channelsLocations(k).theta / 360 * 2 * pi) * channelsLocations(k).radius;
-                    y(count) = cos(channelsLocations(k).theta / 360 * 2 * pi) * channelsLocations(k).radius;
-                    count = count + 1;
+                if ~isempty(prms.channelsLocations(k).radius)
+                    prms.x(end+1) = sin(prms.channelsLocations(k).theta / 360 * 2 * pi) * prms.channelsLocations(k).radius;
+                    prms.y(end+1) = cos(prms.channelsLocations(k).theta / 360 * 2 * pi) * prms.channelsLocations(k).radius;
                 end
             end
 
-            if count <= nChannelsToPlot 
-                x(count) = [];
-                y(count) = [];
-            end
+            prms.xMin = min(prms.x);
+            prms.yMin = min(prms.y);
+            prms.xMax = max(prms.x);
+            prms.yMax = max(prms.y);
+            prms.xAirToEdge = (prms.xMax - prms.xMin) / 50; % air to edge of plot
+            prms.yAirToEdge = (prms.yMax - prms.yMin) / 50; % air to edge of plot
+            prms.xM = prms.xMax - prms.xMin + prms.width;
+            prms.yM = prms.yMax - prms.yMin + prms.height;
+            x_ = (prms.x - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge) + prms.width / (2 * prms.xM);
+            y_ = (prms.y - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge) + prms.height / (2 * prms.yM);
+            prms.ppl = [x_' y_'];
 
-            xMin = min(x);
-            yMin = min(y);
-            xMax = max(x);
-            yMax = max(y);
-            xAirToEdge = (xMax - xMin) / 50; % air to edge of plot
-            yAirToEdge = (yMax - yMin) / 50; % air to edge of plot
-            xM = xMax - xMin + width;
-            yM = yMax - yMin + height;
+            % Create the main figure & add shared user data
+            hFigure = figure();
+            hFigure.UserData = struct();
+            hFigure.UserData.OpenSubPlots = [];
+            hFigure.UserData.SubPlotsAxes = [];
+            hFigure.UserData.ShowSubPlotCbPrms = prms;
+            % Set the callback to close open subplots when the master figure closes
+            hFigure.CloseRequestFcn = @closeReqCb;
+            % Set the callback to display subplots
+            hFigure.WindowButtonDownFcn = @showSubPlotCb;
+            % Set the callback to resize subplots
+            hFigure.WindowKeyPressFcn = @subPlotManageOnKeyPressCb;
+            hFigure.WindowScrollWheelFcn = @subPlotResizeOnMouseScrollCb;
+            % Set the callback to display the subPlot label as cursor info
+            dcm = datacursormode(hFigure);
+            dcm.Enable = 'off'; % toggle to on from the menu
+            dcm.UpdateFcn = @showSubPlotLabelCb;
 
-            % Create the main figure
-            hFigure = figure('WindowButtonDownFcn',{@showTFPlot, data.WT, x, y, channelsLocations, channelsToPlotIdxs, ...
-                timeRange, freqRange, plotsPrms.Scale, xM, yM, xAirToEdge, yAirToEdge, width, height, freqIdxs, timeIdxs, figureName, ...
-                downsampleFactor, plotsPrms.FreqMin, plotsPrms.FreqMax, plotsPrms.Contours, DEFAULT_COLORMAP, cLabel, rotation, xcLabel});    
-                
-            colormap(DEFAULT_COLORMAP);    
-            set(hFigure, 'Name', figureName);
+            colormap(prms.defaultColorMap);    
+            set(hFigure, 'Name', prms.figureName);
             set(hFigure, 'NumberTitle', 'off');
             set(hFigure, 'ToolBar','none');
             clf(hFigure);
@@ -203,24 +222,30 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             set(hFigure, 'PaperPosition', [0 0 12 12]);
             
             % Create axes for the main figure
-            hAxes = axes('position', [0 0 1 1]);
-            set(hAxes, 'Visible', 'off');
+            hFigureAxes = axes('position', [0 0 1 1]);
+            set(hFigureAxes, 'Visible', 'off');
 
             for chn = 1:nChannelsToPlot  
                 wtLog.contextOn().dbg('Channel %s', channelsToPlot{chn});
-                % Create axes for each channel: original below...modified
-                % hAxes = axes('Position',[(x(chn) - xMin + xAirToEdge)/(xM + 2 * xAirToEdge), ...
-                %     (y(chn) - yMin + xAirToEdge) / (yMin + 2 * yAirToEdge), width / xM, height / xM ]);
-                axes('Position',[(x(chn) - xMin + xAirToEdge)/(xM + 2 * xAirToEdge), ...
-                    (y(chn) - yMin + yAirToEdge) / (yMin + 2 * yAirToEdge), width / xM, height / yM ]);
+                % Create axes for each channel: axes(x,y, xWidth, yWidth) (original below) 
+                hSubPlotAxes = axes('Position', ...
+                    [(prms.x(chn) - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge), ...
+                     (prms.y(chn) - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge), ...
+                      prms.width / prms.xM, prms.height / prms.yM]);
+                % Set axes user data that will be used for resizing the  plot via +/- keypress
+                hSubPlotAxes.UserData = struct('OriginalSize', [prms.width / prms.xM, prms.height / prms.yM]);
+                hFigure.UserData.SubPlotsAxes = [hFigure.UserData.SubPlotsAxes hSubPlotAxes];
                 hold('on');        
-                imagesc(squeeze(data.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
-                caxis(plotsPrms.Scale);
+                image = imagesc(squeeze(prms.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
+                channelLabel = prms.channelsLocations(chn).labels;
+                image.UserData = struct('ChannelLabel', channelLabel); % save channel label for data cursor mode
+                clim(plotsPrms.Scale);
                 axis('off');
-                text(0, 0, channelsLocations(chn).labels, 'FontSize', 8, 'FontWeight', 'bold');
+                text(0, 0, channelLabel, 'FontSize', 8, 'FontWeight', 'bold');
                 hold('off');   
                 wtLog.contextOff();     
             end
+
             wtLog.contextOff();
         end
     catch me
@@ -232,554 +257,193 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     wtLog.info('Plotting done.');
 end
 
-    % if ~exist('inputgui.m','file')    
-    %     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
-    %     fprintf('\n');
-    %     return    
-    % end
+function showSubPlotCb(hMasterFigure, event)
+    prms = hMasterFigure.UserData.ShowSubPlotCbPrms;
+    plotsPrms = prms.plotsPrms;
 
-    % try
-    %     PROJECTPATH=evalin('base','PROJECTPATH');
-    %     addpath(strcat(PROJECTPATH,'/Config'));
-    %     filenm;
-    %     if exist('condgrand.m','file')
-    %         condgrand;
-    %         condgrands=cat(2,conditions,condiff);
-    %         cd (PROJECTPATH);
-    %     else
-    %         fprintf(2,'\nFile-list of transformed conditions not found!!!\n');
-    %         fprintf('\n');
-    %         return
-    %     end
-    % catch
-    %     if exist('../cfg','dir')
-    %         addpath('../cfg');
-    %         filenm;
-    %         condgrand;
-    %         condgrands=cat(2,conditions,condiff);
-    %     else
-    %         fprintf(2,'\nProject not found!!!\n');
-    %         fprintf('\n');
-    %         return
-    %     end
-    % end
-
-    % if isempty(varargin)    
-    %     measure=strcat('_bc-avWT.mat');    
-    % elseif strcmp(varargin,'evok')    
-    %     measure=strcat('_bc-evWT.mat');    
-    % elseif ~strcmp(varargin,'evok')    
-    %     fprintf(2,'\nThe measure %s is not present in the %s folder!!!\n',varargin,subj);
-    %     fprintf(2,'If you want to plot evoked oscillations, please type ''evok'' as last argument (after the contours argument).\n');
-    %     fprintf(2,'Type nothing after the contours argument if you want to plot total-induced oscillations.\n');
-    %     fprintf('\n');
-    %     return    
-    % end
-
-    % Make Config folder to store config files for gui working functions
-%     if exist('PROJECTPATH','var')
-%         CommonPath = strcat (PROJECTPATH,'/');
-%         alreadyexistdir=strcat(CommonPath,'Config');
-%         if ~exist(alreadyexistdir,'dir')
-%             mkdir (CommonPath,'Config');
-%         end
-%         addpath(strcat(PROJECTPATH,'/Config'));
-%         pop_cfgfile = strcat(CommonPath,'Config/xavr_cfg.m');
-%     else
-%         CommonPath = strcat ('../');
-%         alreadyexistdir=strcat(CommonPath,'Config');
-%         if ~exist(alreadyexistdir,'dir')
-%             mkdir (CommonPath,'Config');
-%         end
-%         addpath(strcat('../','Config'));
-%         pop_cfgfile = strcat('../Config/xavr_cfg.m');
-%     end
-
-%     % Call gui only if no arguments were entered
-%     if ~nargin
-%         [filenames, pathname, filterindex]=uigetfile({ '*-avWT.mat'; '*-evWT.mat' },'Select files to plot','MultiSelect','on');    
-%         if ~pathname
-%             return %quit on cancel button
-%         end    
-%         % Find subject/grand folder from the path
-%         if ispc
-%             sla='\';
-%         else
-%             sla='/';
-%         end
-%         slashs=findstr(pathname,sla);
-%         subj=pathname(slashs(end-1)+1:end-1);    
-%         if filterindex == 2
-%             varargin='evok';
-%             measure=strcat('_bc-evWT.mat');
-%         elseif filterindex == 3
-%             fprintf(2,'\nYou cannot select -avWT.mat and -evWT.mat at the same time,\n');
-%             fprintf(2,'neither any other different kind of file!!!\n');
-%             fprintf(2,'Please, select either -avWT.mat or -evWT.mat files.\n');
-%             fprintf('\n');
-%             return
-%         end
-        
-%         % CHECK if the data have been log-transformed
-%         logFlag = wtCheckEvokLog();
-%         enable_uV = WTUtils.ifThenElse(logFlag, 'off', 'on');
-
-%         % SET defaultanswer0
-%         % SET color limits and GUI
-%         if logFlag
-%             defaultanswer0={[],[],[],[],'[-10.0    10.0]',0,1};
-%             Scale='Scale (�x% change)';
-%         else
-%             defaultanswer0={[],[],[],[],'[-0.5    0.5]',0,1};
-%             Scale='Scale (mV)';
-%         end
-        
-%         answersN=length(defaultanswer0);
-        
-%         % Load previously called parameters if existing
-%         if exist(pop_cfgfile,'file')
-%             xavr_cfg;
-%             try
-%                 defaultanswer=defaultanswer;
-%                 defaultanswer{1,answersN};
-                
-%                 % Reset default scale if needed (e.g. the user changed from uV
-%                 % to log or vice versa) and if the scale is symmetric
-%                 scale=WTUtils.str2nums(defaultanswer{1,5});
-%                 if (abs(scale(1)) == abs(scale(2))) && (logFlag && (scale(2) < 3)) || (~logFlag && (scale(2) >=3))
-%                     defaultanswer{1,5}=defaultanswer0{1,5};
-%                 end                
-%             catch
-%                 fprintf('\n');
-%                 fprintf(2, 'The xavr_cfg.m file in the Config folder was created by a previous version\n');
-%                 fprintf(2, 'of WTools. It will be updated to the most recent version and overwritten.');
-%                 fprintf('\n');
-%                 defaultanswer=defaultanswer0;
-%             end
-%         else
-%             defaultanswer=defaultanswer0;
-%         end
-        
-%         parameters    = { ...
-%             { 'style' 'text'       'string' 'Time (ms): From     ' } ...
-%             { 'style' 'edit'       'string' defaultanswer{1,1} } ...
-%             { 'style' 'text'       'string' 'To' } ...
-%             { 'style' 'edit'       'string' defaultanswer{1,2} }...
-%             { 'style' 'text'       'string' 'Frequency (Hz): From' } ...
-%             { 'style' 'edit'       'string' defaultanswer{1,3} }...
-%             { 'style' 'text'       'string' 'To' } ...
-%             { 'style' 'edit'       'string' defaultanswer{1,4} }...
-%             { 'style' 'text'       'string' Scale } ...
-%             { 'style' 'edit'       'string' defaultanswer{1,5} }...
-%             { 'style' 'text'       'string' 'Draw contours' } ...
-%             { 'style' 'checkbox'   'value' defaultanswer{1,6} } ...
-%             { 'style' 'text'       'string' 'Plot all channels' } ...
-%             { 'style' 'checkbox'   'value' defaultanswer{1,7} } ...
-%             { 'style' 'text'       'string' '' } ...
-%             { 'style' 'text'       'string' '' } };
-        
-%         geometry = { [0.25 0.15 0.15 0.15]  [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
-        
-%         % answer=inputdlg(parameters,'Set parameters',1.2,defaultanswer);
-        
-%         answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plotting parameters');
-        
-%         if isempty(answer)
-%             return %quit on cancel button
-%         end
-        
-%         tMin=WTUtils.str2nums(answer{1,1});
-%         tMax=WTUtils.str2nums(answer{1,2});
-%         FrMin=WTUtils.str2nums(answer{1,3});
-%         FrMax=WTUtils.str2nums(answer{1,4});
-%         scale=WTUtils.str2nums(answer{1,5});
-%         contr=answer{1,6};
-%         allchan=answer{1,7};
-        
-%         % Find conditions to plot from the user selected files
-%         if ~iscell(filenames)
-%             filenames={filenames};
-%         end
-%         filenames=sort(filenames);
-%         condtoplot=cell(length(filenames),length(condgrands));
-%         condgrands=sort(condgrands);
-        
-       
-
-%         % Exatracts conditions....
-%         % 11_ADS_bc-evWT.mat => ADS
-%         % ADS_bc-evWT.mat => ADS
-
-%          % Clean filenames from measure and file extensions
-%         a=cell(length(filenames));
-%         for i=1:length(filenames)
-%             a{i}=strfind(filenames,measure);
-%             if ~strcmp(subj,'grand')
-%                 b=strfind(filenames,'_');
-%                 filenames{i}=filenames{i}(b{i}(1)+1:a{1}{i}-1);
-%             else
-%                 filenames{i}=filenames{i}(1:a{1}{i}-1);
-%             end
-%         end
-        
-%         % find {i,j} (file/conditions) that matches, set the remaining to empty
-%         for i=1:length(filenames)
-%             for j=1:length(condgrands)
-%                 condtoplot{i,j}=strcmp(filenames{i},condgrands{j});
-%                 if condtoplot{i,j} == 0
-%                     condtoplot{i,j}=[];
-%                 end
-%             end
-%         end
-        
-%         % extract a = rows, b = colums of matiching file/cond
-%         [a,b]=find(~cellfun(@isempty,condtoplot));
-%         condtoplot=unique(b');
-%         condgrands=condgrands(condtoplot);
-%         condN = size(condgrands,2);
-        
-%     end
-
-%     % CHECK if difference and/or grand average files are up to date
-%     [diffConsistency grandConsistency]=wtCheckDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
-%     if ~diffConsistency || ~grandConsistency
-%         return
-%     end
-
-%     % Check the input is correct
-%     if tMin > tMax
-%         fprintf(2,'\nThe time window is  not valid!!!\n');
-%         fprintf('\n');
-%         return
-%     end
-%     if FrMin > FrMax
-%         fprintf(2,'\nThe frequency band is not valid!!!\n');
-%         fprintf('\n');
-%         return
-%     end
-%     if scale(1) >= scale(2)
-%         fprintf(2,'\nThe scale is not valid!!!\n');
-%         fprintf('\n');
-%         return
-%     end
-
-%     % Prompt the user to select the conditions to plot when using command line
-%     % function call
-%     if ~exist('condtoplot','var')
-%         % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % Taken from Luca Filippin's EGIWaveletPlot.m%
-%         % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         [condtoplot,ok] =listdlg('ListString', condgrands, 'SelectionMode', 'multiple', 'Name', 'Select Conditions',...
-%             'ListSize', [200, 200]);
-%         % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-%         if ~ok
-%             return
-%         else
-%             condgrands=condgrands(condtoplot);
-%             condN = size(condgrands,2);
-%         end
-        
-%     end
-
-%     if length(varargin) == 1
-%         varargin=varargin{1};
-%     end
-
-%     if strcmp(subj,'grand')    
-%         if exist('PROJECTPATH','var')
-%             CommonPath = strcat (PROJECTPATH,'/grand/');
-%         else
-%             CommonPath = strcat ('../grand/');
-%         end    
-%         % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-%         % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
-%         firstCond = strcat (CommonPath,condgrands(1),measure);
-%         load (char(firstCond));    
-%     else    
-%         if exist('PROJECTPATH','var')
-%             CommonPath = strcat (PROJECTPATH,'/');
-%         else
-%             CommonPath = strcat ('../');
-%         end    
-%         % load the first condition to take information from the matrixs 'Fa', 'tim' and 'chanlocs'
-%         % (see ERPWAVELAB file structure: http://erpwavelab.org/tutorial/index_files/Page496.htm)
-%         firstCond = strcat (CommonPath,subj,'/',subj,'_',condgrands(1),measure);
-%         load (char(firstCond));    
-%     end
-
-%     timeRes = tim(2) - tim(1); %find time resolution
-%     if length(Fa)>1
-%         frRes = Fa(2) - Fa(1); %find frequency resolution
-%     else
-%         frRes = 1;
-%     end
-
-%     % Adjust times and frequencies limits according with the data sampling
-%     temp=tMin;
-%     if tMin<min(tim)
-%         tMin=min(tim);
-%         fprintf(2,'\n%i ms is out of boundaries!!!',temp);
-%         fprintf(2,'\nValue adjusted to the lower time (%i ms)\n',min(tim));
-%     else
-%         tMin=tMin-mod(tMin,timeRes);
-%         while ~any(tim == tMin)
-%             tMin=tMin+1;
-%         end
-%     end
-%     temp=tMax;
-%     if tMax>max(tim)
-%         tMax=max(tim);
-%         fprintf(2,'\n%i ms is out of boundaries!!!',temp);
-%         fprintf(2,'\nValue adjusted to the higher time (%i ms)\n',max(tim));
-%     else
-%         tMax=tMax-mod(tMax,timeRes);
-%         while ~any(tim == tMax)
-%             tMax=tMax+1;
-%         end
-%     end
-%     temp=FrMin;
-%     if FrMin<min(Fa)
-%         FrMin=min(Fa);
-%         fprintf(2,'\n%i Hz is out of boundaries!!!',temp);
-%         fprintf(2,'\nValue adjusted to the lower frequency (%i Hz)\n',min(Fa));
-%     else
-%         FrMin=FrMin-mod(FrMin,frRes);
-%         while ~any(Fa == FrMin)
-%             FrMin=FrMin+1;
-%         end
-%     end
-%     temp=FrMax;
-%     if FrMax>max(Fa)
-%         FrMax=max(Fa);
-%         fprintf(2,'\n%i Hz is out of boundaries!!!',temp);
-%         fprintf(2,'\nValue adjusted to the higher frequency (%i Hz)\n',max(Fa));
-%     else
-%         FrMax=FrMax-mod(FrMax,frRes);
-%         while ~any(Fa == FrMax)
-%             FrMax=FrMax+1;
-%         end
-%     end
-
-%     % Calculate latency subset to plot and reduce time to speed up
-%     % plotting of individual channels
-%     if timeRes == 1
-%         reduction=4;
-%     elseif timeRes == 2
-%         reduction=2;
-%     else
-%         reduction=timeRes;
-%     end
-%     lat=find(tim == tMin):reduction:find(tim == tMax);
-
-%     % Calculate frequency submset to plot
-%     fr=find(Fa == FrMin):find(Fa == FrMax);
-
-%     % Save the user input parameters in the Config folder
-%     if ~nargin
-%         fid = fopen(pop_cfgfile, 'wt'); %Overwrite preexisting file with the same name
-%         fprintf(fid, 'defaultanswer={ ''%s'' ''%s'' ''%s'' ''%s'' ''[%s]'' %i %i};',...
-%             num2str(tMin),num2str(tMax),num2str(FrMin),num2str(FrMax),num2str(scale,'%.1f'),contr,allchan);
-%         fclose(fid);
-%         rehash;
-%     end
-
-%     % FIND channels to plot from gui
-%     if ~nargin && ~allchan
-%         labels={};
-%         labels=cat(1,labels,chanlocs(1,:).labels);
-%         labels=labels';
-%         [ChannelsList, ok] = listdlg('PromptString','Select channels:','SelectionMode','multiple','ListString',labels);
-%         if ~ok
-%             return
-%         else
-%             channelsN=length(ChannelsList);
-%         end
-%     else
-%         % SET parameters
-%         channelsN = size(WT,1);
-%         ChannelsList = 1:channelsN;
-%     end
-
-%     width = 0.1;
-%     height = 0.1;
-
-%     % set figure parameters for current Matlab and EEGLAB version and color axis
-%     % measure
-%     [DEFAULT_COLORMAP, clabel, Rotation, xclabel] = wtSetFigure(strcmp(enable_uV,'off'));
-
-%     fprintf('\n');
-%     fprintf('Plotting...\n');
-%     fprintf('\n');
-
-%     for cn = 1:condN    
-%         if logFlag % convert the data back to non-log scale straight in percent change        
-%             WT = 100 * (10.^WT - 1);        
-%         end
-        
-%         tim = [tMin tMax];
-%         Fa = [FrMin FrMax];
-        
-%         % channelsN=size(WT,1);
-%         chanlocs = chanlocs(ChannelsList);
-        
-%         if strcmp(subj,'grand')        
-%             figureName = char(strcat(filename, condgrands(cn), measure));        
-%         else        
-%             figureName = char(strcat(filename, 'Subj', subj, '_', condgrands(cn), measure));        
-%         end
-        
-%         for k = 1:length(chanlocs)
-%             if ~isempty(chanlocs(k).radius)
-%                 x(k) = sin(chanlocs(k).theta / 360 * 2 * pi) * chanlocs(k).radius;
-%                 y(k) = cos(chanlocs(k).theta / 360 * 2 * pi) * chanlocs(k).radius;
-%             end
-%         end
-
-%         minx = min(x);
-%         miny = min(y);
-%         maxx = max(x);
-%         maxy = max(y);
-%         a = (maxx-minx) / 50; % air to edge of plot
-%         b = (maxy-miny) / 50; % air to edge of plot
-%         mx = maxx - minx + width;
-%         my = maxy - miny + height;
-        
-%         % Create the main figure
-%         h = figure('WindowButtonDownFcn',{@showTFPlot, WT, x, y, chanlocs, ChannelsList,...
-%             tim, Fa, scale, mx, my, a, b, width, height, fr, lat, figureName, reduction, FrMin,...
-%             FrMax, contr, DEFAULT_COLORMAP, clabel, Rotation, xclabel});    
-%         colormap(DEFAULT_COLORMAP);    
-%         set(h, 'Name', figureName);
-%         set(h, 'NumberTitle', 'off');
-%         set(h, 'ToolBar','none');
-%         clf;
-%         set(h, 'Color', [1 1 1]);
-%         set(h, 'PaperUnits', 'centimeters');
-%         set(h, 'PaperType', '<custom>');
-%         set(h, 'PaperPosition', [0 0 12 12]);
-        
-%         % Create axes for the main figure
-%         h = axes('position', [0 0 1 1]);
-%         set(h, 'Visible', 'off');
-%         for ch = 1:channelsN        
-%             % Create axes for each channel
-%             h = axes('Position',[(x(ch) - minx + a)/(mx + 2 * a), (y(ch) - miny + a) / (my + 2 * b), width / mx, height / mx ]);
-%             hold on;        
-%             % Draw channels
-%             imagesc(squeeze(WT(ChannelsList(ch),fr,lat)));
-%             % set(gca);
-%             caxis(scale);
-%             axis off;
-%             text(0, 0, chanlocs(ch).labels, 'FontSize', 8, 'FontWeight', 'bold');
-%             hold off;        
-%         end
-
-%         % load next condition
-%         if strcmp(subj, 'grand') && (cn < condN)
-%             dataset = char(strcat(CommonPath, condgrands(cn+1), measure));
-%             load(dataset);
-%         elseif cn < condN
-%             dataset = char(strcat(CommonPath, subj, '/', subj, '_', condgrands(cn+1), measure));
-%             load(dataset);
-%         end    
-%     end
-% end
-
-function showTFPlot(src,event,WT,x,y,chanlocs,ChannelsList,tim,Fa,scale,mx,my,...
-    a,b,width,height,fr,lat,figureName,reduction,FrMin,FrMax,contr,DEFAULT_COLORMAP,clabel,Rotation,xclabel)
-    % Button down function for plot figure - displays single channel activity
-    xMin = min(x);
-    yMin = min(y);
-    x = (x - xMin + a) / (mx + 2 * a) + width / (2*mx);
-    y = (y - yMin + a) / (my + 2 * b) + height / (2*mx);
-    ppl = [x' y'];
-    cp = get(src, 'CurrentPoint');
-    cp2 = get(src, 'Position');
+    % Find the index of the sub plot to open
+    cp = get(hMasterFigure, 'CurrentPoint');
+    cp2 = get(hMasterFigure, 'Position');
     pos = cp ./ cp2(3:4);
-    dist = sum((ppl - repmat(pos, [size(ppl,1), 1])) .^ 2,2);
-    [Y,k] = min(dist);
-    alreg = abs(pos - ppl(k,:));
-    if alreg(1) <= width / (2*mx) && alreg(2) <= height / (2*mx)
-        F = figure('NumberTitle', 'off', 'Name', figureName, 'ToolBar','none');
-        % imagesc(tim,Fa,squeeze(WT(k(1),fr,lat)));
-        colormap(DEFAULT_COLORMAP);
-        figureExist = exist('F','var');
-        set(F,'WindowButtonDownFcn', { @changeGrid, figureExist });
-        imagesc(tim, Fa, interp2(squeeze(WT(ChannelsList(k(1)),fr,lat)), 4, 'spline'));
-        hold on;
-        if contr && reduction == 4
-            contour(tim(1):2^2:tim(end), Fa(1):Fa(end), squeeze(WT(k(1),fr,lat)), 'k');
-        elseif contr
-            contour(tim(1):reduction^2:tim(end), Fa(1):Fa(end) ,squeeze(WT(k(1),fr,lat)), 'k');
+    dist = sum((prms.ppl - repmat(pos, [size(prms.ppl,1), 1])) .^ 2,2);
+    [~,k] = min(dist);
+    alreg = abs(pos -prms.ppl(k,:));
+
+    % Check if the figure is already open, if yes, just focus on it...
+    figureTag = prms.channelsLocations(k(1)).labels;
+    openSubPlots = hMasterFigure.UserData.OpenSubPlots;
+    hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag),openSubPlots));
+    if ~isempty(hFigure)
+        figure(hFigure);
+        return
+    end
+
+    function closeSubPlotCb(hSubPlotFigure, event)
+        if isvalid(hMasterFigure)
+            openSubPlots = hMasterFigure.UserData.OpenSubPlots;
+            figureIdx = arrayfun(@(figure)strcmp(figure.Tag, figureTag), openSubPlots);
+            hMasterFigure.UserData.OpenSubPlots(figureIdx) = [];
         end
-        caxis(scale);
+        if isvalid(hSubPlotFigure)
+            delete(hSubPlotFigure);
+        end
+    end
+    
+    % Determine positiion and size of the subp lot on screen
+    sreenSize = get(groot, 'screensize');
+    whScreenRatio =  sreenSize(3)/sreenSize(4);
+    widthOnScreen = 0.15;
+    heightOnScreen = widthOnScreen * whScreenRatio;
+    xSpan = (prms.xMax - prms.xMin + widthOnScreen);
+    ySpan = (prms.yMax - prms.yMin + heightOnScreen);
+    xOnScreen = (prms.x(k(1)) - prms.xMin) / xSpan;
+    yOnScreen = (prms.y(k(1)) - prms.yMin) / ySpan;
+
+    position = [ ...
+        (xOnScreen * sreenSize(3)) ... 
+        (yOnScreen * sreenSize(4)) ...
+        (widthOnScreen * sreenSize(3)) ...
+        (heightOnScreen * sreenSize(4)) ...
+    ];
+
+    if alreg(1) <= prms.width / (2 * prms.xM) && alreg(2) <= prms.height / (2 * prms.yM)
+        hFigure = figure('NumberTitle', 'off', 'Name', prms.figureName, 'ToolBar', 'none', 'Position', position);
+        % Set the unique tag, so we can check if the figure has been already opened
+        hFigure.Tag = figureTag;
+        hMasterFigure.UserData.OpenSubPlots = [openSubPlots hFigure];
+        hFigure.CloseRequestFcn = @closeSubPlotCb;
+        % Save the original position in the UserData
+        subPlotPrms = struct();
+        subPlotPrms.OriginalPosition = position;
+        hFigure.UserData = subPlotPrms;
+
+        colormap(prms.defaultColorMap);
+        set(hFigure, 'WindowButtonDownFcn', @changeSubPlotGridCb);
+        imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
+            interp2(squeeze(prms.WT(prms.channelsToPlotIdxs(k(1)), prms.freqIdxs, prms.timeIdxs)), 4, 'spline'));
+        hold('on');
         
-        xconst = (tim(end) - tim(1)) / 200;
-        xpeace = (tim(end) - tim(1)) / xconst;
-        XTick = tim(1):xpeace:tim(end);
-        
-        if FrMax-FrMin > 1 && FrMax-FrMin <= 5
-            YTick = FrMin:FrMax;
-        elseif FrMax - FrMin > 5 && FrMax - FrMin <= 15
-            YTick = FrMin:2:FrMax;
-        elseif FrMax - FrMin > 15 && FrMax - FrMin <= 25
-            YTick = FrMin:5:FrMax;
-        elseif FrMax - FrMin > 25 && FrMax - FrMin <= 45
-            YTick = FrMin:10:FrMax;
-        elseif FrMax - FrMin > 45 && FrMax - FrMin <= 65
-            YTick = FrMin:15:FrMax;
+        if plotsPrms.Contours
+            timePace = WTUtils.ifThenElse(prms.downsampleFactor == 4, 4,  prms.downsampleFactor^2);
+            contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
+                    plotsPrms.FreqMin:plotsPrms.FreqMax, ...
+                    squeeze(prms.WT(k(1), prms.freqIdxs, prms.timeIdxs)), 'k');
+        end
+
+        clim(plotsPrms.Scale);
+        xConst = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 200;
+        xPace = (plotsPrms.TimeMax - plotsPrms.TimeMin) / xConst;
+        xTick = plotsPrms.TimeMin:xPace:plotsPrms.TimeMax;
+        deltaFreq = plotsPrms.FreqMax - plotsPrms.FreqMin;
+
+        if deltaFreq > 1 && deltaFreq <= 5
+            freqPace = 1;
+        elseif deltaFreq > 5 && deltaFreq <= 15
+            freqPace = 2;
+        elseif deltaFreq > 15 && deltaFreq <= 25
+            freqPace = 5;
+        elseif deltaFreq > 25 && deltaFreq <= 45
+            freqPace = 10;
+        elseif deltaFreq > 45 && deltaFreq <= 65
+            freqPace = 15;
         else
-            YTick = FrMin:20:FrMax;
+            freqPace = 20;
         end
-        
-        set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', XTick, 'YTick', YTick);
-        axis tight;
-        title(chanlocs(k(1)).labels, 'FontSize', 16, 'FontWeight', 'bold');
+
+        yTick = plotsPrms.FreqMin:freqPace:plotsPrms.FreqMax;
+        set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', xTick, 'YTick', yTick);
+        axis('tight');
+        title(prms.channelsLocations(k(1)).labels, 'FontSize', 16, 'FontWeight', 'bold');
         xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
-        peace = linspace(min(scale), max(scale),64);
-        peace = peace(2) - peace(1);
-        C = colorbar('peer', gca, 'YTick', sort([0 scale]));
-        set(get(C, 'xlabel'), 'String', clabel, 'Rotation', Rotation, 'FontSize', 12, 'FontWeight', 'bold', 'Position', [xclabel 2*peace]);   
+        pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
+        pace = pace(2) - pace(1);
+        colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
+        set(get(colorBar, 'xlabel'), 'String', prms.cLabel, 'Rotation', prms.rotation, 'FontSize', 12, 'FontWeight', 'bold', 'Position', [prms.xcLabel 2*pace]);   
     end
 end
 
-function changeGrid(F, event, figureExist)
-    persistent clickN
-
+function changeSubPlotGridCb(hObject, ~)
     try    
-        while figureExist        
-            n = get(gcbo, 'Number');
-            h = findobj('type', 'figure');
-            fn = length(h);        
-            if isempty(clickN)
-                clickN = zeros(1, fn);
-                clickN(n) = 1;
-            elseif n>length(clickN)
-                temp = zeros(1,(n - length(clickN)));
-                clickN = cat(2, clickN, temp);
-                clickN(n) = clickN(n) + 1;
-            else
-                clickN(n) = clickN(n) + 1;
-            end        
-            if rem(clickN(n),3) == 1
+        gridLineStyle = get(gca, 'gridlinestyle');
+        switch gridLineStyle
+            case '-'
+                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '--');
+            case '--'
                 set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', ':');
-            elseif rem(clickN(n),3) == 2
+            case ':'
                 set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', 'none');
-            elseif rem(clickN(n),3) == 0
+            case 'none'
                 set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-');
-            end        
-            waitforbuttonpress;        
-        end    
-    catch    
-        pause(1);
-        return    
+        end     
+    catch 
     end
 end
 
+function txt = showSubPlotLabelCb(hObject, info)
+    try
+        txt = info.Target.UserData.ChannelLabel;
+    catch
+        txt = [];
+    end
+end
 
- %===========================
+function subPlotResize(subPlotsAxes, incdec)
+    for i = 1 : length(subPlotsAxes)
+        spa = subPlotsAxes(i);
+        position = spa.Position;
+        origSize = spa.UserData.OriginalSize;
+        tickWidth = origSize(1) / 20;
+        tickHeight = origSize(2) / 20;
+
+        switch incdec
+            case '+'
+                if position(3) <= origSize(1) - tickWidth 
+                    position(1) = position(1) - tickWidth / 2;
+                    position(2) = position(2) - tickHeight / 2;
+                    position(3) = position(3) + tickWidth;
+                    position(4) = position(4) + tickHeight;
+                    spa.Position = position;
+                end
+            case '-'
+                if position(3) >= 2 * tickWidth 
+                    position(1) = position(1) + tickWidth / 2;
+                    position(2) = position(2) + tickHeight / 2;
+                    position(3) = position(3) - tickWidth;
+                    position(4) = position(4) - tickHeight;
+                    spa.Position = position;
+                end
+        end
+    end
+end
+
+function subPlotManageOnKeyPressCb(hObject, event)
+    switch event.Character
+        case 'r' % rearrange open plots into the original opening position
+            subPlots = hObject.UserData.OpenSubPlots;
+            for i = 1:length(subPlots)
+                subPlots(i).Position = subPlots(i).UserData.OriginalPosition;
+            end
+        case '+'  
+            subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
+        case '-'
+            subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
+        otherwise
+            return
+    end
+end
+
+function subPlotResizeOnMouseScrollCb(hObject, event) 
+    if event.VerticalScrollCount > 1
+        incdec = '+';
+    elseif event.VerticalScrollCount < -1
+        incdec = '-';
+    else
+        return
+    end
+    subPlotsAxes = hObject.UserData.SubPlotsAxes;
+    subPlotResize(subPlotsAxes, incdec)
+end
 
 function conditions = extractConditionsFromFileNames(fileNames)
     conditions = cell(1, length(fileNames));
@@ -887,17 +551,17 @@ end
     success = false;
     logFlag = any(logical(logFlag));
     wtProject = WTProject();
-    plotPrms = copy(wtProject.Config.AveragePlots);
+    plotsPrms = copy(wtProject.Config.AveragePlots);
 
-    if ~WTPlotsGUI.defineAvgPlotsSettings(plotPrms, logFlag)
+    if ~WTPlotsGUI.defineAvgPlotsSettings(plotsPrms, logFlag)
         return
     end
     
-    if ~plotPrms.persist()
+    if ~plotsPrms.persist()
         wtProject.notifyErr([], 'Failed to save average plots params');
         return
     end
 
-    wtProject.Config.AveragePlots = plotPrms;
+    wtProject.Config.AveragePlots = plotsPrms;
     success = true;
 end

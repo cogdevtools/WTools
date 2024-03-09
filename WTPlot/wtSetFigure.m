@@ -4,14 +4,14 @@
 % Auxiliary function for plotting.
 
 function [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(logFlag)
-    % Fetch info from icadefs.m
     icadefs;
-    DEFAULT_COLORMAP;
-    VERS;
 
     % For older version of EEGLAB with no info in icadefs.m
-    if ~exist('DEFAULT_COLORMAP', 'var') || ~exist('VERS', 'var')    
-        DEFAULT_COLORMAP = 'jet';    
+    if ~exist('DEFAULT_COLORMAP', 'var') 
+        DEFAULT_COLORMAP = 'jet'; 
+    end
+
+    if ~exist('VERS', 'var')    
         vers = version;
         indp = find(vers == '.');
         if WTUtils.str2double(vers(indp(1)+1)) > 1 
