@@ -4,6 +4,10 @@
 % Auxiliary function for plotting.
 
 function [DEFAULT_COLORMAP, cLabel, rotation, xcLabel] = wtSetFigure(logFlag)
+    % icadefs is an eeglab module, but can be copied locally, so here we just
+    % call it assuming that either there's a local copy in WTools or eeglab is
+    % in the matlab paths, as it should be if the tools have been correctly 
+    % initialised
     icadefs;
 
     % For older version of EEGLAB with no info in icadefs.m

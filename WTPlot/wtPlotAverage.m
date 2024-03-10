@@ -135,8 +135,6 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     nChannelsToPlot = numel(channelsToPlot);
     wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
-    wtWorspace = WTWorkspace();
-    wtWorspace.pushBase()
     mainPlots = [];
 
     try
@@ -254,7 +252,6 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             wtLog.contextOff();
         end
     catch me
-        wtWorspace.popToBase();
         wtLog.except(me);
         wtLog.popStatus();
     end
