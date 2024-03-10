@@ -11,7 +11,7 @@ function success = wtExtractConditions(subject)
     ioProc = wtProject.Config.IOProc;
     conditions = wtProject.Config.Conditions.ConditionsList;
     nConditions = length(conditions);
-    outFilesPrefix = wtProject.Config.Prefix.FilesPrefix;
+    outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
 
     [success, EEG, ALLEEG] = ioProc.loadProcessedImport(outFilesPrefix, subject);
     if ~success 

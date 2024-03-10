@@ -59,7 +59,7 @@ function wtEEGLabToEEGLab()
     conditions = conditionsPrms.ConditionsList;
     nConditions = length(conditions);
     channelsPrms = wtProject.Config.Channels;
-    outFilesPrefix = wtProject.Config.Prefix.FilesPrefix;
+    outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
 
     if nSubjects == 0 
         wtLog.warn('No subjects to process');

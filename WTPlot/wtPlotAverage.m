@@ -65,7 +65,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
-    prefixPrms = wtProject.Config.Prefix;
+    basicPrms = wtProject.Config.Basic;
     conditionsGrandPrms = wtProject.Config.ConditionsGrand;
     conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
     grandAverage = strcmp(subject, '');
@@ -159,8 +159,8 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             end 
 
             figureName = WTUtils.ifThenElse(grandAverage, ...
-                char(strcat(prefixPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
-                char(strcat(prefixPrms.FilesPrefix,'.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
+                char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
+                char(strcat(basicPrms.FilesPrefix,'.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
             % convert the data back to non-log scale straight in percent change in case logFlag is set
             prms.WT = WTUtils.ifThenElse(logFlag, 100 * (10.^data.WT - 1), data.WT);

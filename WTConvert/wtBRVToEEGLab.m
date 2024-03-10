@@ -65,7 +65,7 @@ function wtBRVToEEGLab()
     conditions = conditionsPrms.ConditionsList;
     nConditions = length(conditions);
     channelsPrms = wtProject.Config.Channels;
-    outFilesPrefix = wtProject.Config.Prefix.FilesPrefix;
+    outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
     epochLimits = BRVToEEGLabPrms.EpochLimits / 1000;
    
     if nSubjects == 0 

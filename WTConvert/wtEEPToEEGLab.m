@@ -62,7 +62,7 @@ function wtEEPToEEGLab()
     conditions = conditionsPrms.ConditionsList;
     nConditions = length(conditions);
     channelsPrms = wtProject.Config.Channels;
-    outFilesPrefix = wtProject.Config.Prefix.FilesPrefix;
+    outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
     epochLimits = EEPToEEGLabPrms.EpochLimits / 1000;
     
     if nSubjects == 0 

@@ -1,20 +1,37 @@
 function wtImportData() 
-    ioProc = WTProject().Config.IOProc;
+    wtProject = WTProject();
+    ioProc = wtProject.Config.IOProc;
+    basicPrms = wtProject.Config.Basic;
     wtLog = WTLog();
     importDir = ioProc.ImportDir;
     notImportedFiles = {};
-
-    % This message is perhaps too annoying...
-    % WTUtils.eeglabMsgDlg('Info', 'NOTE: only files with name format ''%s'' can be imported...', ioProc.ImportFileRe);
-
     systemTypes = WTIOProcessor.getSystemTypes();
-    system = WTUtils.stringsSelectDlg('Source system', systemTypes, true, false, 'ListSize', [200,100]);
-    if isempty(system) 
-        return
+
+    if ~isempty(basicPrms.SourceSystem) && ~any(cellfun(@(x)strcmp(x, basicPrms.SourceSystem), systemTypes))
+        wtLog.err('Unknown source system type: ''%s''', basicPrms.SourceSystem);
+        if ~WTUtils.eeglabYesNoDlg('Error', 'Unknown source system type ''%s''. Reset?', basicPrms.SourceSystem)
+            return
+        end
+        wtLog.wrn('User reset source system type because unknown: ''%s''',  basicPrms.SourceSystem);
+        basicPrms.SourceSystem = '';
     end
 
-    system = char(system);
-    wtLog.info('User selected system ''%s''', system);
+    system = basicPrms.SourceSystem;
+
+    if isempty(system)
+        % This message is perhaps too annoying...
+        % WTUtils.eeglabMsgDlg('Info', 'NOTE: only files with name format ''%s'' can be imported...', ioProc.ImportFileRe);
+        systemTypes = WTIOProcessor.getSystemTypes();
+        system = WTUtils.stringsSelectDlg('Source system', systemTypes, true, false, 'ListSize', [200,100]);
+        if isempty(system) 
+            return
+        end
+        system = char(system);
+        basicPrms.SourceSystem = system;
+        wtLog.info('User selected system ''%s''', system);
+    end
+
+    importedCount = 0;
 
     while true
         fileExt = ['*.' WTIOProcessor.getSystemImportFileExtension(system)];
@@ -71,6 +88,8 @@ function wtImportData()
                     copyFailed = true;
                     break
                 end
+
+                importedCount = importedCount + 1;
             end
 
             if copyFailed
@@ -89,5 +108,9 @@ function wtImportData()
     if ~isempty(notImportedFiles) 
         WTUtils.eeglabMsgDlg('Errors', 'The following files could not be imported. Check the log...\n%s', ... 
             char(join(notImportedFiles, '\n')));
+    end
+
+    if importedCount > 0 && ~basicPrms.persist()
+        wtProject.notifyErr([], 'Failed to save basic configuration params');
     end
 end

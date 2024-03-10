@@ -48,7 +48,7 @@ function success = wtPerformCWT()
     end
 
     ioProc = wtProject.Config.IOProc;
-    prefixParams = wtProject.Config.Prefix;
+    basicParams = wtProject.Config.Basic;
     waveletTransformParams = wtProject.Config.WaveletTransform;
     
     timeMin = waveletTransformParams.TimeMin;
@@ -72,7 +72,7 @@ function success = wtPerformCWT()
             wtLog.pushStatus().contextOn('Subj(%d)/Cond(%d)', i, j);
             doItOnce = i == 1 && j == 1;
 
-            [success, EEG] = ioProc.loadCondition(prefixParams.FilesPrefix, subjects{i}, conditions{j});
+            [success, EEG] = ioProc.loadCondition(basicParams.FilesPrefix, subjects{i}, conditions{j});
             if ~success
                 wtLog.popStatus();
                 return
@@ -274,7 +274,7 @@ function [success, timeRange, maxFreq, maxChans] = getTransformDomain()
         return
     end
 
-    [success, EEG] = wtProject.Config.IOProc.loadCondition(wtProject.Config.Prefix.FilesPrefix, ...
+    [success, EEG] = wtProject.Config.IOProc.loadCondition(wtProject.Config.Basic.FilesPrefix, ...
         subjectsPrms.SubjectsList{1}, conditionsPrms.ConditionsList{1}, false);
 
     if ~success 
