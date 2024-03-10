@@ -429,9 +429,8 @@ classdef WTUtils
             varargout = cell(nargout,1);
             cmdArgOfs = WTUtils.ifThenElse(safeMode, 2, 1);
             wtLog = WTLog();
-            warnState = warning;
             me = [];
-            warning('off', 'all');
+            warnState = warning('off', 'all');
             
             try
                 if nargin < 3 % no argument, just run eeglab by default

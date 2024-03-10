@@ -1,4 +1,5 @@
 function success = wtInit
+    warning('off', 'all');
     crntDir = pwd();
     dir = fileparts(mfilename('fullpath'));
     cd(fullfile(dir, 'WTCore'));

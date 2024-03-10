@@ -137,13 +137,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     wtLog.pushStatus().HeaderOn = false;
     wtWorspace = WTWorkspace();
     wtWorspace.pushBase()
-
-    % This callback function called when the master condition figure is closed, will perform the
-    % close of all open subplot related to the master figure
-    function closeReqCb(hObject, event)
-        arrayfun(@(subPlot)subPlot.CloseRequestFcn(subPlot, event), hObject.UserData.OpenSubPlots);
-        delete(hObject);
-    end
+    mainPlots = [];
 
     try
         % Create struct to store all the useful params used here and by the callbacks
@@ -161,10 +155,10 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = loadDataToPlot(subject, conditionsToPlot{cnd}, measure);
             if ~success
-                return
+                break
             end 
 
-            prms.figureName = WTUtils.ifThenElse(grandAverage, ...
+            figureName = WTUtils.ifThenElse(grandAverage, ...
                 char(strcat(prefixPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 char(strcat(prefixPrms.FilesPrefix,'.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
@@ -189,51 +183,62 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             prms.yAirToEdge = (prms.yMax - prms.yMin) / 50; % air to edge of plot
             prms.xM = prms.xMax - prms.xMin + prms.width;
             prms.yM = prms.yMax - prms.yMin + prms.height;
-            x_ = (prms.x - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge) + prms.width / (2 * prms.xM);
-            y_ = (prms.y - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge) + prms.height / (2 * prms.yM);
-            prms.ppl = [x_' y_'];
+            xBottomLeftCorner = (prms.x - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge);
+            yBottomLeftCorner = (prms.y - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge);
+            xCenter = xBottomLeftCorner + prms.width / (2 * prms.xM);
+            yCenter = yBottomLeftCorner + prms.height / (2 * prms.yM);
+            prms.subPlotAxesCenter = [xCenter' yCenter'];
 
             % Create the main figure & add shared user data
             hFigure = figure();
+            mainPlots(end+1) = hFigure;
+            colormap(prms.defaultColorMap);    
+            hFigure.Name = figureName;
+            hFigure.NumberTitle = 'off';
+            hFigure.ToolBar = 'none';
+            hFigure.Color = [1 1 1];
+            hFigure.PaperUnits = 'centimeters';
+            hFigure.PaperType = '<custom>';
+            hFigure.PaperPosition = [0 0 12 12];
+            % Create axes for the main figure
+            hFigureAxes = axes('position', [0 0 1 1]);
+            hFigureAxes.Visible = 'off';
+            % Create label which display the sub plot name when hovering on it with the mouse
+            hSubPlotHoveringAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
+            hSubPlotHoveringAnnotation.Color = [1 0 0];
+            hSubPlotHoveringAnnotation.String = '';
+            hSubPlotHoveringAnnotation.EdgeColor = 'none';
+            hSubPlotHoveringAnnotation.HorizontalAlignment = 'right';
+            hSubPlotHoveringAnnotation.VerticalAlignment = 'middle';
+            hSubPlotHoveringAnnotation.FontName = 'Courier';
+            hSubPlotHoveringAnnotation.FontSize = 15;
+            hSubPlotHoveringAnnotation.FontWeight = 'bold';
+            % Add user data
             hFigure.UserData = struct();
             hFigure.UserData.OpenSubPlots = [];
             hFigure.UserData.SubPlotsAxes = [];
-            hFigure.UserData.ShowSubPlotCbPrms = prms;
+            hFigure.UserData.SubPlotAnnotation = hSubPlotHoveringAnnotation;
+            hFigure.UserData.onButtonDownCbPrms = prms;
             % Set the callback to close open subplots when the master figure closes
-            hFigure.CloseRequestFcn = @closeReqCb;
+            hFigure.CloseRequestFcn = @mainPLotCloseReqeuestCb;
             % Set the callback to display subplots
-            hFigure.WindowButtonDownFcn = @showSubPlotCb;
-            % Set the callback to resize subplots
-            hFigure.WindowKeyPressFcn = @subPlotManageOnKeyPressCb;
-            hFigure.WindowScrollWheelFcn = @subPlotResizeOnMouseScrollCb;
+            hFigure.WindowButtonDownFcn = @mainPlotOnButtonDownCb;
+            % Set the callback to resize/rearrange subplots 
+            hFigure.WindowKeyPressFcn = @mainPlotOnKeyPressCb;
+            hFigure.WindowScrollWheelFcn = @mainPlotOnMouseScrollCb;
+            % Set the callback to display sub plot lable when mouse hover on it
+            hFigure.WindowButtonMotionFcn = @mainPlotOnMouseMotionCb;
             % Set the callback to display the subPlot label as cursor info
-            dcm = datacursormode(hFigure);
-            dcm.Enable = 'off'; % toggle to on from the menu
-            dcm.UpdateFcn = @showSubPlotLabelCb;
-
-            colormap(prms.defaultColorMap);    
-            set(hFigure, 'Name', prms.figureName);
-            set(hFigure, 'NumberTitle', 'off');
-            set(hFigure, 'ToolBar','none');
-            clf(hFigure);
-            set(hFigure, 'Color', [1 1 1]);
-            set(hFigure, 'PaperUnits', 'centimeters');
-            set(hFigure, 'PaperType', '<custom>');
-            set(hFigure, 'PaperPosition', [0 0 12 12]);
             
-            % Create axes for the main figure
-            hFigureAxes = axes('position', [0 0 1 1]);
-            set(hFigureAxes, 'Visible', 'off');
-
             for chn = 1:nChannelsToPlot  
                 wtLog.contextOn().dbg('Channel %s', channelsToPlot{chn});
                 % Create axes for each channel: axes(x,y, xWidth, yWidth) (original below) 
-                hSubPlotAxes = axes('Position', ...
-                    [(prms.x(chn) - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge), ...
-                     (prms.y(chn) - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge), ...
-                      prms.width / prms.xM, prms.height / prms.yM]);
+                axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), ...
+                     prms.width / prms.xM, prms.height / prms.yM];
+                hSubPlotAxes = axes('Position', axesPosition);
                 % Set axes user data that will be used for resizing the  plot via +/- keypress
-                hSubPlotAxes.UserData = struct('OriginalSize', [prms.width / prms.xM, prms.height / prms.yM]);
+                hSubPlotAxes.UserData = struct();
+                hSubPlotAxes.UserData.OriginalPosition = axesPosition;
                 hFigure.UserData.SubPlotsAxes = [hFigure.UserData.SubPlotsAxes hSubPlotAxes];
                 hold('on');        
                 image = imagesc(squeeze(prms.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
@@ -250,155 +255,48 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
         end
     catch me
         wtWorspace.popToBase();
+        wtLog.except(me);
         wtLog.popStatus();
-        me.rethrow();
     end
 
+    % Wait for all main plots to close
+    waitUIs(mainPlots);
     wtLog.info('Plotting done.');
 end
 
-function showSubPlotCb(hMasterFigure, event)
-    prms = hMasterFigure.UserData.ShowSubPlotCbPrms;
-    plotsPrms = prms.plotsPrms;
-
-    % Find the index of the sub plot to open
-    cp = get(hMasterFigure, 'CurrentPoint');
-    cp2 = get(hMasterFigure, 'Position');
-    pos = cp ./ cp2(3:4);
-    dist = sum((prms.ppl - repmat(pos, [size(prms.ppl,1), 1])) .^ 2,2);
-    [~,k] = min(dist);
-    alreg = abs(pos -prms.ppl(k,:));
-
-    % Check if the figure is already open, if yes, just focus on it...
-    figureTag = prms.channelsLocations(k(1)).labels;
-    openSubPlots = hMasterFigure.UserData.OpenSubPlots;
-    hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag),openSubPlots));
-    if ~isempty(hFigure)
-        figure(hFigure);
-        return
-    end
-
-    function closeSubPlotCb(hSubPlotFigure, event)
-        if isvalid(hMasterFigure)
-            openSubPlots = hMasterFigure.UserData.OpenSubPlots;
-            figureIdx = arrayfun(@(figure)strcmp(figure.Tag, figureTag), openSubPlots);
-            hMasterFigure.UserData.OpenSubPlots(figureIdx) = [];
+function waitUIs(UIs) 
+    for i = 1:length(UIs)
+        try
+            uiwait(UIs(i));
+        catch
         end
-        if isvalid(hSubPlotFigure)
-            delete(hSubPlotFigure);
-        end
-    end
-    
-    % Determine positiion and size of the subp lot on screen
-    sreenSize = get(groot, 'screensize');
-    whScreenRatio =  sreenSize(3)/sreenSize(4);
-    widthOnScreen = 0.15;
-    heightOnScreen = widthOnScreen * whScreenRatio;
-    xSpan = (prms.xMax - prms.xMin + widthOnScreen);
-    ySpan = (prms.yMax - prms.yMin + heightOnScreen);
-    xOnScreen = (prms.x(k(1)) - prms.xMin) / xSpan;
-    yOnScreen = (prms.y(k(1)) - prms.yMin) / ySpan;
-
-    position = [ ...
-        (xOnScreen * sreenSize(3)) ... 
-        (yOnScreen * sreenSize(4)) ...
-        (widthOnScreen * sreenSize(3)) ...
-        (heightOnScreen * sreenSize(4)) ...
-    ];
-
-    if alreg(1) <= prms.width / (2 * prms.xM) && alreg(2) <= prms.height / (2 * prms.yM)
-        hFigure = figure('NumberTitle', 'off', 'Name', prms.figureName, 'ToolBar', 'none', 'Position', position);
-        % Set the unique tag, so we can check if the figure has been already opened
-        hFigure.Tag = figureTag;
-        hMasterFigure.UserData.OpenSubPlots = [openSubPlots hFigure];
-        hFigure.CloseRequestFcn = @closeSubPlotCb;
-        % Save the original position in the UserData
-        subPlotPrms = struct();
-        subPlotPrms.OriginalPosition = position;
-        hFigure.UserData = subPlotPrms;
-
-        colormap(prms.defaultColorMap);
-        set(hFigure, 'WindowButtonDownFcn', @changeSubPlotGridCb);
-        imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
-            interp2(squeeze(prms.WT(prms.channelsToPlotIdxs(k(1)), prms.freqIdxs, prms.timeIdxs)), 4, 'spline'));
-        hold('on');
-        
-        if plotsPrms.Contours
-            timePace = WTUtils.ifThenElse(prms.downsampleFactor == 4, 4,  prms.downsampleFactor^2);
-            contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
-                    plotsPrms.FreqMin:plotsPrms.FreqMax, ...
-                    squeeze(prms.WT(k(1), prms.freqIdxs, prms.timeIdxs)), 'k');
-        end
-
-        clim(plotsPrms.Scale);
-        xConst = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 200;
-        xPace = (plotsPrms.TimeMax - plotsPrms.TimeMin) / xConst;
-        xTick = plotsPrms.TimeMin:xPace:plotsPrms.TimeMax;
-        deltaFreq = plotsPrms.FreqMax - plotsPrms.FreqMin;
-
-        if deltaFreq > 1 && deltaFreq <= 5
-            freqPace = 1;
-        elseif deltaFreq > 5 && deltaFreq <= 15
-            freqPace = 2;
-        elseif deltaFreq > 15 && deltaFreq <= 25
-            freqPace = 5;
-        elseif deltaFreq > 25 && deltaFreq <= 45
-            freqPace = 10;
-        elseif deltaFreq > 45 && deltaFreq <= 65
-            freqPace = 15;
-        else
-            freqPace = 20;
-        end
-
-        yTick = plotsPrms.FreqMin:freqPace:plotsPrms.FreqMax;
-        set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', xTick, 'YTick', yTick);
-        axis('tight');
-        title(prms.channelsLocations(k(1)).labels, 'FontSize', 16, 'FontWeight', 'bold');
-        xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
-        pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
-        pace = pace(2) - pace(1);
-        colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
-        set(get(colorBar, 'xlabel'), 'String', prms.cLabel, 'Rotation', prms.rotation, 'FontSize', 12, 'FontWeight', 'bold', 'Position', [prms.xcLabel 2*pace]);   
     end
 end
 
-function changeSubPlotGridCb(hObject, ~)
-    try    
-        gridLineStyle = get(gca, 'gridlinestyle');
-        switch gridLineStyle
-            case '-'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '--');
-            case '--'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', ':');
-            case ':'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', 'none');
-            case 'none'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-');
-        end     
-    catch 
-    end
-end
-
-function txt = showSubPlotLabelCb(hObject, info)
+% This callback function called when the master condition figure is closed, will perform the
+% close of all open subplot related to the master figure
+function mainPLotCloseReqeuestCb(hObject, event)
     try
-        txt = info.Target.UserData.ChannelLabel;
-    catch
-        txt = [];
+        arrayfun(@(subPlot)subPlot.CloseRequestFcn(subPlot, event), hObject.UserData.OpenSubPlots);   
+    catch me
+        WTLog().except(me);
     end
+    delete(hObject);
 end
 
 function subPlotResize(subPlotsAxes, incdec)
     for i = 1 : length(subPlotsAxes)
         spa = subPlotsAxes(i);
         position = spa.Position;
-        origSize = spa.UserData.OriginalSize;
-        tickWidth = origSize(1) / 20;
-        tickHeight = origSize(2) / 20;
+        origPosition = spa.UserData.OriginalPosition;
+        origWidth = origPosition(3);
+        origHeight = origPosition(4);
+        tickWidth = origWidth / 20;
+        tickHeight = origHeight / 20;
 
         switch incdec
             case '+'
-                if position(3) <= origSize(1) - tickWidth 
+                if position(3) <= origWidth - tickWidth 
                     position(1) = position(1) - tickWidth / 2;
                     position(2) = position(2) - tickHeight / 2;
                     position(3) = position(3) + tickWidth;
@@ -417,32 +315,199 @@ function subPlotResize(subPlotsAxes, incdec)
     end
 end
 
-function subPlotManageOnKeyPressCb(hObject, event)
-    switch event.Character
-        case 'r' % rearrange open plots into the original opening position
-            subPlots = hObject.UserData.OpenSubPlots;
-            for i = 1:length(subPlots)
-                subPlots(i).Position = subPlots(i).UserData.OriginalPosition;
-            end
-        case '+'  
-            subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
-        case '-'
-            subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
-        otherwise
-            return
+function mainPlotOnKeyPressCb(hObject, event)
+    try
+        switch event.Character
+            case 'r' % rearrange open plots into the original opening position
+                subPlots = hObject.UserData.OpenSubPlots;
+                for i = 1:length(subPlots)
+                    subPlots(i).Position = subPlots(i).UserData.OriginalPosition;
+                end
+            case '+'  
+                subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
+            case '-'
+                subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
+            otherwise
+                return
+        end
+    catch me
+        WTLog().except(me);
     end
 end
 
-function subPlotResizeOnMouseScrollCb(hObject, event) 
-    if event.VerticalScrollCount > 1
-        incdec = '+';
-    elseif event.VerticalScrollCount < -1
-        incdec = '-';
-    else
-        return
+function mainPlotOnMouseScrollCb(hObject, event) 
+    try
+        if event.VerticalScrollCount >= 1
+            subPlotResize(hObject.UserData.SubPlotsAxes, '+')
+        elseif event.VerticalScrollCount <= -1
+            subPlotResize(hObject.UserData.SubPlotsAxes, '-')
+        end
+    catch me
+        WTLog().except(me);
     end
-    subPlotsAxes = hObject.UserData.SubPlotsAxes;
-    subPlotResize(subPlotsAxes, incdec)
+end
+
+% This function can be relative expensive, especially if called on mouse motion but havent found
+% any better solution for such case...
+function [subPlotIdx, clickPosRelToAxes] = getClickedSubPlotIndex(hMainPlot) 
+    prms = hMainPlot.UserData.onButtonDownCbPrms;
+    % Find the index of the sub plot to open, by min distance from the click point
+    clickPoint = hMainPlot.CurrentPoint;
+    mainPlotPosition = hMainPlot.Position;
+    relClickPoint = clickPoint ./ mainPlotPosition(3:4);
+    distance = sum((prms.subPlotAxesCenter - repmat(relClickPoint, [size(prms.subPlotAxesCenter,1), 1])) .^ 2, 2);
+    [~, minDistanceAxesIdx] = min(distance);
+    clickPosRelToAxes = abs(relClickPoint - prms.subPlotAxesCenter(minDistanceAxesIdx,:));
+    % Check if the click point falls into the axes extent, if not quit 
+    subPlotIdx = minDistanceAxesIdx;
+end
+
+function mainPlotOnMouseMotionCb(hMainPlot, ~) 
+    try
+        [subPlotIdx, clickPosRelToAxes] = getClickedSubPlotIndex(hMainPlot);
+        subPlotAxesPos = hMainPlot.UserData.SubPlotsAxes(subPlotIdx).Position;
+        annotation = hMainPlot.UserData.SubPlotAnnotation;
+        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || clickPosRelToAxes(2) > subPlotAxesPos(4)/2
+            annotation.String = '';
+        else
+            prms = hMainPlot.UserData.onButtonDownCbPrms;
+            annotation.String = prms.channelsLocations(subPlotIdx).labels;
+        end
+    catch me
+        WTLog().except(me);
+    end
+end
+
+function mainPlotOnButtonDownCb(hMainPlot, ~)
+    try
+        prms = hMainPlot.UserData.onButtonDownCbPrms;
+        plotsPrms = prms.plotsPrms;
+        
+        % Check if the click point falls into the axes extent, if not quit 
+        [subPlotIdx, clickPosRelToAxes] = getClickedSubPlotIndex(hMainPlot);
+        subPlotAxesPos = hMainPlot.UserData.SubPlotsAxes(subPlotIdx).Position;
+        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || clickPosRelToAxes(2) > subPlotAxesPos(4)/2
+            return
+        end
+
+        % Check if the subPlot figure is already open (already clicked on), if yes, just focus on it...
+        % This prevent to reopen many times the same plot and so clutter the screen with no use.
+        figureTag = prms.channelsLocations(subPlotIdx).labels;
+        openSubPlots = hMainPlot.UserData.OpenSubPlots;
+        hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag),openSubPlots));
+        if ~isempty(hFigure)
+            figure(hFigure);
+            return
+        end
+        
+        % Determine positiion and size of the subplot on screen
+        sreenSize = get(groot, 'screensize');
+        whScreenRatio =  sreenSize(3)/sreenSize(4);
+        widthOnScreen = 0.15;
+        heightOnScreen = widthOnScreen * whScreenRatio;
+        xSpan = (prms.xMax - prms.xMin + widthOnScreen);
+        ySpan = (prms.yMax - prms.yMin + heightOnScreen);
+        xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
+        yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
+
+        position = [ ...
+            (xOnScreen * sreenSize(3)) ... 
+            (yOnScreen * sreenSize(4)) ...
+            (widthOnScreen * sreenSize(3)) ...
+            (heightOnScreen * sreenSize(4)) ...
+        ];
+
+        figureName = sprintf('%s.%s', hMainPlot.Name, figureTag);
+        hFigure = figure('NumberTitle', 'off', 'Name', figureName, 'ToolBar', 'none', 'Position', position);
+        % Set the unique tag, so we can check if the figure has been already opened
+        hFigure.Tag = figureTag;
+        hMainPlot.UserData.OpenSubPlots = [openSubPlots hFigure];
+        hFigure.CloseRequestFcn = @subPlotCloseRequestCb;
+        % Save the original position and the main plot handle in the UserData
+        subPlotPrms = struct();
+        subPlotPrms.MainPlot = hMainPlot;
+        subPlotPrms.OriginalPosition = position;
+        hFigure.UserData = subPlotPrms;
+        % Set the callback to manage grid style change
+        hFigure.WindowButtonDownFcn = @subPlotOnMouseButtonDownCb;
+
+        colormap(prms.defaultColorMap);
+        imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
+            interp2(squeeze(prms.WT(prms.channelsToPlotIdxs(subPlotIdx), prms.freqIdxs, prms.timeIdxs)), 4, 'spline'));
+        hold('on');
+        
+        if plotsPrms.Contours
+            timePace = WTUtils.ifThenElse(prms.downsampleFactor == 4, 4, prms.downsampleFactor ^ 2);
+            contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
+                    plotsPrms.FreqMin:plotsPrms.FreqMax, ...
+                    squeeze(prms.WT(subPlotIdx, prms.freqIdxs, prms.timeIdxs)), 'k');
+        end
+
+        clim(plotsPrms.Scale);
+        xConst = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 200;
+        xPace = (plotsPrms.TimeMax - plotsPrms.TimeMin) / xConst;
+        xTick = plotsPrms.TimeMin : xPace : plotsPrms.TimeMax;
+        deltaFreq = plotsPrms.FreqMax - plotsPrms.FreqMin;
+
+        if deltaFreq > 1 && deltaFreq <= 5
+            freqPace = 1;
+        elseif deltaFreq > 5 && deltaFreq <= 15
+            freqPace = 2;
+        elseif deltaFreq > 15 && deltaFreq <= 25
+            freqPace = 5;
+        elseif deltaFreq > 25 && deltaFreq <= 45
+            freqPace = 10;
+        elseif deltaFreq > 45 && deltaFreq <= 65
+            freqPace = 15;
+        else
+            freqPace = 20;
+        end
+
+        yTick = plotsPrms.FreqMin : freqPace : plotsPrms.FreqMax;
+        set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', xTick, 'YTick', yTick);
+        axis('tight');
+        title(figureTag, 'FontSize', 16, 'FontWeight', 'bold');
+        xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
+        ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
+        pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
+        pace = pace(2) - pace(1);
+        colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
+        set(get(colorBar, 'xlabel'), 'String', prms.cLabel, 'Rotation', prms.rotation, 'FontSize', 12, 'FontWeight', 'bold', 'Position', [prms.xcLabel 2 * pace]); 
+    catch me
+        WTLog().except(me);
+    end  
+end
+
+function subPlotCloseRequestCb(hObject, ~)
+    try
+        hMainPlot = hObject.UserData.MainPlot;
+        if isvalid(hMainPlot)
+            openSubPlots = hMainPlot.UserData.OpenSubPlots;
+            figureIdx = arrayfun(@(figure)strcmp(figure.Tag, hObject.Tag), openSubPlots);
+            hMainPlot.UserData.OpenSubPlots(figureIdx) = [];
+        end
+    catch me
+        WTLog().except(me);
+    end
+    delete(hObject);
+end
+
+function subPlotOnMouseButtonDownCb(~, ~)
+    try
+        gridLineStyle = get(gca, 'gridlinestyle');
+        switch gridLineStyle
+            case '-'
+                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '--');
+            case '--'
+                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', ':');
+            case ':'
+                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', 'none');
+            case 'none'
+                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-');
+        end
+    catch me
+        WTLog().except(me);
+    end     
 end
 
 function conditions = extractConditionsFromFileNames(fileNames)
