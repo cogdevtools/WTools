@@ -1,13 +1,13 @@
 classdef WTIOProcessor < handle
 
     properties(Constant,Access=private)
-        LogSubDir      = 'Logs'
-        ConfigSubDir   = 'Config';
-        ImportSubDir   = 'Import';
-        WaveletsSubDir = 'Wavelets';
-        AnalysisSubDir = 'Analysis';
-        GrandAvgSubDir = 'GrandAvg';
-        TempSubDir     = 'Tmp';
+        LogSubDir       = 'Logs'
+        ConfigSubDir    = 'Config';
+        ImportSubDir    = 'Import';
+        WaveletsSubDir  = 'Wavelets';
+        AnalysisSubDir  = 'Analysis';
+        GrandAvgSubDir  = 'GrandAvg';
+        TemporarySubDir = 'Tmp';
     end
 
     properties(Constant, Hidden)
@@ -26,9 +26,12 @@ classdef WTIOProcessor < handle
         SystemBRV    = 'BRV'
 
         SplineFileTypeFlt = '*.spl'
+        GrandAvgFileExt = '.mat'
+        PerSbjGrandAvgFileExt = '.ss'
         SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTUtils.ifThenElse(ispc, '\\','/'));
         EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
-        BaselineCorrectedFileNameRe = '^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+).mat$'
+        BaselineCorrectedFileNameRe = ['^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+)(?:\' ...
+            WTIOProcessor.GrandAvgFileExt '|\' WTIOProcessor.PerSbjGrandAvgFileExt ')$'] 
     end
 
     properties(SetAccess=private,GetAccess=public)
@@ -37,6 +40,7 @@ classdef WTIOProcessor < handle
         ConfigDir char
         ImportDir char
         AnalysisDir char
+        GrandAvgDir char
         TemporaryDir char
     end
 
@@ -128,6 +132,13 @@ classdef WTIOProcessor < handle
             end
         end
 
+        function [wType, extension] = getGrandAverageFileTypeAndExtension(perSubject, evokedOscillation)
+            wType = WTUtils.ifThenElse(evokedOscillation, ...
+                WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
+            extension = WTUtils.ifThenElse(any(logical(perSubject)), ...
+                WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
+        end
+
         function fileNames = getSystemExtraImportFiles(system, subjectFilePath)           
             switch system
                 case WTIOProcessor.SystemEEP
@@ -173,6 +184,19 @@ classdef WTIOProcessor < handle
             wType = match.measure;
         end
 
+        function [conditions, emptyConditionFiles] = getConditionsFromBaselineCorrectedFileNames(fileNames)
+            conditions = cell(1, length(fileNames));
+            emptyConditionFiles = {};
+            for i = 1:length(fileNames) 
+                [~, condition] = WTIOProcessor.splitBaselineCorrectedFileName(fileNames{i});
+                if isempty(condition)
+                    emptyConditionFiles = [emptyConditionFiles fileNames(i)];
+                    continue
+                end
+                conditions{i} = condition;
+            end
+        end
+
         function [success, chansLocations] = readChannelsLocations(system, fileName)
             success = false;
             chansLocations = {};
@@ -211,6 +235,7 @@ classdef WTIOProcessor < handle
             o.ConfigDir = '';
             o.ImportDir = '';
             o.AnalysisDir = '';
+            o.GrandAvgDir = '';
             o.TemporaryDir = '';
         end
     end
@@ -227,7 +252,8 @@ classdef WTIOProcessor < handle
             o.ConfigDir = fullfile(o.RootDir, o.ConfigSubDir);
             o.ImportDir = fullfile(o.RootDir, o.ImportSubDir);
             o.AnalysisDir = fullfile(o.RootDir, o.AnalysisSubDir);
-            o.TemporaryDir = fullfile(o.RootDir, o.TempSubDir);
+            o.GrandAvgDir = fullfile(o.AnalysisDir, o.GrandAvgSubDir);
+            o.TemporaryDir = fullfile(o.RootDir, o.TemporarySubDir);
             wtLog = WTLog();
             
             if mustExist
@@ -521,9 +547,10 @@ classdef WTIOProcessor < handle
                     WTLog().err('Unknown file type %s', wType);
                     return
             end
-            extension = WTUtils.ifThenElse(any(logical(perSubject)), '.ss', '.mat');
+            extension = WTUtils.ifThenElse(any(logical(perSubject)), ...
+                WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
             fileName = strcat(condition, '_bc-', wType, extension);
-            filePath = fullfile(o.AnalysisDir, o.GrandAvgSubDir);
+            filePath = o.GrandAvgDir;
             fullPath = fullfile(filePath, fileName);
         end
 

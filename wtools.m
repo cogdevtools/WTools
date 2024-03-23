@@ -63,9 +63,9 @@ function varargout = wtools(varargin)
         % hObject    handle to figure
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        wtAppConf = WTAppConf();
+        wtAppConfig = WTAppConfig();
         wtLog = WTLog();
-        showSplash = wtAppConf.ShowSplashScreen;
+        showSplash = wtAppConfig.ShowSplashScreen;
         forceClose = false;
         bgColor = [];
         fgColor = [];
@@ -339,7 +339,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.contextOn('AveragePlots');
         try
-            wtPlotAverage();
+            wtAvgPlots();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show average plots');
@@ -377,7 +377,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.contextOn('GlobalPlotsWithStdError');
         try
-            xavrse();
+            wtAvgStdErrPlots();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show average with stderr plots');
@@ -486,7 +486,7 @@ function varargout = wtools(varargin)
         % hObject    handle to ProjectEdit (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        level = WTAppConf().DefaultStdLogLevel;
+        level = WTAppConfig().DefaultStdLogLevel;
         set(hObject, 'Value', level);
         guidata(hObject, handles);
     

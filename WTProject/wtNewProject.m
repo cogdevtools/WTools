@@ -45,13 +45,13 @@ function success = wtNewProject
         return
     end
 
-    wtAppConf = WTAppConf();
+    wtAppConfig = WTAppConfig();
 
-    if wtAppConf.ProjectLog
+    if wtAppConfig.ProjectLog
         ioProc = wtProject.Config.IOProc;
         wtLog = WTLog();
         [~, opened] = wtLog.openStream(ioProc.getLogFile(prjName));
-        wtLog.MuteStdStreams = WTUtils.ifThenElse(opened, wtAppConf.MuteStdLog, false);
+        wtLog.MuteStdStreams = WTUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
     end
 
     wtProject.notifyInf('Project created','As next step you should choose the files to import...');

@@ -10,8 +10,8 @@ classdef WTValidations
 
         function is = isAnyOf(obj, varargin)
             is = false;
-            for metaClass = varargin
-                if WTValidations.isa(obj, metaClass) 
+            for i = 1:nargin 
+                if WTValidations.isa(obj, varargin{i}) 
                     is = true;
                     return
                 end

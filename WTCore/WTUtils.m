@@ -6,9 +6,43 @@ classdef WTUtils
             fontSizeFmt = sprintf('\\\\fontsize{%d}', fontSize);
             msg = sprintf([fontSizeFmt fmt], varargin{:});
         end
+
+        function expr = buildFieldDerefExpr(varargin)
+            expr = [];
+            for i = 1:nargin
+                if ischar(varargin{i}) 
+                    expr = [ expr '.' varargin{i} ];
+                else
+                    expr = [ expr WTUtils.buildFieldDerefExpr(varargin{i}{:})];
+                end
+            end
+        end
     end
 
     methods (Static)
+        function value = xGetField(structObj, varargin)
+            if nargin - 1 <= 0
+                WTException.missingArg('no fields specified').throw();
+            end
+            if ~isstruct(structObj)
+                WTException.badgArg('first arg must be a struct').throw();
+            end 
+            eval(['value = structObj' WTUtils.buildFieldDerefExpr(varargin{:}) ';' ]);
+        end
+
+        function structObj = xSetField(structObj, value, varargin) 
+            if nargin - 2 <= 0
+                WTException.missingArg('no fields specified').throw();
+            end
+            if nargout == 0 
+                WTException.missingArg('an output argument must be defined for the function to be effective').throw();
+            end
+            if ~isstruct(structObj)
+                WTException.badgArg('first arg must be a struct').throw();
+            end
+            eval([ 'structObj' WTUtils.buildFieldDerefExpr(varargin{:}) ' = value;' ]); 
+        end
+
         function value = str2double(str, allowEmptyStr)
             allowEmptyStr = nargin > 1 && any(logical(allowEmptyStr));
             if allowEmptyStr
@@ -68,15 +102,36 @@ classdef WTUtils
                 end
             end
         end
-        
-        function result = ifThenElse(condition, thenSet, elseSet) 
+
+        % thenSet & elseSet can be function handles or cell arrays. When
+        % - function handle => ifThenElse returns thenSet() or  elseSet()
+        % - cell arrays => ifThenElse returns thenSet{:} or  elseSet{:}
+        % If thenSet & elseSet are function handles or cell arrays and  
+        % have to be returned as such, then wrap them into a function. For
+        % example, here below thenSet is a function and elseSet is a cell
+        % arrays:
+        % - ifThenElse(condition, @()thenSet, @()elseSet)
+        function varargout = ifThenElse(condition, thenSet, elseSet) 
+            varargout = cell(1, nargout);
             if any(logical(condition))
-                result = thenSet;
+                if isa(thenSet,'function_handle')
+                    [varargout{:}] = thenSet();
+                elseif iscell(thenSet)
+                    [varargout{:}] = thenSet{:};
+                else
+                    [varargout{:}] = thenSet;
+                end
             else
-                result = elseSet;
+                if isa(elseSet,'function_handle')
+                    [varargout{:}] = elseSet();
+                elseif iscell(elseSet)
+                    [varargout{:}] = elseSet{:};
+                else
+                    [varargout{:}] = elseSet;
+                end
             end
         end
-        
+
         % returnValues() filters function output.
         % func: must be a function reference
         % params: a cell array containing the func() input arguments
@@ -97,7 +152,6 @@ classdef WTUtils
         function quoted = quote(str) 
             quoted = sprintf('''%s''', char(str));
         end
-
 
         function cells = quoteMany(varargin)
             cells = cellfun(@WTUtils.quote, varargin, 'UniformOutput', false);
@@ -337,24 +391,30 @@ classdef WTUtils
 
         function retDir = uiGetDir(startPath, msg, varargin)
             if nargin > 1
-                WTUtils.msgBoxIf(ismac, 'Select a directory', msg, varargin{:});
+                WTUtils.msgBoxIf(ismac, 'Select a directory', msg);
                 retDir = uigetdir(startPath, msg, varargin{:});
             else 
                 retDir = uigetdir(startPath);
             end
         end
         
-        function [fileNames, filesDir, filterIdx] = uiGetFiles(filter, msg, varargin)
-            if nargin > 1
-                WTUtils.msgBoxIf(ismac, 'Select file(s)', msg, varargin{:});
-                [fileNames, filesDir, filterIdx] = uigetfile(filter, msg, varargin{:});
-            else 
-                [fileNames, filesDir, filterIdx] = uigetfile(filter);
-            end
-            if isscalar(fileNames) 
-                fileNames = {};
-            elseif ischar(fileNames) 
-                fileNames = {fileNames};
+        function [fileNames, filesDir, filterIdx] = uiGetFiles(filter, maxFiles, msg, varargin)
+            WTUtils.msgBoxIf(nargin > 2 && ismac, 'Select file(s)', msg);
+            while true
+                if nargin > 2
+                    [fileNames, filesDir, filterIdx] = uigetfile(filter, msg, varargin{:});
+                else 
+                    [fileNames, filesDir, filterIdx] = uigetfile(filter);
+                end
+                if isscalar(fileNames) 
+                    fileNames = {};
+                elseif ischar(fileNames) 
+                    fileNames = {fileNames};
+                end
+                if maxFiles <= 0 || length(fileNames) <= maxFiles
+                    break
+                end
+                WTUtils.wrnDlg('', 'You can select max %d files...', maxFiles);
             end
         end
 

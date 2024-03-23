@@ -1,4 +1,4 @@
-% wtPlotAverage.m
+% wtAvgPlots.m
 % Created by Eugenio Parise
 % CDC CEU 2010 - 2011
 % Based on topmontageplot.m Written by Morten Moerup (ERPWAVELABv1.1)
@@ -16,24 +16,23 @@
 %
 % contr=0, no contours will be plotted; set to 1 to plot them.
 %
-% wtPlotAverage(subj,tMin,tMax,FrMin,FrMax,scale);
-% wtPlotAverage(subj,tMin,tMax,FrMin,FrMax,scale,'evok');
+% wtAvgPlots(subj,tMin,tMax,FrMin,FrMax,scale);
+% wtAvgPlots(subj,tMin,tMax,FrMin,FrMax,scale,'evok');
 %
-% wtPlotAverage('01',-200,1200,10,90,[-0.5 0.5],1); %to plot a single subject
+% wtAvgPlots('01',-200,1200,10,90,[-0.5 0.5],1); %to plot a single subject
 %
-% wtPlotAverage('grand',-200,1200,10,90,[-0.5 0.5],0); %to plot the grand average
+% wtAvgPlots('grand',-200,1200,10,90,[-0.5 0.5],0); %to plot the grand average
 %
-% wtPlotAverage('grand',-200,1200,10,90,[-0.5 0.5],0,'evok'); %to plot the grand
+% wtAvgPlots('grand',-200,1200,10,90,[-0.5 0.5],0,'evok'); %to plot the grand
 % average of evoked oscillations
 %
-% wtPlotAverage(); to run via GUI
+% wtAvgPlots(); to run via GUI
 
 % Now isempty(subject) => grand average
 %     isempty(conditionsToPlot) => all conditions
 %     isempty(channelsToPlot) => all channels
 
-function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
-    success = false;
+function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -53,7 +52,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     logFlag = wtCheckEvokLog();
 
     if interactive
-        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot();
+        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(false, false, -1);
         if isempty(fileNames)
             return
         end
@@ -71,7 +70,11 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     grandAverage = strcmp(subject, '');
 
     if interactive
-        conditionsToPlot = extractConditionsFromFileNames(fileNames);
+        [conditionsToPlot, emptyConditionFiles] = WTIOProcessor.getConditionsFromBaselineCorrectedFileNames(fileNames);
+        if ~isempty(emptyConditionFiles)
+            wtLog.warn('The following files to plots do not have the right name format and have been pruned: %s', ...
+                char(join(emptyConditionFiles, ',')));
+        end
     elseif isempty(conditionsToPlot)
         conditionsToPlot = conditions;
     end
@@ -95,13 +98,13 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
         return
     end
 
-    [success, data] = loadDataToPlot(subject, conditionsToPlot{1}, measure);
-    if ~success || ~correctAvgPlotParams(data) 
+    [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{1}, measure);
+    if ~success || ~WTPlotUtils.adjustPlotTimeFreqRanges(wtProject.Config.AveragePlots, data) 
         return
     end
 
     plotsPrms = wtProject.Config.AveragePlots;
-    timeRes = WTUtils.ifThenElse(length(data.tim) > 1, data.tim(2) - data.tim(1), 1); 
+    timeRes = WTUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
     downsampleFactor = WTUtils.ifThenElse(timeRes == 1, 4, timeRes); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
@@ -133,7 +136,7 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     end
 
     nChannelsToPlot = numel(channelsToPlot);
-    wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', sprintf('subject %s', subject)));
+    wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
 
@@ -147,32 +150,23 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
         prms.plotsPrms = copy(plotsPrms);
         prms.width = 0.1;
         prms.height = 0.1;
-        [prms.defaultColorMap,  prms.cLabel,  prms.rotation,  prms.xcLabel] = wtSetFigure(logFlag);
+        [prms.defaultColorMap,  prms.cLabel,  prms.rotation,  prms.xcLabel] = WTPlotUtils.getFigureBasicParams(logFlag);
 
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
-            [success, data] = loadDataToPlot(subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 break
             end 
 
             figureName = WTUtils.ifThenElse(grandAverage, ...
-                char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
-                char(strcat(basicPrms.FilesPrefix,'.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
+                @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
+                @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
-            % convert the data back to non-log scale straight in percent change in case logFlag is set
-            prms.WT = WTUtils.ifThenElse(logFlag, 100 * (10.^data.WT - 1), data.WT);
+             % convert the data back to non-log scale straight in percent change in case logFlag is set
+            prms.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
-            prms.x = [];
-            prms.y = [];
-
-            for k = 1:nChannelsToPlot
-                if ~isempty(prms.channelsLocations(k).radius)
-                    prms.x(end+1) = sin(prms.channelsLocations(k).theta / 360 * 2 * pi) * prms.channelsLocations(k).radius;
-                    prms.y(end+1) = cos(prms.channelsLocations(k).theta / 360 * 2 * pi) * prms.channelsLocations(k).radius;
-                end
-            end
-
+            [prms.x, prms.y] = WTPlotUtils.getCartesianChannelsPosition(prms.channelsLocations);
             prms.xMin = min(prms.x);
             prms.yMin = min(prms.y);
             prms.xMax = max(prms.x);
@@ -185,7 +179,6 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             yBottomLeftCorner = (prms.y - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge);
             xCenter = xBottomLeftCorner + prms.width / (2 * prms.xM);
             yCenter = yBottomLeftCorner + prms.height / (2 * prms.yM);
-            prms.subPlotAxesCenter = [xCenter' yCenter'];
 
             % Create the main figure & add shared user data
             hFigure = figure();
@@ -202,34 +195,39 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
             hFigureAxes = axes('position', [0 0 1 1]);
             hFigureAxes.Visible = 'off';
             % Create label which display the sub plot name when hovering on it with the mouse
-            hSubPlotHoveringAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
-            hSubPlotHoveringAnnotation.Color = [1 0 0];
-            hSubPlotHoveringAnnotation.String = '';
-            hSubPlotHoveringAnnotation.EdgeColor = 'none';
-            hSubPlotHoveringAnnotation.HorizontalAlignment = 'right';
-            hSubPlotHoveringAnnotation.VerticalAlignment = 'middle';
-            hSubPlotHoveringAnnotation.FontName = 'Courier';
-            hSubPlotHoveringAnnotation.FontSize = 15;
-            hSubPlotHoveringAnnotation.FontWeight = 'bold';
+            hSubPlotHoverAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
+            hSubPlotHoverAnnotation.Color = [1 0 0];
+            hSubPlotHoverAnnotation.String = '';
+            hSubPlotHoverAnnotation.EdgeColor = 'none';
+            hSubPlotHoverAnnotation.HorizontalAlignment = 'right';
+            hSubPlotHoverAnnotation.VerticalAlignment = 'middle';
+            hSubPlotHoverAnnotation.FontName = 'Courier';
+            hSubPlotHoverAnnotation.FontSize = 15;
+            hSubPlotHoverAnnotation.FontWeight = 'bold';
             % Add user data
             hFigure.UserData = struct();
             hFigure.UserData.OpenSubPlots = [];
             hFigure.UserData.SubPlotsAxes = [];
-            hFigure.UserData.SubPlotAnnotation = hSubPlotHoveringAnnotation;
+            hFigure.UserData.SubPlotAnnotation = hSubPlotHoverAnnotation;
+            hFigure.UserData.SubPlotAxesCenter = [xCenter' yCenter'];
             hFigure.UserData.onButtonDownCbPrms = prms;
             % Set the callback to close open subplots when the master figure closes
-            hFigure.CloseRequestFcn = @mainPLotCloseReqeuestCb;
+            hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
             % Set the callback to display subplots
             hFigure.WindowButtonDownFcn = @mainPlotOnButtonDownCb;
             % Set the callback to resize/rearrange subplots 
-            hFigure.WindowKeyPressFcn = @mainPlotOnKeyPressCb;
-            hFigure.WindowScrollWheelFcn = @mainPlotOnMouseScrollCb;
+            hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
+                {@WTPlotUtils.onKeyPressResizeObjectsCb, 'SubPlotsAxes', 'OriginalPosition'}, ...
+                {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'});
+            hFigure.WindowScrollWheelFcn = {@WTPlotUtils.onMouseScrollResizeObjectsCb, ...
+                'SubPlotsAxes', 'OriginalPosition'};
             % Set the callback to display sub plot lable when mouse hover on it
-            hFigure.WindowButtonMotionFcn = @mainPlotOnMouseMotionCb;
+            hFigure.WindowButtonMotionFcn = {@WTPlotUtils.onMouseOverSubObjectsDoCb, ...
+                'SubPlotAxesCenter', 'SubPlotsAxes', @setSubPlotAnnotationSetCb};
             % Set the callback to display the subPlot label as cursor info
-            
-            for chn = 1:nChannelsToPlot  
-                wtLog.contextOn().dbg('Channel %s', channelsToPlot{chn});
+            for chn = 1:nChannelsToPlot
+                channelLabel = prms.channelsLocations(chn).labels;  
+                wtLog.contextOn().dbg('Channel %s', channelLabel);
                 % Create axes for each channel: axes(x,y, xWidth, yWidth) (original below) 
                 axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), ...
                      prms.width / prms.xM, prms.height / prms.yM];
@@ -237,10 +235,10 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
                 % Set axes user data that will be used for resizing the  plot via +/- keypress
                 hSubPlotAxes.UserData = struct();
                 hSubPlotAxes.UserData.OriginalPosition = axesPosition;
+                hSubPlotAxes.UserData.ChannelLabel = channelLabel;
                 hFigure.UserData.SubPlotsAxes = [hFigure.UserData.SubPlotsAxes hSubPlotAxes];
                 hold('on');        
                 image = imagesc(squeeze(prms.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
-                channelLabel = prms.channelsLocations(chn).labels;
                 image.UserData = struct('ChannelLabel', channelLabel); % save channel label for data cursor mode
                 clim(plotsPrms.Scale);
                 axis('off');
@@ -257,122 +255,12 @@ function success = wtPlotAverage(subject, conditionsToPlot, channelsToPlot, evok
     end
 
     % Wait for all main plots to close
-    waitUIs(mainPlots);
+    WTPlotUtils.waitUIs(mainPlots);
     wtLog.info('Plotting done.');
 end
 
-function waitUIs(UIs) 
-    for i = 1:length(UIs)
-        try
-            uiwait(UIs(i));
-        catch
-        end
-    end
-end
-
-% This callback function called when the master condition figure is closed, will perform the
-% close of all open subplot related to the master figure
-function mainPLotCloseReqeuestCb(hObject, event)
-    try
-        arrayfun(@(subPlot)subPlot.CloseRequestFcn(subPlot, event), hObject.UserData.OpenSubPlots);   
-    catch me
-        WTLog().except(me);
-    end
-    delete(hObject);
-end
-
-function subPlotResize(subPlotsAxes, incdec)
-    for i = 1 : length(subPlotsAxes)
-        spa = subPlotsAxes(i);
-        position = spa.Position;
-        origPosition = spa.UserData.OriginalPosition;
-        origWidth = origPosition(3);
-        origHeight = origPosition(4);
-        tickWidth = origWidth / 20;
-        tickHeight = origHeight / 20;
-
-        switch incdec
-            case '+'
-                if position(3) <= origWidth - tickWidth 
-                    position(1) = position(1) - tickWidth / 2;
-                    position(2) = position(2) - tickHeight / 2;
-                    position(3) = position(3) + tickWidth;
-                    position(4) = position(4) + tickHeight;
-                    spa.Position = position;
-                end
-            case '-'
-                if position(3) >= 2 * tickWidth 
-                    position(1) = position(1) + tickWidth / 2;
-                    position(2) = position(2) + tickHeight / 2;
-                    position(3) = position(3) - tickWidth;
-                    position(4) = position(4) - tickHeight;
-                    spa.Position = position;
-                end
-        end
-    end
-end
-
-function mainPlotOnKeyPressCb(hObject, event)
-    try
-        switch event.Character
-            case 'r' % rearrange open plots into the original opening position
-                subPlots = hObject.UserData.OpenSubPlots;
-                for i = 1:length(subPlots)
-                    subPlots(i).Position = subPlots(i).UserData.OriginalPosition;
-                end
-            case '+'  
-                subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
-            case '-'
-                subPlotResize(hObject.UserData.SubPlotsAxes, event.Character)
-            otherwise
-                return
-        end
-    catch me
-        WTLog().except(me);
-    end
-end
-
-function mainPlotOnMouseScrollCb(hObject, event) 
-    try
-        if event.VerticalScrollCount >= 1
-            subPlotResize(hObject.UserData.SubPlotsAxes, '+')
-        elseif event.VerticalScrollCount <= -1
-            subPlotResize(hObject.UserData.SubPlotsAxes, '-')
-        end
-    catch me
-        WTLog().except(me);
-    end
-end
-
-% This function can be relative expensive, especially if called on mouse motion but havent found
-% any better solution for such case...
-function [subPlotIdx, clickPosRelToAxes] = getClickedSubPlotIndex(hMainPlot) 
-    prms = hMainPlot.UserData.onButtonDownCbPrms;
-    % Find the index of the sub plot to open, by min distance from the click point
-    clickPoint = hMainPlot.CurrentPoint;
-    mainPlotPosition = hMainPlot.Position;
-    relClickPoint = clickPoint ./ mainPlotPosition(3:4);
-    distance = sum((prms.subPlotAxesCenter - repmat(relClickPoint, [size(prms.subPlotAxesCenter,1), 1])) .^ 2, 2);
-    [~, minDistanceAxesIdx] = min(distance);
-    clickPosRelToAxes = abs(relClickPoint - prms.subPlotAxesCenter(minDistanceAxesIdx,:));
-    % Check if the click point falls into the axes extent, if not quit 
-    subPlotIdx = minDistanceAxesIdx;
-end
-
-function mainPlotOnMouseMotionCb(hMainPlot, ~) 
-    try
-        [subPlotIdx, clickPosRelToAxes] = getClickedSubPlotIndex(hMainPlot);
-        subPlotAxesPos = hMainPlot.UserData.SubPlotsAxes(subPlotIdx).Position;
-        annotation = hMainPlot.UserData.SubPlotAnnotation;
-        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || clickPosRelToAxes(2) > subPlotAxesPos(4)/2
-            annotation.String = '';
-        else
-            prms = hMainPlot.UserData.onButtonDownCbPrms;
-            annotation.String = prms.channelsLocations(subPlotIdx).labels;
-        end
-    catch me
-        WTLog().except(me);
-    end
+function setSubPlotAnnotationSetCb(hObject, hSubObject, subObjIdx) 
+    hObject.UserData.SubPlotAnnotation.String = WTUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel);
 end
 
 function mainPlotOnButtonDownCb(hMainPlot, ~)
@@ -381,7 +269,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~)
         plotsPrms = prms.plotsPrms;
         
         % Check if the click point falls into the axes extent, if not quit 
-        [subPlotIdx, clickPosRelToAxes] = getClickedSubPlotIndex(hMainPlot);
+        [subPlotIdx, clickPosRelToAxes] = WTPlotUtils.getClickedSubObjectIndex(hMainPlot, hMainPlot.UserData.SubPlotAxesCenter);
         subPlotAxesPos = hMainPlot.UserData.SubPlotsAxes(subPlotIdx).Position;
         if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || clickPosRelToAxes(2) > subPlotAxesPos(4)/2
             return
@@ -419,14 +307,14 @@ function mainPlotOnButtonDownCb(hMainPlot, ~)
         % Set the unique tag, so we can check if the figure has been already opened
         hFigure.Tag = figureTag;
         hMainPlot.UserData.OpenSubPlots = [openSubPlots hFigure];
-        hFigure.CloseRequestFcn = @subPlotCloseRequestCb;
+        hFigure.CloseRequestFcn = {@WTPlotUtils.childObjectCloseRequestCb, 'MainPlot', 'OpenSubPlots'};
         % Save the original position and the main plot handle in the UserData
         subPlotPrms = struct();
         subPlotPrms.MainPlot = hMainPlot;
         subPlotPrms.OriginalPosition = position;
         hFigure.UserData = subPlotPrms;
         % Set the callback to manage grid style change
-        hFigure.WindowButtonDownFcn = @subPlotOnMouseButtonDownCb;
+        hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
 
         colormap(prms.defaultColorMap);
         imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
@@ -434,7 +322,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~)
         hold('on');
         
         if plotsPrms.Contours
-            timePace = WTUtils.ifThenElse(prms.downsampleFactor == 4, 4, prms.downsampleFactor ^ 2);
+            timePace = WTUtils.ifThenElse(prms.downsampleFactor == 4, 4, @()prms.downsampleFactor ^ 2);
             contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
                     plotsPrms.FreqMin:plotsPrms.FreqMax, ...
                     squeeze(prms.WT(subPlotIdx, prms.freqIdxs, prms.timeIdxs)), 'k');
@@ -473,140 +361,6 @@ function mainPlotOnButtonDownCb(hMainPlot, ~)
     catch me
         WTLog().except(me);
     end  
-end
-
-function subPlotCloseRequestCb(hObject, ~)
-    try
-        hMainPlot = hObject.UserData.MainPlot;
-        if isvalid(hMainPlot)
-            openSubPlots = hMainPlot.UserData.OpenSubPlots;
-            figureIdx = arrayfun(@(figure)strcmp(figure.Tag, hObject.Tag), openSubPlots);
-            hMainPlot.UserData.OpenSubPlots(figureIdx) = [];
-        end
-    catch me
-        WTLog().except(me);
-    end
-    delete(hObject);
-end
-
-function subPlotOnMouseButtonDownCb(~, ~)
-    try
-        gridLineStyle = get(gca, 'gridlinestyle');
-        switch gridLineStyle
-            case '-'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '--');
-            case '--'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', ':');
-            case ':'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', 'none');
-            case 'none'
-                set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-');
-        end
-    catch me
-        WTLog().except(me);
-    end     
-end
-
-function conditions = extractConditionsFromFileNames(fileNames)
-    conditions = cell(1, length(fileNames));
-    for i = 1:length(fileNames) 
-        [~, condition] = WTIOProcessor.splitBaselineCorrectedFileName(fileNames{i});
-        conditions{i} = condition;
-    end
-end
-
-function [success, data] = loadDataToPlot(subject, condition, measure) 
-    wtProject = WTProject();
-    ioProc = wtProject.Config.IOProc;
-    grandAverage = isempty(subject);
-
-    if grandAverage
-        [success, data] = ioProc.loadGrandAverage(condition, measure, false);
-    else
-        [success, data] = ioProc.loadBaselineCorrection(subject, condition, measure);
-    end
-    if ~success 
-        wtProject.notifyErr([], 'Failed to load data for condition ''%s''', condition);
-    end
-end
-
-% Adjust 'edge' to the closest value in the ORDERED vector 'values'.
-function adjEdge = adjustEdge(edge, values)
-    edgeL = values(find(values <= edge, 1, 'last'));
-    edgeR = values(find(values >= edge, 1, 'first'));
-    if isempty(edgeL)
-        adjEdge = edgeR;
-    elseif isempty(edgeR)
-        adjEdge = edgeL;
-    elseif edge - edgeL <= edgeR - edge
-        adjEdge = edgeL;
-    else 
-        adjEdge = edgeR;
-    end
-end
-
-function success = correctAvgPlotParams(data)
-    success = false;
-    wtProject = WTProject();
-    wtLog = WTLog();
-    
-    plotParams = copy(wtProject.Config.AveragePlots);
-    tMin = data.tim(1);
-    tMax = data.tim(end);
-
-    plotTimeMin = adjustEdge(plotParams.TimeMin, data.tim);
-    if plotParams.TimeMin > tMax 
-        wtLog.warn('Average plots param TimeMin auto-corrected to minimum sample time %d ms (was %d ms > maximum sample time)', plotTimeMin, plotParams.TimeMin);
-    elseif plotTimeMin ~=  plotParams.TimeMin
-        wtLog.warn('Average plots param TimeMin adjusted to closest sample time %d ms (was %d ms)', plotTimeMin, plotParams.TimeMin);
-    end
-
-    plotTimeMax = adjustEdge(plotParams.TimeMax, data.tim);
-    if plotParams.TimeMax < tMin 
-        wtLog.warn('Average plots param TimeMax auto-corrected to maximum sample time %d ms (was %d ms < minimum sample time)', plotTimeMax, plotParams.TimeMax);
-    elseif plotTimeMin ~=  plotParams.TimeMin
-        wtLog.warn('Average plots param TimeMax adjusted to closest sample time %d ms (was %d ms)', plotTimeMax, plotParams.TimeMax);
-    end
-
-    if plotTimeMin > plotTimeMax 
-        wtProject.notifyErr([], 'Bad average plots range [TimeMin,TimeMax] = [%d,%d] after adjustments...', plotTimeMin, plotTimeMax);
-        return
-    end
-
-    fMin = data.Fa(1);
-    fMax = data.Fa(end);
-
-    plotFreqMin = adjustEdge(plotParams.FreqMin, data.Fa);
-    if plotParams.FreqMin > fMax 
-        wtLog.warn('Average plots param FreqMin auto-corrected to minimum frequency %d Hz (was %d Hz > maximum frequency)', plotFreqMin, plotParams.FreqMin);
-    elseif plotTimeMin ~=  plotParams.TimeMin
-        wtLog.warn('Average plots param FreqMin adjusted to closest frequency %d Hz (was %d Hz)', plotFreqMin, plotParams.FreqMin);
-    end
-
-    plotFreqMax = adjustEdge(plotParams.FreqMax, data.Fa);
-    if plotParams.FreqMax < fMin 
-        wtLog.warn('Average plots param FreqMax auto-corrected to maximum frequency %d Hz (was %d Hz < minimum frequency)', plotFreqMax, plotParams.FreqMax);
-    elseif plotTimeMin ~=  plotParams.TimeMin
-        wtLog.warn('Average plots param FreqMax adjusted to closest frequency %d Hz (was %d Hz)', plotFreqMax, plotParams.FreqMax);
-    end
-
-    if plotFreqMin > plotFreqMax 
-        wtProject.notifyErr([], 'Bad average plots range [FreqMin,FreqMax] = [%d,%d] after adjustments...', plotFreqMin, plotFreqMax);
-        return
-    end
-
-    plotParams.TimeMin = plotTimeMin;
-    plotParams.TimeMax = plotTimeMax;
-    plotParams.FreqMin = plotFreqMin;
-    plotParams.FreqMax = plotFreqMax;
-    
-    if ~plotParams.persist() 
-        wtProject.notifyErr([], 'Failed to save average plots params');
-        return
-    end
-
-    wtProject.Config.AveragePlots = plotParams;
-    success = true;
 end
 
  function success = setAvgPlotsParams(logFlag)

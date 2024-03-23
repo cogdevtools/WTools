@@ -2,30 +2,41 @@ classdef WTPlotsGUI
 
     methods(Static)
         % subject = [] when the grand average directory is selected instead of a specific subject dir
-        function [fileNames, filesPath, fileType, subject] = selectFilesToPlot()
+        function [fileNames, filesPath, fileType, subject] = selectFilesToPlot(perSubject, averageOnly, maxFilesNum)
+            averageOnly = any(logical(averageOnly));
             wtProject = WTProject();
             ioProc = wtProject.Config.IOProc;
             subject = [];
+            
 
-            if WTUtils.eeglabYesNoDlg('Define plot type', 'Do you want to plot Evoked Oscillations?')
-                fileType = WTIOProcessor.WaveletsAnalisys_evWT;
-            else
-                fileType = WTIOProcessor.WaveletsAnalisys_avWT;
-            end
-
-            fileFilter = { sprintf('*-%s.mat', fileType), 'All Files' };
+            evokedOscillations = WTUtils.eeglabYesNoDlg('Define plot type', 'Do you want to plot Evoked Oscillations?');
+            [fileType, fileExt] = ioProc.getGrandAverageFileTypeAndExtension(perSubject, evokedOscillations);
+            fileFilter = {  sprintf('*-%s%s', fileType, fileExt), 'All Files' };
 
             while true
-                [fileNames, filesPath, ~] = WTUtils.uiGetFiles(fileFilter, ...
-                    'Select files to plot', 'MultiSelect', 'on', ioProc.AnalysisDir);
+                title = 'Select files to plot';
+                if maxFilesNum > 0
+                    title = sprintf('%s\n[ Max %d files ]', title, maxFilesNum);
+                end
+
+                rootSelectionDir = WTUtils.ifThenElse(averageOnly, ioProc.GrandAvgDir, ioProc.AnalysisDir);
+                
+                [fileNames, filesPath, ~] = WTUtils.uiGetFiles(fileFilter,  ...
+                    maxFilesNum, title, 'MultiSelect', 'on', rootSelectionDir);
                 if isempty(fileNames) 
                     wtProject.notifyWrn([], 'No files to plot selected');
                     return
                 end
+
+                if averageOnly
+                    break
+                end
+                
                 subject = ioProc.getSubjectFromPath(filesPath);
                 if ~isempty(subject) || ioProc.isGrandAvgDir(filesPath)
                     break
                 end
+                
                 WTUtils.eeglabMsgDlg('Warning', ...
                     'Directory:\n   ''%s''\ndoesn''t look like a subject directory.\nPlease select again...', filesPath)
             end

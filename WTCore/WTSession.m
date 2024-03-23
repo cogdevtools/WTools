@@ -39,11 +39,11 @@ classdef WTSession < handle
             o.SessionOpen = true;
             o.prepareContext();
             wtLog = WTLog();
-            wtAppConf = WTAppConf();
-            wtAppConf.load();
-            wtLog.ColorizeMessages = wtAppConf.ColorizedLog;
-            wtLog.UsrLogLevel = wtAppConf.ProjectLogLevel;
-            wtLog.StdLogLevel = wtAppConf.DefaultStdLogLevel;
+            wtAppConfig = WTAppConfig();
+            wtAppConfig.load();
+            wtLog.ColorizeMessages = wtAppConfig.ColorizedLog;
+            wtLog.UsrLogLevel = wtAppConfig.ProjectLogLevel;
+            wtLog.StdLogLevel = wtAppConfig.DefaultStdLogLevel;
             wtLog.info('Starting WTools session...');
             WTProject();
         end
@@ -53,12 +53,12 @@ classdef WTSession < handle
                 return
             end
             o.SessionOpen = false;
-            wtAppConf = WTAppConf();
+            wtAppConfig = WTAppConfig();
             wtProject = WTProject();
             wtLog = WTLog();
-            wtAppConf.persist();
+            wtAppConfig.persist();
             wtLog.info('Closing WTools session...');
-            wtAppConf.clear()
+            wtAppConfig.clear()
             wtProject.clear();
             wtLog.clear();
             o.restoreContext();
