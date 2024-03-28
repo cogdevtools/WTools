@@ -4,7 +4,7 @@
 ## Structure
 * Folder "sh" contains all the functions to run the toolbox
 * Folder "chans_splines" contains the channel layouts and the 3D maps (adult and infant maps)
-* A step-by-step tutorial for the use of WTools is provided on the wiki section
+* A step-by-step tutorial for the use of WTools is provided in the wiki section
 * An example anonymized dataset is freely available on [OSF](https://osf.io/jtudr/)
 
 ## Reference
