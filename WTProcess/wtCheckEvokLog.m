@@ -4,6 +4,11 @@
 
 function [log, wtEvok, bsEvok, bsLog] = wtCheckEvokLog()
     wtProject = WTProject();
+    
+    log = 0;
+    wtEvok = 0;
+    bsEvok = 0; 
+    bsLog= 0;
 
     if ~wtProject.checkIsOpen() 
         return
@@ -11,11 +16,6 @@ function [log, wtEvok, bsEvok, bsLog] = wtCheckEvokLog()
 
     waveletTransformParams = wtProject.Config.WaveletTransform;
     baselineChopParams = wtProject.Config.BaselineChop;
-
-    log = 0;
-    wtEvok = 0;
-    bsEvok = 0; 
-    bsLog= 0;
 
     if waveletTransformParams.exist()
         log = waveletTransformParams.LogarithmicTransform;
@@ -27,6 +27,6 @@ function [log, wtEvok, bsEvok, bsLog] = wtCheckEvokLog()
         bsEvok = baselineChopParams.EvokedOscillations;
         % Get log value after averaging
         bsLog = baselineChopParams.Log10Enable;
-        log =  log || bsLog;
+        log = log || bsLog;
     end
 end

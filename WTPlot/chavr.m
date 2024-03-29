@@ -381,7 +381,11 @@ if ~nargin
 end
 
 % set figure parameters for current Matlab and EEGLAB version and color axis measure
-[DEFAULT_COLORMAP, clabel, Rotation, xclabel] = WTPlotUtils.getFigureBasicParams(logFlag);
+xLabelPrms = WTPlotUtils.getXLabelParams(logFlag);
+clabel = xLabelPrms.String;
+Rotation = xLabelPrms.Rotation;
+xclabel = xLabelPrms.Position;
+DEFAULT_COLORMAP =  WTPlotUtils.getPlotsColorMap();
 
 fprintf('\n');
 fprintf('Plotting...\n');

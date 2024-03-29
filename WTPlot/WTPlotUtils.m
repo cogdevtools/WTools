@@ -2,7 +2,13 @@ classdef WTPlotUtils
 
     methods(Static, Access=private)
         
-        function  v = normalizedMatlabVersion()
+        function matVer = normalizedMatlabVersion()
+            persistent vers
+
+            if ~isempty(vers)
+                matVer = vers;
+                return
+            end
             % same as in eeglab's icadefs.m: can't make sense of the code though...
             vTemp = version();
             pointIdxs = find(vTemp == '.');
@@ -10,7 +16,8 @@ classdef WTPlotUtils
                 vTemp = [ vTemp(1:pointIdxs(1)) '0' vTemp(pointIdxs(1)+1:end) ]; 
                 pointIdxs = find(vTemp == '.');
             end
-            v = WTUtils.str2double(vTemp(1:pointIdxs(2)-1)); 
+            vers = WTUtils.str2double(vTemp(1:pointIdxs(2)-1));
+            matVer = vers;
         end
 
         % Adjust 'edge' to the closest value in the ORDERED vector 'values'.
@@ -40,38 +47,49 @@ classdef WTPlotUtils
             end
         end
 
-        function [defaultColorMap, cLabel, rotation, xcLabel] = getFigureBasicParams(logFlag)
+        function params = getYLabelParams(logFlag) 
+            params = struct();
+            params.String = WTUtils.ifThenElse(logFlag, '% change', '\muV');
+        end
+
+        function params = getXLabelParams(logFlag) 
+            params = struct();
+            if logFlag
+                params.String = '% change';
+                params.Rotation = 90;
+            else
+                params.String = '\muV';
+                params.Rotation = 0;
+            end
+            vers = WTPlotUtils.normalizedMatlabVersion();
+            params.Position = WTUtils.ifThenElse(vers < 8.04, 5, 2);
+        end
+
+        function plotsColorMap = getPlotsColorMap()
+            persistent colorMap
+
+            if ~isempty(colorMap)
+                plotsColorMap = colorMap;
+                return
+            end
+
             wtAppConfig = WTAppConfig();
 
             if ~isempty(wtAppConfig.PlotsColorMap)
-                defaultColorMap = wtAppConfig.PlotsColorMap;
+                colorMap = wtAppConfig.PlotsColorMap;
             else
-                defaultColorMap = 'parula'; 
+                colorMap = 'parula'; 
                 try
                     % call eeglab icadefs to set the same colormap if defined there...
                     icadefs;
                     if exist('DEFAULT_COLORMAP', 'var')
-                        defaultColorMap = DEFAULT_COLORMAP;
+                        colorMap = DEFAULT_COLORMAP;
                     end
                 catch
                 end
             end
 
-            vers = WTPlotUtils.normalizedMatlabVersion();
-
-            if vers < 8.04
-                xcLabel = 5;
-            else
-                xcLabel = 2;
-            end
-
-            if ~logFlag
-                cLabel = '\muV';
-                rotation = 0;
-            else
-                cLabel = '% change';
-                rotation = 90;
-            end
+            plotsColorMap = colorMap;
         end
 
         % subject empty => load grand average
@@ -90,7 +108,7 @@ classdef WTPlotUtils
             end
         end
 
-        function [x, y] = getCartesianChannelsPosition(channelsLocations)
+        function [x, y] = getChannelsXY(channelsLocations)
             n = length(channelsLocations);
             x = zeros(1, n);
             y = zeros(1, n);
@@ -203,7 +221,7 @@ classdef WTPlotUtils
             try
                 hChildrenObjects = WTUtils.xGetField(hObject.UserData, childrenObjField);
                 arrayfun(@(hChildObj)close(hChildObj), hChildrenObjects); 
-                hObject.UserData = WTUtils.xSetField(hObject.UserData, hChildrenObjects, childrenObjField); 
+                WTUtils.xSetField('hObject.UserData', '[]', childrenObjField); 
             catch me
                 WTLog().except(me);
             end
@@ -228,7 +246,7 @@ classdef WTPlotUtils
                     hChildrenObjects(hChildObjIdx) = [];
 
                     hParentObject.UserData.(childrenObjField) = hChildrenObjects;
-                    hParentObject.UserData = WTUtils.xSetField(hParentObject.UserData, hChildrenObjects, childrenObjField);
+                    WTUtils.xSetField('hParentObject.UserData', 'hChildrenObjects', childrenObjField);
                 end
             catch me
                 WTLog().except(me);
@@ -356,7 +374,6 @@ classdef WTPlotUtils
         % As graphical objects, hObject and the sub-objects are supposed to have the property Position
         % and CurrentPoint.
         % User callback: doCb(hObject, []|hSubObject, subObjIdx, varargin{:})
-
         function onMouseOverSubObjectsDoCb(hObject, event, pointsField, subObjectsField, doCb, varargin) 
             try
                 points = WTUtils.xGetField(hObject.UserData, pointsField); 

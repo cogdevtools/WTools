@@ -7,21 +7,41 @@ classdef WTLayout
 
     methods (Static)
         function d = getToolsDir() 
-            fn = mfilename('fullpath');
-            d = WTUtils.getPathPrefix(fn);
-            d = WTUtils.getAbsPath(fullfile(d, '..'));
+            persistent toolsDir
+
+            if isempty(toolsDir)
+                fn = mfilename('fullpath');
+                d = WTUtils.getPathPrefix(fn);
+                toolsDir = WTUtils.getAbsPath(fullfile(d, '..'));
+            end
+            d = toolsDir;
         end
 
         function d = getToolsPicturesDir() 
-            d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir, WTLayout.PicturesSubDir);
+            persistent picturesDir
+
+            if isempty(picturesDir)
+                picturesDir = fullfile(WTLayout.getResourcesDir(), WTLayout.PicturesSubDir);
+            end
+            d = picturesDir;
         end
 
         function d = getToolsDevicesDir() 
-            d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir, WTLayout.DevicesSubDir);
+            persistent devicesDir
+
+            if isempty(devicesDir)
+                devicesDir = fullfile(WTLayout.getResourcesDir(), WTLayout.DevicesSubDir);
+            end
+            d = devicesDir;
         end
 
         function d = getResourcesDir() 
-            d = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir);
+            persistent resourcesDir
+
+            if isempty(resourcesDir)
+                resourcesDir = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir);
+            end
+            d = resourcesDir;
         end
     end
 end

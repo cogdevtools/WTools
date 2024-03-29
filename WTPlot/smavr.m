@@ -653,7 +653,14 @@ end
 
 % Draw the clicked scalpmap
 figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
-[DEFAULT_COLORMAP, clabel, Rotation, xclabel] = WTPlotUtils.getFigureBasicParams(strcmp(enable_uV,'off'));
+
+logFlag = strcmp(enable_uV, 'off');
+xLabelPrms = WTPlotUtils.getXLabelParams(logFlag);
+clabel = xLabelPrms.String;
+Rotation = xLabelPrms.Rotation;
+xclabel = xLabelPrms.Position;
+DEFAULT_COLORMAP = WTPlotUtils.getPlotsColorMap();
+
 if size(WT,3)>1
     topoplot(WT(:,:,lat(i)), chanlocs, 'electrodes', labels, 'maplimits',...
         scale, 'intrad',periphelectr,'numcontour',contours);

@@ -1,10 +1,18 @@
 classdef WTUtils
 
     methods (Static, Access=private)
-        function [interpreter, msg] = setDlgMsg(fontSize, fmt, varargin)
-            interpreter = struct('Interpreter', 'tex', 'WindowStyle', 'modal');
-            fontSizeFmt = sprintf('\\\\fontsize{%d}', fontSize);
-            msg = sprintf([fontSizeFmt fmt], varargin{:});
+        function [options, msg] = setDlgOptions(fontSize, fmt, varargin)
+            options = struct();
+            options.Resize = 'on';
+            options.Interpreter = 'tex';
+            options.WindowStyle = 'modal';
+            fontSizeFmt = sprintf('\\fontsize{%d}', fontSize);
+            msg = WTUtils.ifThenElse(isempty(varargin), fmt, @()sprintf(fmt, varargin{:}));
+            % Escape Tex control chars + replace \n with newline. Note that the order of char counts:
+            % The \ must be replaced before the other chars but after \n 
+            msg = regexprep(msg, { '\\n',   '\\',   '\{' , '\}' , '\^'  }, ...
+                                 { newline, '\\\\', '\\{', '\\}', '\\^' });
+            msg = [ fontSizeFmt  msg ];
         end
 
         function expr = buildFieldDerefExpr(varargin)
@@ -20,27 +28,55 @@ classdef WTUtils
     end
 
     methods (Static)
+
+        % xGetField() extracts a value from a possibly nested structure. The path to
+        % the value is described by varargin. The items in varargin must either be
+        % char array or cell array of char array. Examples:
+        %
+        %   s = struct('f1', struct('f11', 1, 'f12', struct('f121', 1)));
+        %   xGetField(s, 'f1', 'f11', 'f12');       -> return 1
+        %   xGetField(s, { 'f1', 'f11', 'f12' });   -> return 1
+        %   xGetField(s, 'f1', {'f11', 'f12' });    -> return 1
+        %   xGetField(s, 'f1', {'f11', {'f12'} });  -> return 1
         function value = xGetField(structObj, varargin)
             if nargin - 1 <= 0
                 WTException.missingArg('no fields specified').throw();
             end
             if ~isstruct(structObj)
-                WTException.badgArg('first arg must be a struct').throw();
+                WTException.badArg('first arg must be a struct').throw();
             end 
             eval(['value = structObj' WTUtils.buildFieldDerefExpr(varargin{:}) ';' ]);
         end
 
+        % xSetField() set the value of a possibly nested structure field. The path to
+        % the value is described by varargin. The items in varargin must either be
+        % char array or cell array of char array. If varargout is empty, then the function
+        % requires structObj to be a char array describing the name of the structure in
+        % the caller namespace. In such case value must be a char array as well, describing 
+        % the variable holding value to set in the caller namespace or an actual value.
+        % if varagout is not empty them it must be the structure itself of which the 
+        % function will modify the content, if not the structure update will be lost.
+        % Examples:
+        %   s = struct('f1', struct('f11', 1, 'f12', struct('f121', 1)));
+        %   v = 100;
+        %   s = xSetField(s, v, 'f1', 'f12', 'f121');     -> s.f1.f12.f121 = 100
+        %   s = xSetField(s, v, 'f1', { 'f12', 'f121' }); -> s.f1.f12.f121 = 100
+        %   xSetField('s', '999', 'f1', 'f12', 'f121');   -> s.f1.f12.f121 = 999
+        %   xSetField('s', 'v', 'f1', 'f12', 'f121');     -> s.f1.f12.f121 = 100
         function structObj = xSetField(structObj, value, varargin) 
             if nargin - 2 <= 0
                 WTException.missingArg('no fields specified').throw();
             end
-            if nargout == 0 
-                WTException.missingArg('an output argument must be defined for the function to be effective').throw();
+            if nargout == 0
+                if ~ischar(structObj) || ~ischar(value)
+                    WTException.missingArg('an output argument must be defined').throw(); 
+                end
+                evalin('caller', [ char(structObj) WTUtils.buildFieldDerefExpr(varargin{:}) ' = ' char(value) ';' ]);
+            elseif ~isstruct(structObj)
+                WTException.badArg('first arg must be a struct').throw();
+            else
+                eval([ 'structObj' WTUtils.buildFieldDerefExpr(varargin{:}) ' = value;' ]); 
             end
-            if ~isstruct(structObj)
-                WTException.badgArg('first arg must be a struct').throw();
-            end
-            eval([ 'structObj' WTUtils.buildFieldDerefExpr(varargin{:}) ' = value;' ]); 
         end
 
         function value = str2double(str, allowEmptyStr)
@@ -354,33 +390,29 @@ classdef WTUtils
         end
 
         function hlpDlg(title, fmt, varargin)
-            [interpreter, text] = WTUtils.setDlgMsg(14, fmt, varargin{:});
-            hd = helpdlg(text, strcat('[WTools] ', title), interpreter);
-            uiwait(hd);
+            [options, text] = WTUtils.setDlgOptions(14, fmt, varargin{:});
+            uiwait(helpdlg(text, strcat('[WTools] ', title), options));
         end
 
         function errDlg(title, fmt, varargin)
-            [interpreter, text] = WTUtils.setDlgMsg(14, fmt, varargin{:});
-            ed = errordlg(text, strcat('[WTools] ', title), interpreter);
-            uiwait(ed);
+            [options, text] = WTUtils.setDlgOptions(14, fmt, varargin{:});
+            uiwait(errordlg(text, strcat('[WTools] ', title), options));
         end
 
         function wrnDlg(title, fmt, varargin)
-            [interpreter, text] = WTUtils.setDlgMsg(14, fmt, varargin{:});
-            wd = warndlg(text, strcat('[WTools] ', title), interpreter);
-            uiwait(wd);
+            [options, text] = WTUtils.setDlgOptions(14, fmt, varargin{:});
+            uiwait(warndlg(text, strcat('[WTools] ', title), options));
         end
 
         function msgBox(title, fmt, varargin)
-            [interpreter, text] = WTUtils.setDlgMsg(14, fmt, varargin{:});
-            mb = msgbox(text, strcat('[WTools] ', title), interpreter);
-            uiwait(mb);
+            [options, text] = WTUtils.setDlgOptions(14, fmt, varargin{:});
+            uiwait(msgbox(text, strcat('[WTools] ', title), options));
         end
         
-        function choice = askDlg(title, fmt, fmtArgs, options, defaultOption)
-            [interpreter, text] = WTUtils.setDlgMsg(14, fmt, fmtArgs{:});
-            interpreter.Default = defaultOption;
-            choice = questdlg(text, strcat('[WTools] ', title), options{:}, interpreter);
+        function choice = askDlg(title, fmt, fmtArgs, choices, defaultchoice)
+            [options, text] = WTUtils.setDlgOptions(14, fmt, fmtArgs{:});
+            options.Default = defaultchoice;
+            choice = questdlg(text, strcat('[WTools] ', title), choices{:}, options);
         end
 
         function msgBoxIf(cnd, title, fmt, varargin)
@@ -398,23 +430,61 @@ classdef WTUtils
             end
         end
         
-        function [fileNames, filesDir, filterIdx] = uiGetFiles(filter, maxFiles, msg, varargin)
-            WTUtils.msgBoxIf(nargin > 2 && ismac, 'Select file(s)', msg);
+        % popOptionFromArgs() find the option with name 'option' in a varargin ('args')
+        % cell array and pop it from the cell array together with its value.
+        function args = popOptionFromArgs(args, option)
+            for i = 1:2:length(args)
+                if ischar(args{i}) && strcmp(args{i}, option)
+                    args = [args(1:i-1) args(i+2:end)];
+                    return
+                end
+            end
+        end
+
+        % uiGetFiles() select min/maxFiles (<= 0 ignored) files applying files type 'filter'.
+        % msg is the title of the dialog. varargin are any list of paramters accepted by 
+        % matlab uigetfile + an extra optional parameter restrictToDirs which must be either 
+        % a char array or a cell array of char arrays whose elements are regular expressions 
+        % one of which at least the directory of the selected file matches.
+        function [fileNames, filesDir, filterIdx] = uiGetFiles(filter, minFiles, maxFiles, msg, varargin)
+            argParser = inputParser();
+            argParser.CaseSensitive = true;
+            argParser.KeepUnmatched = true;
+            validateRestrictToDirs = @(v)WTValidations.isALinearCellArrayOfString(v) || ischar(v);
+            addParameter(argParser, 'restrictToDirs', {}, validateRestrictToDirs);
+            argsToParse = WTUtils.ifThenElse(mod(length(varargin), 2), @()varargin(1:end-1), @()varargin); 
+            parse(argParser, argsToParse{:}); 
+            restrictToDirs = WTUtils.ifThenElse(ischar(argParser.Results.restrictToDirs), ...
+                {{argParser.Results.restrictToDirs}}, @()argParser.Results.restrictToDirs);
+            varargin = WTUtils.popOptionFromArgs(varargin, 'restrictToDirs'); 
+            WTUtils.msgBoxIf(nargin > 3 && ismac, 'Select file(s)', msg);
+
             while true
-                if nargin > 2
+                if nargin > 3
                     [fileNames, filesDir, filterIdx] = uigetfile(filter, msg, varargin{:});
                 else 
                     [fileNames, filesDir, filterIdx] = uigetfile(filter);
                 end
                 if isscalar(fileNames) 
                     fileNames = {};
+                    return
                 elseif ischar(fileNames) 
                     fileNames = {fileNames};
                 end
-                if maxFiles <= 0 || length(fileNames) <= maxFiles
-                    break
+                if ~isempty(restrictToDirs) && ...
+                   all(cell2mat(cellfun(@(d)isempty(regexp(filesDir, char(d), 'once')), restrictToDirs, 'UniformOutput', false)))
+                    WTUtils.wrnDlg('', 'Only select files within the directories matching the following regexp:\n\n  - %s', char(join(restrictToDirs,'\n  - ')));
+                    continue
                 end
-                WTUtils.wrnDlg('', 'You can select max %d files...', maxFiles);
+                if minFiles > 0 && length(fileNames) < minFiles
+                    WTUtils.wrnDlg('', 'You must select min %d files...', minFiles);
+                    continue
+                end
+                if maxFiles > 0 && length(fileNames) > maxFiles
+                    WTUtils.wrnDlg('', 'You can select max %d files...', maxFiles);
+                    continue
+                end
+                break
             end
         end
 

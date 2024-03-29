@@ -36,6 +36,10 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     wtProject = WTProject();
     wtLog = WTLog();
 
+    if ~wtProject.checkIsOpen() 
+        return
+    end
+
     interactive = wtProject.Interactive;
 
     if ~interactive 
@@ -150,7 +154,8 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         prms.plotsPrms = copy(plotsPrms);
         prms.width = 0.1;
         prms.height = 0.1;
-        [prms.defaultColorMap,  prms.cLabel,  prms.rotation,  prms.xcLabel] = WTPlotUtils.getFigureBasicParams(logFlag);
+        prms.xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        prms.defaultColorMap =  WTPlotUtils.getPlotsColorMap();
 
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -166,7 +171,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
              % convert the data back to non-log scale straight in percent change in case logFlag is set
             prms.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
-            [prms.x, prms.y] = WTPlotUtils.getCartesianChannelsPosition(prms.channelsLocations);
+            [prms.x, prms.y] = WTPlotUtils.getChannelsXY(prms.channelsLocations);
             prms.xMin = min(prms.x);
             prms.yMin = min(prms.y);
             prms.xMax = max(prms.x);
@@ -195,20 +200,19 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             hFigureAxes = axes('position', [0 0 1 1]);
             hFigureAxes.Visible = 'off';
             % Create label which display the sub plot name when hovering on it with the mouse
-            hSubPlotHoverAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
-            hSubPlotHoverAnnotation.Color = [1 0 0];
-            hSubPlotHoverAnnotation.String = '';
-            hSubPlotHoverAnnotation.EdgeColor = 'none';
-            hSubPlotHoverAnnotation.HorizontalAlignment = 'right';
-            hSubPlotHoverAnnotation.VerticalAlignment = 'middle';
-            hSubPlotHoverAnnotation.FontName = 'Courier';
-            hSubPlotHoverAnnotation.FontSize = 15;
-            hSubPlotHoverAnnotation.FontWeight = 'bold';
+            hWhichSubPlotAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
+            hWhichSubPlotAnnotation.Color = [1 0 0];
+            hWhichSubPlotAnnotation.String = '';
+            hWhichSubPlotAnnotation.EdgeColor = 'none';
+            hWhichSubPlotAnnotation.HorizontalAlignment = 'right';
+            hWhichSubPlotAnnotation.VerticalAlignment = 'middle';
+            hWhichSubPlotAnnotation.FontName = 'Courier';
+            hWhichSubPlotAnnotation.FontSize = 15;
+            hWhichSubPlotAnnotation.FontWeight = 'bold';
             % Add user data
-            hFigure.UserData = struct();
             hFigure.UserData.OpenSubPlots = [];
             hFigure.UserData.SubPlotsAxes = [];
-            hFigure.UserData.SubPlotAnnotation = hSubPlotHoverAnnotation;
+            hFigure.UserData.SubPlotAnnotation = hWhichSubPlotAnnotation;
             hFigure.UserData.SubPlotAxesCenter = [xCenter' yCenter'];
             hFigure.UserData.onButtonDownCbPrms = prms;
             % Set the callback to close open subplots when the master figure closes
@@ -224,6 +228,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             % Set the callback to display sub plot lable when mouse hover on it
             hFigure.WindowButtonMotionFcn = {@WTPlotUtils.onMouseOverSubObjectsDoCb, ...
                 'SubPlotAxesCenter', 'SubPlotsAxes', @setSubPlotAnnotationSetCb};
+
             % Set the callback to display the subPlot label as cursor info
             for chn = 1:nChannelsToPlot
                 channelLabel = prms.channelsLocations(chn).labels;  
@@ -233,13 +238,11 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
                      prms.width / prms.xM, prms.height / prms.yM];
                 hSubPlotAxes = axes('Position', axesPosition);
                 % Set axes user data that will be used for resizing the  plot via +/- keypress
-                hSubPlotAxes.UserData = struct();
                 hSubPlotAxes.UserData.OriginalPosition = axesPosition;
                 hSubPlotAxes.UserData.ChannelLabel = channelLabel;
                 hFigure.UserData.SubPlotsAxes = [hFigure.UserData.SubPlotsAxes hSubPlotAxes];
                 hold('on');        
-                image = imagesc(squeeze(prms.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
-                image.UserData = struct('ChannelLabel', channelLabel); % save channel label for data cursor mode
+                imagesc(squeeze(prms.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
                 clim(plotsPrms.Scale);
                 axis('off');
                 text(0, 0, channelLabel, 'FontSize', 8, 'FontWeight', 'bold');
@@ -260,10 +263,15 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
 end
 
 function setSubPlotAnnotationSetCb(hObject, hSubObject, subObjIdx) 
-    hObject.UserData.SubPlotAnnotation.String = WTUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel);
+    newAnnotatonString = WTUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel); 
+    hAnnotation = hObject.UserData.SubPlotAnnotation;
+    if ~strcmp(hAnnotation.String, newAnnotatonString)
+        hAnnotation.String = newAnnotatonString;
+        drawnow();
+    end
 end
 
-function mainPlotOnButtonDownCb(hMainPlot, ~)
+function mainPlotOnButtonDownCb(hMainPlot, event)
     try
         prms = hMainPlot.UserData.onButtonDownCbPrms;
         plotsPrms = prms.plotsPrms;
@@ -357,7 +365,11 @@ function mainPlotOnButtonDownCb(hMainPlot, ~)
         pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
         pace = pace(2) - pace(1);
         colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
-        set(get(colorBar, 'xlabel'), 'String', prms.cLabel, 'Rotation', prms.rotation, 'FontSize', 12, 'FontWeight', 'bold', 'Position', [prms.xcLabel 2 * pace]); 
+        set(get(colorBar, 'xlabel'), ...
+            'String', prms.xLabel.String, ...
+            'Rotation', prms.xLabel.Rotation, ...
+            'Position', [prms.xLabel.Position 2 * pace], ...
+            'FontSize', 12, 'FontWeight', 'bold'); 
     catch me
         WTLog().except(me);
     end  

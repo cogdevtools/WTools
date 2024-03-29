@@ -71,8 +71,12 @@ classdef WTLog < handle
                 end
                 header = sprintf('[%s WTOOLS %s:%s(%d)%s|%s]', time, module, func, line, jctx{1}, level);
             end
-            msgout = sprintf(fmt, varargin{:});
-            msgout = regexprep(msgout, {'%','\\n','\\'}, {'%%',newline,'\\\\'});
+            if ~isempty(varargin)
+                msgout = sprintf(fmt, varargin{:});
+            else
+                msgout = fmt;
+            end
+            msgout = regexprep(msgout, {'%','\\n','\\'}, {'%%', newline, '\\\\'});
             toks = splitlines(msgout)';
             indent = (length(o.Context)+1)*2;
             padding = repelem(' ', indent);

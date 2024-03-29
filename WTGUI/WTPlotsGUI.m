@@ -21,8 +21,8 @@ classdef WTPlotsGUI
 
                 rootSelectionDir = WTUtils.ifThenElse(averageOnly, ioProc.GrandAvgDir, ioProc.AnalysisDir);
                 
-                [fileNames, filesPath, ~] = WTUtils.uiGetFiles(fileFilter,  ...
-                    maxFilesNum, title, 'MultiSelect', 'on', rootSelectionDir);
+                [fileNames, filesPath, ~] = WTUtils.uiGetFiles(fileFilter, -1, maxFilesNum, title, ...
+                    'MultiSelect', 'on', 'restrictToDirs', ['^' rootSelectionDir], rootSelectionDir);
                 if isempty(fileNames) 
                     wtProject.notifyWrn([], 'No files to plot selected');
                     return
@@ -43,6 +43,7 @@ classdef WTPlotsGUI
         end
 
         function success = defineAvgPlotsSettings(plotsPrms, logFlag) 
+            success = false;
             WTValidations.mustBeA(plotsPrms, ?WTAvgPlotsCfg);
             logFlag = any(logical(logFlag));
             wtLog = WTLog();
@@ -84,7 +85,7 @@ classdef WTPlotsGUI
             };
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
-
+            
             while true
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
@@ -111,7 +112,8 @@ classdef WTPlotsGUI
             success = true;
         end
 
-        function success = defineAvgStdErrPlotsSettings(plotsPrms) 
+        function success = defineAvgStdErrPlotsSettings(plotsPrms)
+            success = false; 
             WTValidations.mustBeA(plotsPrms, ?WTAvgStdErrPlotsCfg);
             wtLog = WTLog();
 
@@ -152,7 +154,7 @@ classdef WTPlotsGUI
                     plotsPrms.TimeMax = WTUtils.str2double(answer{1,2});
                     plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
                     plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
-                    plotsPrms.AllChannels = answer{1,7};
+                    plotsPrms.AllChannels = answer{1,5};
                     plotsPrms.validate();
                 catch me
                     wtLog.except(me);
@@ -165,6 +167,7 @@ classdef WTPlotsGUI
         end
 
         function success = defineChansAvgPlotsSettings(plotsPrms, logFlag) 
+            success = false;
             WTValidations.mustBeA(plotsPrms, ?WTChansAvgPlotsCfg);
             logFlag = any(logical(logFlag));
             wtLog = WTLog();
@@ -228,7 +231,8 @@ classdef WTPlotsGUI
             success = true;
         end
 
-        function success = defineChansAvgStdErrPlotsSettings(plotsPrms) 
+        function success = defineChansAvgStdErrPlotsSettings(plotsPrms)
+            success = false; 
             WTValidations.mustBeA(plotsPrms, ?WTChansAvgStdErrPlotsCfg);
             wtLog = WTLog();
 
@@ -276,7 +280,8 @@ classdef WTPlotsGUI
             success = true;
         end
 
-        function success = defineScalpMapPlotsSettings(plotsPrms, logFlag) 
+        function success = defineScalpMapPlotsSettings(plotsPrms, logFlag)
+            success = false; 
             WTValidations.mustBeA(plotsPrms, ?WTScalpMapPlotsCfg);
             logFlag = any(logical(logFlag));
             wtLog = WTLog();
@@ -340,7 +345,8 @@ classdef WTPlotsGUI
             success = true;
         end
 
-        function success = define3DScalpMapPlotsSettings(plotsPrms, logFlag) 
+        function success = define3DScalpMapPlotsSettings(plotsPrms, logFlag)
+            success = false; 
             WTValidations.mustBeA(plotsPrms, ?WTScalpMapPlotsCfg);
             logFlag = any(logical(logFlag));
             wtLog = WTLog();

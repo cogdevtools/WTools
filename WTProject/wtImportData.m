@@ -37,9 +37,8 @@ function wtImportData()
         fileExt = ['*.' WTIOProcessor.getSystemImportFileExtension(system)];
         fileFilter = {fileExt, sprintf('%s (%s)', system, fileExt)};
 
-        [srcFiles, srcDir, ~] = WTUtils.uiGetFiles(fileFilter, -1, ...
-            sprintf('Select all the files to import from %s system',  system), ...
-            'MultiSelect', 'on');
+        [srcFiles, srcDir, ~] = WTUtils.uiGetFiles(fileFilter, -1, -1, ...
+            sprintf('Select all the files to import from %s system',  system), 'MultiSelect', 'on');
 
         if isempty(srcFiles) 
             if WTUtils.eeglabYesNoDlg('Confirm', 'Quit import?')
