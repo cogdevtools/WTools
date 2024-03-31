@@ -47,6 +47,23 @@ classdef WTPlotUtils
             end
         end
 
+        function position = getCentralFigurePosition(widthHeightRatio, relativeWidth)
+            WTValidations.mustBeGTE(1, relativeWidth, false);
+            WTValidations.mustBeGT(relativeWidth, 0, false);
+            screenSize = get(groot, 'screensize');
+            screenWidthHeighRatio = screenSize(3) / screenSize(4);
+            relativeHeight = relativeWidth * screenWidthHeighRatio / widthHeightRatio;
+            if relativeHeight > 1
+                relativeHeight = 1;
+                relativeWidth = relativeHeight * widthHeightRatio / screenWidthHeighRatio;
+            end
+            x = (1 - relativeWidth) * screenSize(3) / 2 + 1;
+            y = (1 - relativeHeight) * screenSize(4) / 2 + 1;
+            w = relativeWidth * screenSize(3);
+            h = relativeHeight * screenSize(4);
+            position = [x y w h];
+        end
+
         function params = getYLabelParams(logFlag) 
             params = struct();
             params.String = WTUtils.ifThenElse(logFlag, '% change', '\muV');
@@ -191,6 +208,14 @@ classdef WTPlotUtils
         end
 
         % --- Callbacks -- ON ---
+
+        function keepWindowSizeRatioCb(hObject, event, whRatio) 
+            pos = hObject.Position;
+            scale = (pos(3) + pos(4) * whRatio) / 2;
+            pos(3) = scale;
+            pos(4) = scale / whRatio;
+            hObject.Position = pos;
+        end
 
         % setAxesGridStyleCb() switch the axes grid style each time is called
         function setAxesGridStyleCb(hObject, event)

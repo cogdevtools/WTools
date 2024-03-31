@@ -141,6 +141,11 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     mainPlots = [];    
         
     try
+        % The annotation text's height which will appear on the top left corner
+        channelAnnotationHeight = 0.05;
+        % The width / height ratio of the main figure
+        figureWHRatio = 1;
+        figurePosition = WTPlotUtils.getCentralFigurePosition(figureWHRatio, 0.3);
         % Create struct to store all the useful params used here and by the callbacks
         prms = struct();
         prms.timeIdxs = timeIdxs;
@@ -150,29 +155,34 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         prms.channelsToPlotIdxs = channelsToPlotIdxs;
         prms.plotsPrms = copy(plotsPrms);
         prms.width = 0.1;
-        prms.height = 0.1;
+        prms.height = prms.width * 3/4;
         prms.yLabel = WTPlotUtils.getYLabelParams(logFlag);
         prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
+
+        % Determine sub plots images size and position within the main figure
         [prms.x, prms.y] = WTPlotUtils.getChannelsXY(prms.channelsLocations);
         prms.xMin = min(prms.x);
         prms.yMin = min(prms.y);
         prms.xMax = max(prms.x);
         prms.yMax = max(prms.y);
-        prms.xAirToEdge = (prms.xMax - prms.xMin) / 50; % air to edge of plot
-        prms.yAirToEdge = (prms.yMax - prms.yMin) / 50; % air to edge of plot
-        prms.xM = prms.xMax - prms.xMin + prms.width;
-        prms.yM = prms.yMax - prms.yMin + prms.height;
-        prms.logFlag = logFlag;
+        prms.height = prms.height * figureWHRatio;
+        prms.xAirToEdge = 1 / 50; % air to edge of plot
+        prms.yAirToEdge = figureWHRatio / 50; % air to edge of plot
+        xSpanRel = 1 - 2 * prms.xAirToEdge - prms.width;
+        ySpanRel = 1 - 2 * prms.yAirToEdge - prms.height - channelAnnotationHeight;
+        xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+        xBottomLeftCorner = prms.xAirToEdge + ((prms.x - prms.xMin) / xSpan) * xSpanRel;
+        yBottomLeftCorner = prms.yAirToEdge + ((prms.y - prms.yMin) / ySpan) * ySpanRel;
+        xCenter = xBottomLeftCorner + (prms.width / 2);
+        yCenter = yBottomLeftCorner + (prms.height / 2);
+
         prms.data = cell(1, nConditionsToPlot);
         hPrms = WTHandle(prms);
-        xBottomLeftCorner = (prms.x - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge);
-        yBottomLeftCorner = (prms.y - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge);
-        xCenter = xBottomLeftCorner + prms.width / (2 * prms.xM);
-        yCenter = yBottomLeftCorner + prms.height / (2 * prms.yM);
 
         % Create main plot figure
         figureName = sprintf('%s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
-        hFigure = figure();
+        hFigure = figure('Position', figurePosition);
         mainPlots(end+1) = hFigure;  
         hFigure.Name = figureName;
         hFigure.NumberTitle = 'off';
@@ -185,7 +195,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         hFigureAxes.Visible = 'off';
 
         % Create annotation to display channel label on mouse hovering
-        hWhichSubPlotAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
+        hWhichSubPlotAnnotation = annotation('textbox', [0.9, 0.95 .09 channelAnnotationHeight]);
         hWhichSubPlotAnnotation.Color = [1 0 0];
         hWhichSubPlotAnnotation.String = '';
         hWhichSubPlotAnnotation.EdgeColor = 'none';
@@ -203,6 +213,8 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         hFigure.UserData.onButtonDownCbPrms = hPrms;
 
         % Callbacks settings
+        % Set the callback to keep the window size ratio constant
+        hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figurePosition(3)/figurePosition(4)};
         % Set the callback to close open subplots when the master figure closes
         hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
         % Set the callback to display subplots
@@ -238,8 +250,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
                 chnsStdErr = squeeze(mean(std(data.SS(channelIdx, freqIdxs, timeIdxsReduced, :), 0, 4)./sqrt(size(data.SS, 4)), 2));
         
                 if cnd == 1
-                    axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), ...
-                        prms.width / prms.xM, prms.height / prms.yM];
+                    axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.width, prms.height];
                     hSubPlotAxes = axes('Position', axesPosition, 'nextplot', 'add');
                     hSubPlotAxes.UserData.OriginalPosition = axesPosition;
                     hSubPlotAxes.UserData.ChannelLabel = channelLabel;
@@ -248,6 +259,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
                     errorbar(hSubPlotAxes, chnsAvg, chnsStdErr, 'b');  % blue line
                 else
                     hSubPlotAxes = hFigure.UserData.SubPlotsAxes(chn);
+                    hold(hSubPlotAxes, 'on');
                     errorbar(hSubPlotAxes, chnsAvg, chnsStdErr,'r'); % red line
                     yLim = ylim();
                     title(hSubPlotAxes, channelLabel, 'FontSize', 8, 'FontWeight', 'bold', 'pos', [0, (yLim(1) - 0.22)]);
@@ -288,7 +300,9 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         % Check if the click point falls into the axes extent, if not quit 
         [subPlotIdx, clickPosRelToAxes] = WTPlotUtils.getClickedSubObjectIndex(hMainPlot, hMainPlot.UserData.SubPlotAxesCenter);
         subPlotAxesPos = hMainPlot.UserData.SubPlotsAxes(subPlotIdx).Position;
-        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || clickPosRelToAxes(2) > subPlotAxesPos(4)/2
+        clickPosRelToAxes = abs(clickPosRelToAxes);
+        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || ...
+            clickPosRelToAxes(2) > subPlotAxesPos(4)/2
             return
         end
 
@@ -302,21 +316,21 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
             return
         end
         
-        % Determine positiion and size of the subplot on screen
-        sreenSize = get(groot, 'screensize');
-        whScreenRatio =  sreenSize(3)/sreenSize(4);
-        widthOnScreen = 0.15;
-        heightOnScreen = widthOnScreen * whScreenRatio;
-        xSpan = (prms.xMax - prms.xMin + widthOnScreen);
-        ySpan = (prms.yMax - prms.yMin + heightOnScreen);
+        % Determine position and size of the new subplot which opens on screen
+        screenSize = get(groot, 'screensize');
+        whScreenRatio =  screenSize(3)/screenSize(4);
+        widthOnScreen = max(0.5 / sqrt(length(prms.x)), 0.15);
+        heightOnScreen = widthOnScreen * whScreenRatio * subPlotAxesPos(4) / subPlotAxesPos(3);
+        xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
         xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
         yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
-
+        
         position = [ ...
-            (xOnScreen * sreenSize(3)) ... 
-            (yOnScreen * sreenSize(4)) ...
-            (widthOnScreen * sreenSize(3)) ...
-            (heightOnScreen * sreenSize(4)) ...
+            (xOnScreen * (1 - widthOnScreen) * screenSize(3)) + 1 ... 
+            (yOnScreen * (1 - heightOnScreen) * screenSize(4)) + 1 ...
+            (widthOnScreen * screenSize(3)) ...
+            (heightOnScreen * screenSize(4)) ...
         ];
 
         figureName = sprintf('%s.%s', hMainPlot.Name, figureTag);

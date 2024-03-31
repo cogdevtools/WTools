@@ -145,6 +145,11 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     mainPlots = [];
 
     try
+        % The annotation text's height which will appear on the top left corner
+        channelAnnotationHeight = 0.05; 
+        % The width / height ratio of the main figure
+        figureWHRatio = 1; 
+        figurePosition = WTPlotUtils.getCentralFigurePosition(figureWHRatio, 0.3);
         % Create struct to store all the useful params used here and by the callbacks
         prms = struct();
         prms.timeIdxs = timeIdxs;
@@ -153,10 +158,10 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         prms.channelsToPlotIdxs = channelsToPlotIdxs;
         prms.plotsPrms = copy(plotsPrms);
         prms.width = 0.1;
-        prms.height = 0.1;
+        prms.height = prms.width * 3/4;
         prms.xLabel = WTPlotUtils.getXLabelParams(logFlag);
         prms.defaultColorMap =  WTPlotUtils.getPlotsColorMap();
-
+        
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
@@ -168,25 +173,29 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
-             % convert the data back to non-log scale straight in percent change in case logFlag is set
+           % convert the data back to non-log scale straight in percent change in case logFlag is set
             prms.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
+
             [prms.x, prms.y] = WTPlotUtils.getChannelsXY(prms.channelsLocations);
             prms.xMin = min(prms.x);
             prms.yMin = min(prms.y);
             prms.xMax = max(prms.x);
             prms.yMax = max(prms.y);
-            prms.xAirToEdge = (prms.xMax - prms.xMin) / 50; % air to edge of plot
-            prms.yAirToEdge = (prms.yMax - prms.yMin) / 50; % air to edge of plot
-            prms.xM = prms.xMax - prms.xMin + prms.width;
-            prms.yM = prms.yMax - prms.yMin + prms.height;
-            xBottomLeftCorner = (prms.x - prms.xMin + prms.xAirToEdge) / (prms.xM + 2 * prms.xAirToEdge);
-            yBottomLeftCorner = (prms.y - prms.yMin + prms.yAirToEdge) / (prms.yM + 2 * prms.yAirToEdge);
-            xCenter = xBottomLeftCorner + prms.width / (2 * prms.xM);
-            yCenter = yBottomLeftCorner + prms.height / (2 * prms.yM);
+            prms.height = prms.height * figureWHRatio;
+            prms.xAirToEdge = 1 / 50; % air to edge of plot
+            prms.yAirToEdge = figureWHRatio / 50; % air to edge of plot
+            xSpanRel = 1 - 2 * prms.xAirToEdge - prms.width;
+            ySpanRel = 1 - 2 * prms.yAirToEdge - prms.height - channelAnnotationHeight;
+            xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+            ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+            xBottomLeftCorner = prms.xAirToEdge + ((prms.x - prms.xMin) / xSpan) * xSpanRel;
+            yBottomLeftCorner = prms.yAirToEdge + ((prms.y - prms.yMin) / ySpan) * ySpanRel;
+            xCenter = xBottomLeftCorner + (prms.width / 2);
+            yCenter = yBottomLeftCorner + (prms.height / 2);
 
             % Create the main figure & add shared user data
-            hFigure = figure();
+            hFigure = figure('Position', figurePosition);
             mainPlots(end+1) = hFigure;
             colormap(prms.defaultColorMap);    
             hFigure.Name = figureName;
@@ -200,7 +209,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             hFigureAxes = axes('position', [0 0 1 1]);
             hFigureAxes.Visible = 'off';
             % Create label which display the sub plot name when hovering on it with the mouse
-            hWhichSubPlotAnnotation = annotation('textbox', [0.9, 0.95 .09 .05]);
+            hWhichSubPlotAnnotation = annotation('textbox', [0.9, 0.95 .09 channelAnnotationHeight]);
             hWhichSubPlotAnnotation.Color = [1 0 0];
             hWhichSubPlotAnnotation.String = '';
             hWhichSubPlotAnnotation.EdgeColor = 'none';
@@ -215,6 +224,8 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             hFigure.UserData.SubPlotAnnotation = hWhichSubPlotAnnotation;
             hFigure.UserData.SubPlotAxesCenter = [xCenter' yCenter'];
             hFigure.UserData.onButtonDownCbPrms = prms;
+            % Set the callback to keep the window size ratio constant
+            hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figurePosition(3)/figurePosition(4)};
             % Set the callback to close open subplots when the master figure closes
             hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
             % Set the callback to display subplots
@@ -234,8 +245,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
                 channelLabel = prms.channelsLocations(chn).labels;  
                 wtLog.contextOn().dbg('Channel %s', channelLabel);
                 % Create axes for each channel: axes(x,y, xWidth, yWidth) (original below) 
-                axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), ...
-                     prms.width / prms.xM, prms.height / prms.yM];
+                axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.width, prms.height];
                 hSubPlotAxes = axes('Position', axesPosition);
                 % Set axes user data that will be used for resizing the  plot via +/- keypress
                 hSubPlotAxes.UserData.OriginalPosition = axesPosition;
@@ -279,7 +289,9 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         % Check if the click point falls into the axes extent, if not quit 
         [subPlotIdx, clickPosRelToAxes] = WTPlotUtils.getClickedSubObjectIndex(hMainPlot, hMainPlot.UserData.SubPlotAxesCenter);
         subPlotAxesPos = hMainPlot.UserData.SubPlotsAxes(subPlotIdx).Position;
-        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || clickPosRelToAxes(2) > subPlotAxesPos(4)/2
+        clickPosRelToAxes = abs(clickPosRelToAxes);
+        if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || ...
+            clickPosRelToAxes(2) > subPlotAxesPos(4)/2
             return
         end
 
@@ -293,21 +305,21 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
             return
         end
         
-        % Determine positiion and size of the subplot on screen
-        sreenSize = get(groot, 'screensize');
-        whScreenRatio =  sreenSize(3)/sreenSize(4);
-        widthOnScreen = 0.15;
-        heightOnScreen = widthOnScreen * whScreenRatio;
-        xSpan = (prms.xMax - prms.xMin + widthOnScreen);
-        ySpan = (prms.yMax - prms.yMin + heightOnScreen);
+        % Determine position and size of the new subplot which opens on screen
+        screenSize = get(groot, 'screensize');
+        whScreenRatio =  screenSize(3)/screenSize(4);
+        widthOnScreen = max(0.5 / sqrt(length(prms.x)), 0.15);
+        heightOnScreen = widthOnScreen * whScreenRatio * subPlotAxesPos(4) / subPlotAxesPos(3);
+        xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
         xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
         yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
-
+        
         position = [ ...
-            (xOnScreen * sreenSize(3)) ... 
-            (yOnScreen * sreenSize(4)) ...
-            (widthOnScreen * sreenSize(3)) ...
-            (heightOnScreen * sreenSize(4)) ...
+            (xOnScreen * (1 - widthOnScreen) * screenSize(3)) + 1 ... 
+            (yOnScreen * (1 - heightOnScreen) * screenSize(4)) + 1 ...
+            (widthOnScreen * screenSize(3)) ...
+            (heightOnScreen * screenSize(4)) ...
         ];
 
         figureName = sprintf('%s.%s', hMainPlot.Name, figureTag);
