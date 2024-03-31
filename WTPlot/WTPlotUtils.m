@@ -64,6 +64,25 @@ classdef WTPlotUtils
             position = [x y w h];
         end
 
+        % function positions = getCentralFiguresPositions(nFigures, widthHeightRatio, relativeWidth, relativeWidthShift)
+        %     centralPos = getCentralFigurePosition(widthHeightRatio, relativeWidth);
+        %     positions = centralPos;
+        %     if nFigures == 1 
+        %         return
+        %     end
+        %     if mod(nFigures, 2)
+
+
+        %           =  (nFigures - 1) / 2;
+        %         nRightFigures = nLeftFigures;
+        %         widthShiftMax = 0.5 / (nLeftFigures+1);
+        %         relativeWidthShift = min(relativeWidthShift, widthShiftMax);
+        %     else
+        %         nLeftFigures = nFigures / 2;
+        %         nRightFigures = nLeftFigures;
+        %     end
+        % end
+
         function params = getYLabelParams(logFlag) 
             params = struct();
             params.String = WTUtils.ifThenElse(logFlag, '% change', '\muV');
@@ -150,20 +169,25 @@ classdef WTPlotUtils
         
             plotTimeMin = WTPlotUtils.adjustEdge(plotParams.TimeMin, data.tim);
             if plotParams.TimeMin > tMax 
-                wtLog.warn('Average plots param %s.TimeMin auto-corrected to minimum sample time %d ms (was %d ms > maximum sample time)', paramsType, plotTimeMin, plotParams.TimeMin);
+                wtLog.warn('Average plots param %s.TimeMin auto-corrected to minimum sample time %d ms (was %d ms > maximum sample time)', ...
+                    paramsType, plotTimeMin, plotParams.TimeMin);
             elseif plotTimeMin ~=  plotParams.TimeMin
-                wtLog.warn('Average plots param %s.TimeMin adjusted to closest sample time %d ms (was %d ms)', paramsType, plotTimeMin, plotParams.TimeMin);
+                wtLog.warn('Average plots param %s.TimeMin adjusted to closest sample time %d ms (was %d ms)', ... 
+                    paramsType, plotTimeMin, plotParams.TimeMin);
             end
         
             plotTimeMax = WTPlotUtils.adjustEdge(plotParams.TimeMax, data.tim);
             if plotParams.TimeMax < tMin 
-                wtLog.warn('Average plots param %s.TimeMax auto-corrected to maximum sample time %d ms (was %d ms < minimum sample time)', paramsType, plotTimeMax, plotParams.TimeMax);
+                wtLog.warn('Average plots param %s.TimeMax auto-corrected to maximum sample time %d ms (was %d ms < minimum sample time)', ...
+                    paramsType, plotTimeMax, plotParams.TimeMax);
             elseif plotTimeMin ~=  plotParams.TimeMin
-                wtLog.warn('Average plots param %s.TimeMax adjusted to closest sample time %d ms (was %d ms)', paramsType, plotTimeMax, plotParams.TimeMax);
+                wtLog.warn('Average plots param %s.TimeMax adjusted to closest sample time %d ms (was %d ms)', ...
+                    paramsType, plotTimeMax, plotParams.TimeMax);
             end
         
             if plotTimeMin > plotTimeMax 
-                wtProject.notifyErr([], 'Bad average plots range %s.[TimeMin,TimeMax] = [%d,%d] after adjustments...', paramsType, plotTimeMin, plotTimeMax);
+                wtProject.notifyErr([], 'Bad average plots range %s.[TimeMin,TimeMax] = [%d,%d] after adjustments...', ...
+                    paramsType, plotTimeMin, plotTimeMax);
                 return
             end
         
@@ -172,20 +196,25 @@ classdef WTPlotUtils
         
             plotFreqMin = WTPlotUtils.adjustEdge(plotParams.FreqMin, data.Fa);
             if plotParams.FreqMin > fMax 
-                wtLog.warn('Average plots param %s.FreqMin auto-corrected to minimum frequency %d Hz (was %d Hz > maximum frequency)', paramsType, plotFreqMin, plotParams.FreqMin);
+                wtLog.warn('Average plots param %s.FreqMin auto-corrected to minimum frequency %d Hz (was %d Hz > maximum frequency)', ...
+                    paramsType, plotFreqMin, plotParams.FreqMin);
             elseif plotFreqMin ~=  plotParams.FreqMin
-                wtLog.warn('Average plots param %s.FreqMin adjusted to closest frequency %d Hz (was %d Hz)', paramsType, plotFreqMin, plotParams.FreqMin);
+                wtLog.warn('Average plots param %s.FreqMin adjusted to closest frequency %d Hz (was %d Hz)', ...
+                    paramsType, plotFreqMin, plotParams.FreqMin);
             end
         
             plotFreqMax = WTPlotUtils.adjustEdge(plotParams.FreqMax, data.Fa);
             if plotParams.FreqMax < fMin 
-                wtLog.warn('Average plots param %s.FreqMax auto-corrected to maximum frequency %d Hz (was %d Hz < minimum frequency)', paramsType, plotFreqMax, plotParams.FreqMax);
+                wtLog.warn('Average plots param %s.FreqMax auto-corrected to maximum frequency %d Hz (was %d Hz < minimum frequency)', ...
+                    paramsType, plotFreqMax, plotParams.FreqMax);
             elseif plotTimeMin ~=  plotParams.TimeMin
-                wtLog.warn('Average plots param %s.FreqMax adjusted to closest frequency %d Hz (was %d Hz)', paramsType, plotFreqMax, plotParams.FreqMax);
+                wtLog.warn('Average plots param %s.FreqMax adjusted to closest frequency %d Hz (was %d Hz)', ...
+                    paramsType, plotFreqMax, plotParams.FreqMax);
             end
         
             if plotFreqMin > plotFreqMax 
-                wtProject.notifyErr([], 'Bad average plots range %s.[FreqMin,FreqMax] = [%d,%d] after adjustments...', paramsType, plotFreqMin, plotFreqMax);
+                wtProject.notifyErr([], 'Bad average plots range %s.[FreqMin,FreqMax] = [%d,%d] after adjustments...', ...
+                    paramsType, plotFreqMin, plotFreqMax);
                 return
             end
             

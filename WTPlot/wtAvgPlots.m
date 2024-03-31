@@ -71,7 +71,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     basicPrms = wtProject.Config.Basic;
     conditionsGrandPrms = wtProject.Config.ConditionsGrand;
     conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
-    grandAverage = strcmp(subject, '');
+    grandAverage = isempty(subject);
 
     if interactive
         [conditionsToPlot, emptyConditionFiles] = WTIOProcessor.getConditionsFromBaselineCorrectedFileNames(fileNames);
@@ -121,7 +121,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         channelsToPlot = allChannelsLabels;
         channelsToPlotIdxs = 1:numel(allChannelsLabels);
     elseif interactive 
-        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto cut:', allChannelsLabels, false, true);
+        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
     else
@@ -135,7 +135,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     end
     
     if isempty(channelsToPlot)
-        wtProject.notifyWrn([], "Plotting aborted due to empty channels selection");
+        wtProject.notifyWrn([], 'Plotting aborted due to empty channels selection');
         return
     end
 
@@ -143,7 +143,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
-
+   
     try
         % The annotation text's height which will appear on the top left corner
         channelAnnotationHeight = 0.05; 
@@ -157,23 +157,24 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         prms.downsampleFactor = downsampleFactor;
         prms.channelsToPlotIdxs = channelsToPlotIdxs;
         prms.plotsPrms = copy(plotsPrms);
-        prms.width = 0.1;
-        prms.height = prms.width * 3/4;
+        prms.subPlotRelWidth = 0.1;
+        prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
         prms.xLabel = WTPlotUtils.getXLabelParams(logFlag);
-        prms.defaultColorMap =  WTPlotUtils.getPlotsColorMap();
+        prms.colorMap =  WTPlotUtils.getPlotsColorMap();
         
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
-                break
+                wtLog.contextOff();
+                continue
             end 
 
             figureName = WTUtils.ifThenElse(grandAverage, ...
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
-           % convert the data back to non-log scale straight in percent change in case logFlag is set
+           % Convert the data back to non-log scale straight in percent change in case logFlag is set
             prms.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
 
@@ -182,22 +183,22 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             prms.yMin = min(prms.y);
             prms.xMax = max(prms.x);
             prms.yMax = max(prms.y);
-            prms.height = prms.height * figureWHRatio;
+            prms.subPlotRelHeight = prms.subPlotRelHeight * figureWHRatio;
             prms.xAirToEdge = 1 / 50; % air to edge of plot
             prms.yAirToEdge = figureWHRatio / 50; % air to edge of plot
-            xSpanRel = 1 - 2 * prms.xAirToEdge - prms.width;
-            ySpanRel = 1 - 2 * prms.yAirToEdge - prms.height - channelAnnotationHeight;
+            xSpanRel = 1 - 2 * prms.xAirToEdge - prms.subPlotRelWidth;
+            ySpanRel = 1 - 2 * prms.yAirToEdge - prms.subPlotRelHeight - channelAnnotationHeight;
             xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
             ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
             xBottomLeftCorner = prms.xAirToEdge + ((prms.x - prms.xMin) / xSpan) * xSpanRel;
             yBottomLeftCorner = prms.yAirToEdge + ((prms.y - prms.yMin) / ySpan) * ySpanRel;
-            xCenter = xBottomLeftCorner + (prms.width / 2);
-            yCenter = yBottomLeftCorner + (prms.height / 2);
+            xCenter = xBottomLeftCorner + (prms.subPlotRelWidth / 2);
+            yCenter = yBottomLeftCorner + (prms.subPlotRelHeight / 2);
 
             % Create the main figure & add shared user data
             hFigure = figure('Position', figurePosition);
             mainPlots(end+1) = hFigure;
-            colormap(prms.defaultColorMap);    
+            colormap(prms.colorMap);    
             hFigure.Name = figureName;
             hFigure.NumberTitle = 'off';
             hFigure.ToolBar = 'none';
@@ -225,7 +226,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             hFigure.UserData.SubPlotAxesCenter = [xCenter' yCenter'];
             hFigure.UserData.onButtonDownCbPrms = prms;
             % Set the callback to keep the window size ratio constant
-            hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figurePosition(3)/figurePosition(4)};
+            hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
             % Set the callback to close open subplots when the master figure closes
             hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
             % Set the callback to display subplots
@@ -245,7 +246,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
                 channelLabel = prms.channelsLocations(chn).labels;  
                 wtLog.contextOn().dbg('Channel %s', channelLabel);
                 % Create axes for each channel: axes(x,y, xWidth, yWidth) (original below) 
-                axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.width, prms.height];
+                axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.subPlotRelWidth, prms.subPlotRelHeight];
                 hSubPlotAxes = axes('Position', axesPosition);
                 % Set axes user data that will be used for resizing the  plot via +/- keypress
                 hSubPlotAxes.UserData.OriginalPosition = axesPosition;
@@ -336,7 +337,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         % Set the callback to manage grid style change
         hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
 
-        colormap(prms.defaultColorMap);
+        colormap(prms.colorMap);
         imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
             interp2(squeeze(prms.WT(prms.channelsToPlotIdxs(subPlotIdx), prms.freqIdxs, prms.timeIdxs)), 4, 'spline'));
         hold('on');

@@ -358,7 +358,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.contextOn('ChannelsPlots');
         try
-            chavr();
+            wtChansAvgPlots();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show channels average plots');

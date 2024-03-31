@@ -117,7 +117,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         channelsToPlot = allChannelsLabels;
         channelsToPlotIdxs = 1:numel(allChannelsLabels);
     elseif interactive 
-        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto cut:', allChannelsLabels, false, true);
+        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
     else
@@ -131,7 +131,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     end
     
     if isempty(channelsToPlot)
-        wtProject.notifyWrn([], "Plotting aborted due to empty channels selection");
+        wtProject.notifyWrn([], 'Plotting aborted due to empty channels selection');
         return
     end
 
@@ -154,8 +154,8 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         prms.conditionsToPlot = conditionsToPlot;
         prms.channelsToPlotIdxs = channelsToPlotIdxs;
         prms.plotsPrms = copy(plotsPrms);
-        prms.width = 0.1;
-        prms.height = prms.width * 3/4;
+        prms.subPlotRelWidth = 0.1;
+        prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
         prms.yLabel = WTPlotUtils.getYLabelParams(logFlag);
         prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
 
@@ -165,17 +165,17 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         prms.yMin = min(prms.y);
         prms.xMax = max(prms.x);
         prms.yMax = max(prms.y);
-        prms.height = prms.height * figureWHRatio;
+        prms.subPlotRelHeight = prms.subPlotRelHeight * figureWHRatio;
         prms.xAirToEdge = 1 / 50; % air to edge of plot
         prms.yAirToEdge = figureWHRatio / 50; % air to edge of plot
-        xSpanRel = 1 - 2 * prms.xAirToEdge - prms.width;
-        ySpanRel = 1 - 2 * prms.yAirToEdge - prms.height - channelAnnotationHeight;
+        xSpanRel = 1 - 2 * prms.xAirToEdge - prms.subPlotRelWidth;
+        ySpanRel = 1 - 2 * prms.yAirToEdge - prms.subPlotRelHeight - channelAnnotationHeight;
         xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
         ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
         xBottomLeftCorner = prms.xAirToEdge + ((prms.x - prms.xMin) / xSpan) * xSpanRel;
         yBottomLeftCorner = prms.yAirToEdge + ((prms.y - prms.yMin) / ySpan) * ySpanRel;
-        xCenter = xBottomLeftCorner + (prms.width / 2);
-        yCenter = yBottomLeftCorner + (prms.height / 2);
+        xCenter = xBottomLeftCorner + (prms.subPlotRelWidth / 2);
+        yCenter = yBottomLeftCorner + (prms.subPlotRelHeight / 2);
 
         prms.data = cell(1, nConditionsToPlot);
         hPrms = WTHandle(prms);
@@ -214,7 +214,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
 
         % Callbacks settings
         % Set the callback to keep the window size ratio constant
-        hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figurePosition(3)/figurePosition(4)};
+        hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
         % Set the callback to close open subplots when the master figure closes
         hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
         % Set the callback to display subplots
@@ -233,6 +233,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = WTPlotUtils.loadDataToPlot(true, subject, conditionsToPlot{cnd}, measure);
             if ~success
+                wtLog.contextOff(); 
                 break
             end
 
@@ -250,7 +251,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
                 chnsStdErr = squeeze(mean(std(data.SS(channelIdx, freqIdxs, timeIdxsReduced, :), 0, 4)./sqrt(size(data.SS, 4)), 2));
         
                 if cnd == 1
-                    axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.width, prms.height];
+                    axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.subPlotRelWidth, prms.subPlotRelHeight];
                     hSubPlotAxes = axes('Position', axesPosition, 'nextplot', 'add');
                     hSubPlotAxes.UserData.OriginalPosition = axesPosition;
                     hSubPlotAxes.UserData.ChannelLabel = channelLabel;
