@@ -149,7 +149,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         channelAnnotationHeight = 0.05; 
         % The width / height ratio of the main figure
         figureWHRatio = 1; 
-        figurePosition = WTPlotUtils.getCentralFigurePosition(figureWHRatio, 0.3);
+        figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
         % Create struct to store all the useful params used here and by the callbacks
         prms = struct();
         prms.timeIdxs = timeIdxs;
@@ -196,7 +196,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             yCenter = yBottomLeftCorner + (prms.subPlotRelHeight / 2);
 
             % Create the main figure & add shared user data
-            hFigure = figure('Position', figurePosition);
+            hFigure = figure('Position', figuresPosition{cnd});
             mainPlots(end+1) = hFigure;
             colormap(prms.colorMap);    
             hFigure.Name = figureName;

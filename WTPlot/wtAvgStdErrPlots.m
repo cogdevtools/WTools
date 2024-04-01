@@ -145,7 +145,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         channelAnnotationHeight = 0.05;
         % The width / height ratio of the main figure
         figureWHRatio = 1;
-        figurePosition = WTPlotUtils.getCentralFigurePosition(figureWHRatio, 0.3);
+        figuresPosition = WTPlotUtils.getFiguresPositions(1, figureWHRatio, 0.3, 0.1);
         % Create struct to store all the useful params used here and by the callbacks
         prms = struct();
         prms.timeIdxs = timeIdxs;
@@ -182,7 +182,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
 
         % Create main plot figure
         figureName = sprintf('%s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
-        hFigure = figure('Position', figurePosition);
+        hFigure = figure('Position', figuresPosition{1});
         mainPlots(end+1) = hFigure;  
         hFigure.Name = figureName;
         hFigure.NumberTitle = 'off';

@@ -134,8 +134,10 @@ classdef WTValidations
             is = isvector(range) && isnumeric(range) && length(range) == 2 && range(1) <= range(2);
         end
 
-        function is = isInClosedRange(v, vMin, vMax)
-            is = isnumeric(v) && v >= vMin || v <= vMax;
+        function is = isInRange(v, vMin, vMax, includeMin, includeMax)
+            is = isnumeric(v) && ...
+                (v > vMin || (v == vMin && includeMin)) && ...
+                (v < vMax || (v == vMax && includeMax));
         end
 
         function is = isZeroOrOne(v)
@@ -230,9 +232,11 @@ classdef WTValidations
             end
         end
 
-        function mustBeInClosedRange(v, vMin, vMax)
-            if ~WTValidations.isInClosedRange(v, vMin, vMax)
-                WTException.badValue(['Value must be numeric and in the range [' num2str(vMin) ',' num2str(vMax) ']']).throw();
+        function mustBeInRange(v, vMin, vMax, includeMin, includeMax)
+            if ~WTValidations.isInRange(v, vMin, vMax, includeMin, includeMin)
+                if includeMin brkMin = '['; else brkMin = '('; end
+                if includeMax brkMax = ']'; else brkMax = ')'; end
+                WTException.badValue(['Value must be numeric and in the range' brkMin num2str(vMin) ',' num2str(vMax) brkMax]).throw();
             end
         end
 
@@ -257,6 +261,12 @@ classdef WTValidations
         function mustBeZeroOrOne(v)
             if ~WTValidations.isZeroOrOne(v)
                 WTException.badValue('Value must be 0 or 1').throw();
+            end
+        end
+
+        function mustBeInt(x)
+            if ~WTValidations.isInt(x)
+                WTException.badValue('Value must be an integer').throw();
             end
         end
 

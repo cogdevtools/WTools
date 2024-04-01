@@ -97,24 +97,18 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     end
 
     [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{1}, measure);
-    if ~success || ~WTPlotUtils.adjustPlotTimeFreqRanges(wtProject.Config.AveragePlots, data) 
+    if ~success || ~WTPlotUtils.adjustPlotTimeFreqRanges(wtProject.Config.ChannelsAveragePlots, data) 
         return
     end
 
-    plotsPrms = wtProject.Config.AveragePlots;
+    plotsPrms = wtProject.Config.ChannelsAveragePlots;
     timeRes = WTUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
     downsampleFactor = WTUtils.ifThenElse(timeRes == 1, 4, timeRes); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     allChannelsLabels = {data.chanlocs.labels}';
 
-    if plotsPrms.AllChannels
-        if ~interactive && numel(channelsToPlot) > 0
-            wtLog.warn('All channels will be plotted: subset ignored: %s', char(join(channelsToPlot, ','))); 
-        end
-        channelsToPlot = allChannelsLabels;
-        channelsToPlotIdxs = 1:numel(allChannelsLabels);
-    elseif interactive 
+    if interactive 
         [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
@@ -133,18 +127,17 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         return
     end
 
-    nChannelsToPlot = numel(channelsToPlot);
     wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
 
     try
         figureWHRatio = 4/3; 
-        figurePosition = WTPlotUtils.getCentralFigurePosition(figureWHRatio, 0.3);
+        figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
         colorMap = WTPlotUtils.getPlotsColorMap();
 
-        for cnd = 1: nConditionsToPlot
+        for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
             [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
@@ -156,16 +149,14 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
             channelsLocations = data.chanlocs(channelsToPlotIdxs);
-            figureTitle = WTUtils.ifThenElse(numel(channelsLocations) == 1, ...
-                @()sprintf('Channel: %s', channelsLocations(1).labels), ...
-                @()sprintf('Average: %s', char(join({channelsLocations.labels},','))));
+            figureTitle = makeFigureTitle({channelsLocations.labels}, 10);
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
             WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             WTChansAvg = mean(WT(channelsToPlotIdxs,:,:), 1);
 
             % Create the figure
-            hFigure = figure('Position', figurePosition);
+            hFigure = figure('Position', figuresPosition{cnd});
             mainPlots(end+1) = hFigure;
             colormap(colorMap);
             hFigure.NumberTitle = 'off'; 
@@ -211,7 +202,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
                      'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', xTick, 'YTick', yTick);
             axis('tight');
 
-            title(figureTitle, 'FontSize', figureTitleFontSize, 'FontWeight', 'bold');
+            title(figureTitle, 'FontSize', 16, 'FontWeight', 'bold');
             xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
             ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
             pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
@@ -251,4 +242,18 @@ function success = setChansAvgPlotsParams(logFlag)
 
     wtProject.Config.ChannelsAveragePlots = plotsPrms;
     success = true;
+end
+
+function figureTitle = makeFigureTitle(channelLabels, labelsPerLine)
+    nLabels = length(channelLabels);
+    if nLabels == 1
+        figureTitle = sprintf('Channel: %s', channelLabels{1});
+        return
+    end
+    figureTitle = {};
+    for i = 1:labelsPerLine:nLabels
+        subLabels = channelLabels(i:min(i+labelsPerLine, nLabels));
+        figureTitle = [ figureTitle char(join(subLabels,','))];
+    end
+    figureTitle{1} = [ 'Avg of:' figureTitle{1}];
 end

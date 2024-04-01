@@ -17,7 +17,7 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable
         LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         NormalizedWavelets(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        WaveletsCycles(1,1) uint8 {WTValidations.mustBeInClosedRange(WaveletsCycles,2,15)} = 7
+        WaveletsCycles(1,1) uint8 {WTValidations.mustBeInRange(WaveletsCycles,2,15,1,1)} = 7
     end
     methods
         function o = WTWaveletTransformCfg(ioProc)

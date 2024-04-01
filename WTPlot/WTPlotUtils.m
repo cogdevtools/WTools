@@ -47,41 +47,43 @@ classdef WTPlotUtils
             end
         end
 
-        function position = getCentralFigurePosition(widthHeightRatio, relativeWidth)
-            WTValidations.mustBeGTE(1, relativeWidth, false);
-            WTValidations.mustBeGT(relativeWidth, 0, false);
-            screenSize = get(groot, 'screensize');
-            screenWidthHeighRatio = screenSize(3) / screenSize(4);
-            relativeHeight = relativeWidth * screenWidthHeighRatio / widthHeightRatio;
-            if relativeHeight > 1
-                relativeHeight = 1;
-                relativeWidth = relativeHeight * widthHeightRatio / screenWidthHeighRatio;
+        % getFiguresPositions() given a number of figures (nFigures), their width/height ratio (whRation)
+        % their relative width (rWidth: [0,1]) and the relative width offset between each other (rWidthOffs) 
+        % returns a cell array sotring their position [x y w h] on screen. The positions are such that the 
+        % figures will appear along the screen diagonal, with a certain offset which depends on rWidthOffs
+        % (although the function might correct rWidthOffs if the window fall off the screen). The window 
+        % size is a constant.
+        function positions = getFiguresPositions(nFigures, whRatio, rWidth, rWidthOffs)
+            WTValidations.mustBeInt(nFigures);
+            WTValidations.mustBeGTE(nFigures, 1, false);
+            WTValidations.mustBeGT(whRatio, 0);
+            WTValidations.mustBeInRange(rWidth, 0, 1, false, true);
+            WTValidations.mustBeInRange(rWidthOffs, 0, 1, true, true);
+
+            absSize = get(groot, 'screensize');
+            WHRatio = absSize(3)/absSize(4);
+            rHeight = rWidth * WHRatio / whRatio;
+            rWOffsMax = (1-rWidth)/nFigures;
+            rHOffsMax = (1-rHeight)/nFigures;
+            if rHOffsMax < rWOffsMax/WHRatio
+                rWOffsMax = rHOffsMax / WHRatio;
             end
-            x = (1 - relativeWidth) * screenSize(3) / 2 + 1;
-            y = (1 - relativeHeight) * screenSize(4) / 2 + 1;
-            w = relativeWidth * screenSize(3);
-            h = relativeHeight * screenSize(4);
-            position = [x y w h];
+            rWOffs = min(rWidthOffs, rWOffsMax);
+            rHOffs = rWOffs/WHRatio;
+            xC = (1-((nFigures-1)*rWOffs + rWidth))/2;
+            yC = 1-((1-((nFigures-1)*rHOffs + rHeight))/2)-rHeight;
+            positions = cell(1, nFigures);
+            positions = cell(1, nFigures);
+            for i = 1:nFigures
+                xRel = xC + (i-1)*rWOffs;
+                yRel = yC - (i-1)*rHOffs;
+                positions{i} = [ ...
+                    min(max(xRel * absSize(3), 1), absSize(3)) ... 
+                    min(max(yRel * absSize(4), 1), absSize(4)) ...
+                    rWidth * absSize(3) ...
+                    rHeight * absSize(4)];
+            end
         end
-
-        % function positions = getCentralFiguresPositions(nFigures, widthHeightRatio, relativeWidth, relativeWidthShift)
-        %     centralPos = getCentralFigurePosition(widthHeightRatio, relativeWidth);
-        %     positions = centralPos;
-        %     if nFigures == 1 
-        %         return
-        %     end
-        %     if mod(nFigures, 2)
-
-
-        %           =  (nFigures - 1) / 2;
-        %         nRightFigures = nLeftFigures;
-        %         widthShiftMax = 0.5 / (nLeftFigures+1);
-        %         relativeWidthShift = min(relativeWidthShift, widthShiftMax);
-        %     else
-        %         nLeftFigures = nFigures / 2;
-        %         nRightFigures = nLeftFigures;
-        %     end
-        % end
 
         function params = getYLabelParams(logFlag) 
             params = struct();
