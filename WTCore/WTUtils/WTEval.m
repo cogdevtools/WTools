@@ -28,7 +28,7 @@ classdef WTEval
                 WTException.evalinErr('Failed to exec ''%s''', evalcCmd).throw();
             end
 
-            log = strip(log,'right', newline);
+            log = strip(log, 'right', newline);
         
             if ~isempty(log)
                 wtLog.pushStatus();

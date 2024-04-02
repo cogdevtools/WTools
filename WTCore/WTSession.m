@@ -3,19 +3,16 @@ classdef WTSession < handle
     properties(Access=private)
         PathsContext
         Workspace
-        ToolsDir
         SessionOpen
     end
 
     methods(Access=private)
-        function prepareContext(o)
-            o.Workspace.pushBase(true);
+        function savePaths(o)
             o.PathsContext = path();
-            addpath(genpath(o.ToolsDir));
+            addpath(genpath(WTLayout.getToolsDir()));
         end
 
-        function restoreContext(o)
-            o.Workspace.popToBase(true);
+        function restorePaths(o)
             path(o.PathsContext);
         end
     end
@@ -24,8 +21,6 @@ classdef WTSession < handle
         function o = WTSession()
             st = singleton();
             if isempty(st) || ~isvalid(st)
-                o.ToolsDir = WTLayout.getToolsDir();
-                o.Workspace = WTWorkspace();
                 singleton(o);
             else 
                 o = st;
@@ -37,7 +32,9 @@ classdef WTSession < handle
                 return
             end
             o.SessionOpen = true;
-            o.prepareContext();
+            o.savePaths();
+            o.Workspace = WTWorkspace();
+            o.Workspace.pushBase(true);
             wtLog = WTLog();
             wtAppConfig = WTAppConfig();
             wtAppConfig.load();
@@ -61,13 +58,14 @@ classdef WTSession < handle
             wtAppConfig.clear()
             wtProject.clear();
             wtLog.clear();
-            o.restoreContext();
+            o.Workspace.popToBase(true);
+            o.restorePaths();
         end
     end
 
     methods(Static)
         function clear()
-            singleton();
+            o = singleton();
             munlock('singleton');
         end
     end

@@ -46,7 +46,7 @@ classdef WTAppConfig < handle
         
         function o = load(o)
             try
-                jsonFile = fullfile(WTLayout.getResourcesDir, o.ConfigFileName);
+                jsonFile = fullfile(WTLayout.getAppConfigDir(), o.ConfigFileName);
                 jsonText = fileread(jsonFile, 'Encoding', 'UTF-8');
                 data = jsondecode(jsonText);
                 

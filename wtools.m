@@ -40,10 +40,7 @@ function varargout = wtools(varargin)
         if ischar(varargin{i})
             switch varargin{i}
                 case 'no-splash'
-                case 'bg-color'
-                    i = i+1;
-                case 'fg-color'
-                    i = i+1;
+                case 'force-close'
                 otherwise
                     gui_State.gui_Callback = str2func(varargin{i});
             end
@@ -81,16 +78,6 @@ function varargout = wtools(varargin)
                 switch varargin{i}
                     case 'no-splash'
                         showSplash = false;
-                    case 'bg-color'
-                        if i < nargin
-                            i = i+1;
-                            bgColor = varargin{i};
-                        end
-                    case 'fg-color'
-                        if i < nargin
-                            i = i+1;
-                            fgColor = varargin{i};
-                        end
                     case 'force-close'
                         forceClose = true;
                         break
@@ -102,9 +89,6 @@ function varargout = wtools(varargin)
             if ~forceClose && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))
                 if showSplash       
                     wtSplash();
-                end
-                if ~isempty(bgColor) && ~isempty(fgColor)
-                    wtChangeGUIColors(hObject, bgColor, fgColor)
                 end
                 if ~WTUtils.eeglabDep()
                     forceClose = true;

@@ -1,8 +1,10 @@
 classdef WTLayout
     properties (Constant, Access=private)
-        ResourcesSubDir = 'WTResources'
+        ResourcesSubDir = 'WTRsrcs'
         PicturesSubDir = 'WTPictures'
+        CoreSubDir = 'WTCore'
         DevicesSubDir = 'WTDevices'
+        AppConfSubDir = 'WTAppConf'
     end
 
     methods (Static)
@@ -10,9 +12,10 @@ classdef WTLayout
             persistent toolsDir
 
             if isempty(toolsDir)
-                fn = mfilename('fullpath');
-                d = WTUtils.getPathPrefix(fn);
-                toolsDir = WTUtils.getAbsPath(fullfile(d, '..'));
+                thisFileName = mfilename('fullpath');
+                thisFileDir = fileparts(thisFileName);
+                [~, parentDirAttr] = fileattrib(fullfile(thisFileDir, '..'));
+                toolsDir = parentDirAttr.Name;
             end
             d = toolsDir;
         end
@@ -30,7 +33,7 @@ classdef WTLayout
             persistent devicesDir
 
             if isempty(devicesDir)
-                devicesDir = fullfile(WTLayout.getResourcesDir(), WTLayout.DevicesSubDir);
+                devicesDir = fullfile(WTLayout.getToolsDir(), WTLayout.CoreSubDir, WTLayout.DevicesSubDir);
             end
             d = devicesDir;
         end
@@ -40,6 +43,15 @@ classdef WTLayout
 
             if isempty(resourcesDir)
                 resourcesDir = fullfile(WTLayout.getToolsDir(), WTLayout.ResourcesSubDir);
+            end
+            d = resourcesDir;
+        end
+
+        function d = getAppConfigDir() 
+            persistent resourcesDir
+
+            if isempty(resourcesDir)
+                resourcesDir = fullfile(WTLayout.getResourcesDir(), WTLayout.AppConfSubDir);
             end
             d = resourcesDir;
         end

@@ -1,10 +1,10 @@
 function success = wtInit
     warning('off', 'all');
     crntDir = pwd();
-    dir = fileparts(mfilename('fullpath'));
-    cd(fullfile(dir, 'WTCore'));
-
+    
     try
+        thisFileDir = fileparts(mfilename('fullpath'));
+        cd(fullfile(thisFileDir, 'WTCore'));
         WTSession().open();
         success = true;
     catch me
