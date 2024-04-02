@@ -202,7 +202,7 @@ classdef WTIOProcessor < handle
             chansLocations = {};
 
             try
-                fullPath = fullfile(WTLayout.getToolsDevicesDir(), fileName);
+                fullPath = fullfile(WTLayout.getDevicesDir(), fileName);
 
                 if strcmp(system, WTIOProcessor.SystemEGI) || ...
                    strcmp(system, WTIOProcessor.SystemEEGLab) || ...

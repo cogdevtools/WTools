@@ -511,7 +511,6 @@ function varargout = wtools(varargin)
         try
             wtLog.reset();
             WTSession().close();
-            WTSession.clear();
         catch
         end
     

@@ -289,18 +289,18 @@ classdef WTUtils
             [status, ~] = mkdir(dirName);
         end
 
-        function name = getFileNamePart(fname)
-            [~,name,~] = fileparts(fname);
+        function name = getFileNamePart(fileName)
+            [~,name,~] = fileparts(fileName);
         end
 
-        function response = fileExist(fnamePart, varargin)
-            fname = fullfile(fnamePart, varargin{:});
-            response = exist(fname, 'file');
+        function response = fileExist(filePart, varargin)
+            fileName = fullfile(filePart, varargin{:});
+            response = exist(fileName, 'file');
         end
 
-        function response = dirExist(fnamePart, varargin)
-            dname = fullfile(fnamePart, varargin{:});
-            response = exist(dname, 'dir');
+        function response = dirExist(dirPart, varargin)
+            dirName = fullfile(dirPart, varargin{:});
+            response = exist(dirName, 'dir');
         end
 
         function success = writeTxtFile(dirName, fileName, mode, varargin)
@@ -532,32 +532,32 @@ classdef WTUtils
             selection = list(indexes);
         end
 
-        function found = eeglabDep(fname)
+        function found = eeglabDep(fileName)
             if nargin == 0
-                fname = 'eeglab.m';
+                fileName = 'eeglab.m';
             end
             
-            found = WTUtils.fileExist(fname);  
+            found = WTUtils.fileExist(fileName);  
             if found
                 return
             end
             
-            WTUtils.msgBox('', 'EEGLAB file ''%s'' is required.\nPlease set EEGLAB root directory...', fname);
+            WTUtils.msgBox('', 'EEGLAB file ''%s'' is required.\nPlease set EEGLAB root directory...', fileName);
             wtLog = WTLog();
 
             while ~found
                 eeglabRoot = uigetdir(pwd, 'Set EEGLAB root directory');
                 
                 if eeglabRoot == 0 
-                    wtLog.err('eeglab''s file ''%s'' is needed, but user skipped to set eeglab root directory.', fname);
+                    wtLog.err('eeglab''s file ''%s'' is needed, but user skipped to set eeglab root directory.', fileName);
                     break
                 end
 
-                pathlist = dir(fullfile(eeglabRoot, '**', fname)); 
+                pathlist = dir(fullfile(eeglabRoot, '**', fileName)); 
                 filelist = pathlist(~[pathlist.isdir]); 
 
                 if size(filelist, 1) ~= 1 
-                    WTUtils.errDlg('', '%s not found (or many found) in %s: retry...', fname, eeglabRoot);
+                    WTUtils.errDlg('', '%s not found (or many found) in %s: retry...', fileName, eeglabRoot);
                     continue;
                 end
 
@@ -608,7 +608,7 @@ classdef WTUtils
                 WTException.eeglabDependency('Can''t find ''inputgui.m''').throw();
             end
             varargout = cell(nargout,1);
-            [varargout{:}] = WTUtils().eeglabRun(WTLog.LevelDbg, false, 'inputgui', varargin{:});
+            [varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'inputgui', varargin{:});
         end
 
         function varargout = eeglabMsgDlg(title, fmt, varargin)
@@ -676,16 +676,16 @@ classdef WTUtils
             ws.popToBase(true)
         end
 
-        % fname: with trailing .m
-        function [success, varargout] = readModuleFile(fname, varargin) 
+        % fileName: with trailing .m
+        function [success, varargout] = readModuleFile(fileName, varargin) 
             success = false;
             varargout = cell(nargout-1,1);
             if (nargin > 1 && nargin ~= nargout) || (nargin == 1 && nargout ~= 2) || nargin < 1
                 WTException.ioArgsMismatch('Input/output args number mismatch').throw();
-            elseif ~isfile(fname) 
-                WTLog().err('Not a file or not existing: "%s"', fname);
+            elseif ~isfile(fileName) 
+                WTLog().err('Not a file or not existing: "%s"', fileName);
             else
-                [dir, module, ~] = fileparts(fname);
+                [dir, module, ~] = fileparts(fileName);
                 [success, varargout{:}] = WTUtils.readModule(dir, module, varargin{:});
             end
         end

@@ -12,6 +12,10 @@ classdef WTAppConfig < handle
         FldPlotsColorMap = 'PlotsColorMap'
     end
 
+    properties (Access=private)
+        ConfigFile
+    end
+
     properties(SetAccess=private,GetAccess=public)
         ShowSplashScreen(1,1) logical
         DefaultStdLogLevel(1,1) uint8
@@ -26,6 +30,7 @@ classdef WTAppConfig < handle
         function o = WTAppConfig()
             st = singleton();
             if isempty(st) || ~isvalid(st)
+                o.ConfigFile = fullfile(WTLayout.getAppConfigDir(), o.ConfigFileName);
                 o.default();
                 o.load();
                 singleton(o);
@@ -46,8 +51,7 @@ classdef WTAppConfig < handle
         
         function o = load(o)
             try
-                jsonFile = fullfile(WTLayout.getAppConfigDir(), o.ConfigFileName);
-                jsonText = fileread(jsonFile, 'Encoding', 'UTF-8');
+                jsonText = fileread(o.ConfigFile, 'Encoding', 'UTF-8');
                 data = jsondecode(jsonText);
                 
                 splashScreen = o.ShowSplashScreen;
@@ -114,7 +118,6 @@ classdef WTAppConfig < handle
  
         function o = persist(o)
             try
-                jsonFile = fullfile(WTLayout.getResourcesDir, o.ConfigFileName);
                 data = struct(); 
                 data.(o.FldShowSplashScreen) = o.ShowSplashScreen;
                 data.(o.FldDefaultStdLogLevel) = WTLog.logLevelStr(o.DefaultStdLogLevel);
@@ -123,7 +126,7 @@ classdef WTAppConfig < handle
                 data.(o.FldProjectLog) = o.ProjectLog;
                 data.(o.FldColorizedLog) = o.ColorizedLog;
                 jsonText = jsonencode(data);
-                writelines(jsonText, jsonFile, 'Encoding', 'UTF-8');
+                writelines(jsonText, o.ConfigFile, 'Encoding', 'UTF-8');
             catch me
                 WTLog().except(me);
             end

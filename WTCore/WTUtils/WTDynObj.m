@@ -1,4 +1,4 @@
-classdef WTDynObject < dynamicprops 
+classdef WTDynObj < dynamicprops 
     methods
         function o = addProp(o, name)
             addprop(o, name)

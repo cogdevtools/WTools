@@ -13,7 +13,20 @@ classdef WTSession < handle
         end
 
         function restorePaths(o)
-            path(o.PathsContext);
+            if iaempty(o.PathsContext)
+                path(o.PathsContext);
+            end
+        end
+
+        function saveWorkspace(o)
+            o.Workspace = WTWorkspace();
+            o.Workspace.pushBase(true);
+        end
+
+        function restoreWorkspace(o)
+            if iaempty(o.Workspace)
+                o.Workspace.popToBase(true);
+            end
         end
     end
 
@@ -33,8 +46,7 @@ classdef WTSession < handle
             end
             o.SessionOpen = true;
             o.savePaths();
-            o.Workspace = WTWorkspace();
-            o.Workspace.pushBase(true);
+            o.saveWorkspace();
             wtLog = WTLog();
             wtAppConfig = WTAppConfig();
             wtAppConfig.load();
@@ -58,14 +70,15 @@ classdef WTSession < handle
             wtAppConfig.clear()
             wtProject.clear();
             wtLog.clear();
-            o.Workspace.popToBase(true);
+            o.restoreWorkspace()
             o.restorePaths();
+            o.clear();
         end
     end
 
     methods(Static)
         function clear()
-            o = singleton();
+            singleton();
             munlock('singleton');
         end
     end
