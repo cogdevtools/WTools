@@ -1,6 +1,10 @@
 # WTools
- A Matlab® based toolbox for time-frequency analysis
+A Matlab® based toolbox for time-frequency analysis
 
 ## Structure
-* Folder "sh" contains all the functions to run the toolbox
-* Folder "chans_splines" contains the channel layouts and the 3D maps (adult and infant maps)
+* WTCore: core wtools module
+* WTExtenrn: extern utilities
+* WTRsrcs: general project resources
+** WTDevices: data specific to the various measurement devices
+** WTPictures: picture files (used for example in the splash screen) 
+* WTSplash: splash module
