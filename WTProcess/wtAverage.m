@@ -73,13 +73,8 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
 
     wtProject = WTProject();
     wtLog = WTLog();
-
-    if ~wtProject.checkIsOpen()
-        return
-    end
-    
-    WTValidations.mustBeA(cwtParams, ?WTWaveletTransformCfg)
-
+   
+    WTValidations.mustBeA(cwtParams, ?WTWaveletTransformCfg);
     if ~WTValidations.isALinearCellArrayOfString(selection)
         WTException.badArgType('expected cell array of strings, got %s', class(selection)).throw();
     end 
@@ -119,7 +114,6 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         WT = zeros([length(chansToAnalyse),length(Fa),N]);
     end
 
-    wtLog = WTLog();
     wtLog.info('Transforming & averaging (subject/condition ''%s/%s'')...', subject, condition);
     wtLog.pushStatus().contextOn('Transform & Average').HeaderOn = false;
     

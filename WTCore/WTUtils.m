@@ -28,6 +28,28 @@ classdef WTUtils
     end
 
     methods (Static)
+        % Transform a list of string (char arrays) in a new list where each element is made of 'separator' separated
+        % string of max 'itemsPerLine' origina items. The first item in the returned result can be prefixed with an 
+        % header  which can be different depending if the original list contained only one item or multiple (see the 
+        % parameters 'singleItemHeader' or 'multipleItemsHeader')
+        function lines = chunkStrings(singleItemHeader, multipleItemsHeader, strItems, itemsPerLine, separator)
+            lines = {''};
+            if nargin < 5
+                separator = ',';
+            end
+            nItems = length(strItems);
+            if nItems == 0
+                return
+            end
+            header = WTUtils.ifThenElse(nItems == 1, singleItemHeader, multipleItemsHeader);
+            iter = 1:itemsPerLine:nItems;
+            lines = cell(1, length(iter));
+            for i = 1:length(iter)
+                subItems = strItems(iter(i):min(iter(i)+itemsPerLine, nItems));
+                lines{i} = char(join(subItems, separator));
+            end
+            lines{1} = [ header lines{1} ];
+        end
 
         % xGetField() extracts a value from a possibly nested structure. The path to
         % the value is described by varargin. The items in varargin must either be

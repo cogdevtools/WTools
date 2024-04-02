@@ -33,17 +33,18 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen() 
+    if ~wtProject.checkWaveletAnalysisDone() 
         return
     end
 
     interactive = wtProject.Interactive;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 4);
-        conditionsToPlot = unique(conditionsToPlot);
-        WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot, 1, 2, 0);
+        mustBeGreaterThanOrEqual(nargin, 3);
+        WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot, 1, -1, 0);
         WTValidations.mustBeALinearCellArrayOfString(channelsToPlot);
+        conditionsToPlot = unique(conditionsToPlot);
+        WTValidations.mustBeLTE(length(conditionsToPlot), 2); 
         channelsToPlot = unique(channelsToPlot);
         evokedOscillations = any(logical(evokedOscillations));
     end
@@ -231,6 +232,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
 
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
+
             [success, data] = WTPlotUtils.loadDataToPlot(true, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff(); 
@@ -262,9 +264,12 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
                     hSubPlotAxes = hFigure.UserData.SubPlotsAxes(chn);
                     hold(hSubPlotAxes, 'on');
                     errorbar(hSubPlotAxes, chnsAvg, chnsStdErr,'r'); % red line
+                end 
+
+                if cnd == nConditionsToPlot
                     yLim = ylim();
                     title(hSubPlotAxes, channelLabel, 'FontSize', 8, 'FontWeight', 'bold', 'pos', [0, (yLim(1) - 0.22)]);
-                end 
+                end
 
                 axis('off');   
                 wtLog.contextOff();     
@@ -370,20 +375,21 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
 
             if cnd == 1
                 errorbar(chnsAvg, chnsStdErr, 'b');
-                xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
-                ylabel(prms.yLabel.String, 'FontSize', 12,'FontWeight','bold'); 
                 hold('on');
             else
                 errorbar(chnsAvg, chnsStdErr, 'r'); 
-                legend(prms.conditionsToPlot{1}, prms.conditionsToPlot{2});
+                legend(prms.conditionsToPlot{1}, prms.conditionsToPlot{nConditionsToPlot});
+            end
+
+            if cnd == nConditionsToPlot
                 set(gca, 'XTick', 1 : timePace/prms.timeRes : length(prms.timeIdxs))
                 set(gca, 'XTickLabel', plotsPrms.TimeMin : timePace : plotsPrms.TimeMax);
-                set(gca, 'XMinorTick', 'on', 'xgrid', 'on', 'YMinorTick','on',...
+                set(gca, 'XMinorTick', 'on', 'xgrid', 'on', 'YMinorTick', 'on',...
                     'ygrid', 'on', 'gridlinestyle', ':', 'YDIR', 'normal');
-                axis tight;
+                axis('tight');
                 title(figureName, 'FontSize', 16, 'FontWeight','bold');
                 xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
-                ylabel(prms.yLabel.String, 'FontSize', 12,'FontWeight','bold');
+                ylabel(prms.yLabel.String, 'FontSize', 12, 'FontWeight', 'bold');
                 hold('off');
             end 
         end

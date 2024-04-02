@@ -26,13 +26,7 @@ function wtDifference(subjects)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen() 
-        return
-    end
-
-    if ~wtProject.Config.SubjectsGrand.exist() || ...
-       ~wtProject.Config.WaveletTransform.exist()
-        wtProject.notifyWrn([], 'Wavelet transformation needs to be performed first!');
+    if ~wtProject.checkWaveletAnalysisDone()
         return
     end
 

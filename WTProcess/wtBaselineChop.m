@@ -21,7 +21,7 @@ function success = wtBaselineChop()
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen()
+    if ~wtProject.checkWaveletAnalysisDone()
         return
     end
 
@@ -33,11 +33,6 @@ function success = wtBaselineChop()
     baselineChopParams = wtProject.Config.BaselineChop;
     subjects = subjectsGrandParams.SubjectsList;
     conditions = conditionsGrandParams.ConditionsList;
-
-    if ~subjectsGrandParams.exist() || ~waveletTransformParams.exist()
-        wtProject.notifyWrn([], 'Before to execute baseline correction & edges chopping, apply wavelet transformation...');
-        return
-    end
 
     if interactive 
         subjects = WTUtils.stringsSelectDlg('Select subjects:', subjects);

@@ -18,13 +18,12 @@
 function wtEGIToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().contextOn('EGIToEEGLab');
-
+   
     if ~wtProject.checkIsOpen()
-        wtLog.popStatus();
         return
     end
-
+    
+    wtLog.pushStatus().contextOn('EGIToEEGLab');
     interactive = wtProject.Interactive;
     system = WTIOProcessor.SystemEGI;
 
@@ -258,7 +257,7 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
         end
 
         ioProc = wtProject.IOProc;
-        selectedConditions = wtProject.Config.ConditionsList;
+        selectedConditions = wtProject.Config.Conditions.ConditionsList;
         minMaxTrialIdPrms = wtProject.Config.MinMaxTrialId;
         minMaxTrialIdPrms = minMaxTrialIdPrms.interpret();
 

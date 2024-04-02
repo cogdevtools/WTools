@@ -11,18 +11,12 @@ function wtRebuildSubjects()
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen()
+    if ~wtProject.checkWaveletAnalysisDone()
         return
     end
 
     subjectsPrms = wtProject.Config.Subjects;
     subjectsGrandPrms =  wtProject.Config.SubjectsGrand;
-
-    if ~subjectsPrms.exist() || ~subjectsGrandPrms.exist()
-        wtProject.notifyWrn([], 'Perform wavelet analysis before...');
-        return
-    end
-
     importedSubjects = 'Subjects Analysis';
     includedSubjects = 'Subjects Grand Analysis';
     optionsList = { importedSubjects, includedSubjects };

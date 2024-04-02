@@ -22,24 +22,12 @@ function wtGrandAverage(subjects, conditions)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen()
+    if ~wtProject.checkChopAndBaselineCorrectionDone()
         return
     end
 
     interactive = wtProject.Interactive;
     subjectsGrandPrms = wtProject.Config.SubjectsGrand;
-    waveletsTransformPrms = wtProject.Config.WaveletTransform;
-    
-    if ~subjectsGrandPrms.exist() || ~waveletsTransformPrms.exist()
-        wtProject.notifyWrn([], 'Perform wavelet analysis before...');
-        return
-    end
-
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    if ~baselineChopPrms.exist() 
-        wtProject.notifyWrn([], 'Perform baseline correction & edges chopping before...');
-        return
-    end 
 
     if length(subjectsGrandPrms.SubjectsList) < 2 
         wtProject.notifyWrn([], ['To perform the grand average is meaningful when\n' ... 

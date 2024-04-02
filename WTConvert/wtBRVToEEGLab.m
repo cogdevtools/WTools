@@ -20,13 +20,12 @@
 function wtBRVToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().contextOn('BRVToEEGLab');
-
+    
     if ~wtProject.checkIsOpen()
-        wtLog.popStatus();
         return
     end
-
+    
+    wtLog.pushStatus().contextOn('BRVToEEGLab');
     interactive = wtProject.Interactive;
     system = WTIOProcessor.SystemBRV;
 

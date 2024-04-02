@@ -36,7 +36,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen() 
+    if ~wtProject.checkWaveletAnalysisDone() 
         return
     end
 
@@ -164,6 +164,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
+
             [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff();

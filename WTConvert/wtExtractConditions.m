@@ -4,10 +4,6 @@ function success = wtExtractConditions(subject)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen()
-        return
-    end
-
     ioProc = wtProject.Config.IOProc;
     conditions = wtProject.Config.Conditions.ConditionsList;
     nConditions = length(conditions);
@@ -19,7 +15,7 @@ function success = wtExtractConditions(subject)
         return
     end
     
-    wtLog.info('Processing conditions...');
+    wtLog.info('Processing %d conditions...', nConditions);
     wtLog.pushStatus().contextOn().HeaderOn = false;
 
     for cnd = 1:nConditions
@@ -41,8 +37,7 @@ function success = wtExtractConditions(subject)
             success = false;
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to process/save condition ''%s'' for subject ''%s''', condition, subject);
-            wtLog.popStatus();
-            return
+            break
         end      
     end 
 

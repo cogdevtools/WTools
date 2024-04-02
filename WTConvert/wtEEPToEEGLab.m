@@ -17,13 +17,12 @@
 function wtEEPToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().contextOn('EEPToEEGLab');
-
+   
     if ~wtProject.checkIsOpen()
-        wtLog.popStatus();
         return
     end
-
+    
+    wtLog.pushStatus().contextOn('EEPToEEGLab');
     interactive = wtProject.Interactive;
     system = WTIOProcessor.SystemEEP;
 

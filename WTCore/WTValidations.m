@@ -240,6 +240,24 @@ classdef WTValidations
             end
         end
 
+        function mustBeLT(v, vMax, allowNaN)
+            if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
+                return
+            end
+            if ~isnumeric(v) || any(v >= vMax)
+                WTException.badValue(['Value must be numeric and < ' num2str(vMax)]).throw();
+            end
+        end
+
+        function mustBeLTE(v, vMax, allowNaN)
+            if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
+                return
+            end
+            if ~isnumeric(v) || any(v > vMax)
+                WTException.badValue(['Value must be numeric and <= ' num2str(vMax)]).throw();
+            end
+        end
+
         function mustBeGT(v, vMin, allowNaN)
             if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
                 return

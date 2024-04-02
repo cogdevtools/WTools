@@ -29,6 +29,58 @@ classdef WTProject < handle
             end
         end
 
+        function done = checkImportDone(o)
+            done = o.checkIsOpen();
+            if ~done 
+                return
+            end
+
+            subjectsPrms = o.Config.Subjects;
+            conditionsPrms = o.Config.Conditions;
+
+            done = subjectsPrms.exist() && ...
+                conditionsPrms.exist() && ...
+                ~isempty(subjectsPrms.FilesList) && ... 
+                ~isempty(conditionsPrms.ConditionsList);
+            if ~done
+                o.notifyWrn([], 'Data import must be performed before to proceed');
+            end
+        end
+
+        function done = checkWaveletAnalysisDone(o)
+            done = o.checkIsOpen();
+            if ~done 
+                return
+            end  
+                      
+            waveletPrms = o.Config.WaveletTransform;
+            condsGrandPrms = o.Config.ConditionsGrand;
+            subjsGrandPrms = o.Config.SubjectsGrand;
+
+            done = waveletPrms.exist() && ...
+                subjsGrandPrms.exist() && ...
+                condsGrandPrms.exist() && ...
+                ~isempty(subjsGrandPrms.SubjectsList) && ...
+                ~isempty(condsGrandPrms.ConditionsList);
+            if ~done
+                o.notifyWrn([], 'Wavelet analysis must be performed before to proceed');
+            end
+        end
+
+        function done = checkChopAndBaselineCorrectionDone(o)
+            done = o.checkWaveletAnalysisDone();
+            if ~done 
+                return
+            end  
+                      
+            baselineChopPrms = o.Config.BaselineChop;
+            done = baselineChopPrms.exist(); 
+
+            if ~done
+                o.notifyWrn([], 'Chop and baseline correction must be performed before to proceed');
+            end
+        end
+
         function notify(o, title, fmt, varargin)
             if o.Interactive 
                 WTUtils.eeglabMsgDlg(title, fmt, varargin{:});

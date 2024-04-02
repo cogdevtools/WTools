@@ -22,13 +22,12 @@
 function wtEEGLabToEEGLab()
     wtProject = WTProject();
     wtLog = WTLog();
-    wtLog.pushStatus().contextOn('EEGLabToEEGLab');
-
+   
     if ~wtProject.checkIsOpen()
-        wtLog.popStatus();
         return
     end
 
+    wtLog.pushStatus().contextOn('EEGLabToEEGLab');
     interactive = wtProject.Interactive;
     system = WTIOProcessor.SystemEEGLab;
 

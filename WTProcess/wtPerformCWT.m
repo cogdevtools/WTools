@@ -25,7 +25,7 @@ function success = wtPerformCWT()
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkIsOpen()
+    if ~wtProject.checkImportDone()
         return
     end
 

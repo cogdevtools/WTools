@@ -129,7 +129,7 @@ classdef WTPlotUtils
 
             plotsColorMap = colorMap;
         end
-
+        
         % subject empty => load grand average
         function [success, data] = loadDataToPlot(perSubject, subject, condition, measure) 
             wtProject = WTProject();
