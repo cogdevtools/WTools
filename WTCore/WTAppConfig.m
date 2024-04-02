@@ -125,7 +125,7 @@ classdef WTAppConfig < handle
                 data.(o.FldMuteStdLog) = o.MuteStdLog;
                 data.(o.FldProjectLog) = o.ProjectLog;
                 data.(o.FldColorizedLog) = o.ColorizedLog;
-                jsonText = jsonencode(data);
+                jsonText = jsonencode(data, 'PrettyPrint', true);
                 writelines(jsonText, o.ConfigFile, 'Encoding', 'UTF-8');
             catch me
                 WTLog().except(me);
