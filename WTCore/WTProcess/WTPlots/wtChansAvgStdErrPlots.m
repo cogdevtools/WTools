@@ -44,7 +44,8 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         evokedOscillations = any(logical(evokedOscillations));
     end
     
-    logFlag = wtCheckEvokLog();
+    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
+        wtProject.Config.BaselineChop.Log10Enable;
 
     if interactive
         [fileNames, ~, measure] = WTPlotsGUI.selectFilesToPlot(true, true, 2);
@@ -85,11 +86,11 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
     nConditionsToPlot = length(conditionsToPlot);
 
     if nConditionsToPlot == 0
-        wtProject.notifyWrn([], 'Plotting aborted due to empty conditions selection')
+        wtProject.notifyWrn([], 'Plotting aborted due to empty conditions selection');
         return
     end
 
-    [diffConsistency, grandConsistency] = wtCheckDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTPlotUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end

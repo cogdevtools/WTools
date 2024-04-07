@@ -53,7 +53,8 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         evokedOscillations = any(logical(evokedOscillations));
     end
     
-    logFlag = wtCheckEvokLog();
+    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
+        wtProject.Config.BaselineChop.Log10Enable;
 
     if interactive
         [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(false, false, -1);
@@ -93,11 +94,11 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     nConditionsToPlot = length(conditionsToPlot);
 
     if nConditionsToPlot == 0
-        wtProject.notifyWrn([], 'Plotting aborted due to empty conditions selection')
+        wtProject.notifyWrn([], 'Plotting aborted due to empty conditions selection');
         return
     end
 
-    [diffConsistency, grandConsistency] = wtCheckDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTPlotUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
@@ -108,8 +109,8 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     end
 
     plotsPrms = wtProject.Config.AveragePlots;
-    timeRes = WTUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
-    downsampleFactor = WTUtils.ifThenElse(timeRes == 1, 4, timeRes); % apply downsampling to speed up plotting
+    timeRes = data.tim(2) - data.tim(1); 
+    downsampleFactor = WTUtils.ifThenElse(timeRes <= 1, 4, @()WTUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     allChannelsLabels = {data.chanlocs.labels}';
@@ -154,6 +155,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         prms = struct();
         prms.timeIdxs = timeIdxs;
         prms.freqIdxs = freqIdxs;
+        prms.timeRes = timeRes;
         prms.downsampleFactor = downsampleFactor;
         prms.channelsToPlotIdxs = channelsToPlotIdxs;
         prms.plotsPrms = copy(plotsPrms);
@@ -344,7 +346,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         hold('on');
         
         if plotsPrms.Contours
-            timePace = WTUtils.ifThenElse(prms.downsampleFactor == 4, 4, @()prms.downsampleFactor ^ 2);
+            timePace = prms.downsampleFactor * prms.timeRes;
             contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
                     plotsPrms.FreqMin:plotsPrms.FreqMax, ...
                     squeeze(prms.WT(subPlotIdx, prms.freqIdxs, prms.timeIdxs)), 'k');

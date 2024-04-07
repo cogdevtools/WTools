@@ -141,9 +141,9 @@ classdef WTUtils
 
         function throwOrLog(excpt, log)
             if any(logical(log)) 
-                WTLog().fromCaller().err('Exception(%s): %s', excpt.identifier, getReport(excpt, 'extended'))
+                WTLog().fromCaller().err('Exception(%s): %s', excpt.identifier, getReport(excpt, 'extended'));
             else
-                excpt.throwAsCaller()
+                excpt.throwAsCaller();
             end
         end
 

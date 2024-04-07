@@ -292,8 +292,7 @@ function success = setUpdateTransformPrms(timeRange, maxFreq, maxChans)
     wtProject = WTProject();
 
     waveletTransformParams = copy(wtProject.Config.WaveletTransform);
-     % Check if log was already run after averaging and if so disable the option here
-     [~, ~, ~, bsLogEnabled] = wtCheckEvokLog();
+    bsLogEnabled = wtProject.Config.BaselineChop.Log10Enable;
 
     if ~WTTransformGUI.defineCWTParams(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
         return

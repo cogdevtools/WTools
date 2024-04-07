@@ -89,7 +89,9 @@ function datatab=avrretrieve(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin)
         end
         
         % CHECK Evok
-        [logFlag, last_tfcmor] = wtCheckEvokLog();
+        logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
+            wtProject.Config.BaselineChop.Log10Enable;
+        last_tfcmor = wtProject.Config.WaveletTransform.LogarithmicTransform;
 
         % SET defaultanswer0
         defaultanswer0={'1',[],[],[],[],0,last_tfcmor};

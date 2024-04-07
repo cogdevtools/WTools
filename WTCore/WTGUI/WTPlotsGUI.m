@@ -86,7 +86,7 @@ classdef WTPlotsGUI
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
             
-            while true
+            while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
                 if isempty(answer)
@@ -101,15 +101,15 @@ classdef WTPlotsGUI
                     plotsPrms.Scale = WTUtils.str2nums(answer{1,5});
                     plotsPrms.Contours = answer{1,6};
                     plotsPrms.AllChannels = answer{1,7};
-                    plotsPrms.validate();
+                    success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                    continue
                 end
-                break
+                
+                if ~success
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                end
             end
-            success = true;
         end
 
         function success = defineAvgStdErrPlotsSettings(plotsPrms)
@@ -142,7 +142,7 @@ classdef WTPlotsGUI
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
-            while true
+            while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
                 if isempty(answer)
@@ -155,15 +155,15 @@ classdef WTPlotsGUI
                     plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
                     plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
                     plotsPrms.AllChannels = answer{1,5};
-                    plotsPrms.validate();
+                    success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                    continue
                 end
-                break
+                
+                if ~success
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                end
             end
-            success = true;
         end
 
         function success = defineChansAvgPlotsSettings(plotsPrms, logFlag) 
@@ -205,7 +205,7 @@ classdef WTPlotsGUI
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
-            while true
+            while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
                 if isempty(answer)
@@ -219,15 +219,15 @@ classdef WTPlotsGUI
                     plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
                     plotsPrms.Scale = WTUtils.str2nums(answer{1,5});
                     plotsPrms.Contours = answer{1,6};
-                    plotsPrms.validate();
+                    success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                    continue
                 end
-                break
+                
+                if ~success
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                end
             end
-            success = true;
         end
 
         function success = defineChansAvgStdErrPlotsSettings(plotsPrms)
@@ -255,7 +255,7 @@ classdef WTPlotsGUI
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
-            while true
+            while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
                 if isempty(answer)
@@ -267,15 +267,15 @@ classdef WTPlotsGUI
                     plotsPrms.TimeMax = WTUtils.str2double(answer{1,2});
                     plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
                     plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
-                    plotsPrms.validate();
+                    success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                    continue
                 end
-                break
+                
+                if ~success
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                end
             end
-            success = true;
         end
 
         function success = defineScalpMapPlotsSettings(plotsPrms, logFlag)
@@ -284,14 +284,15 @@ classdef WTPlotsGUI
             logFlag = any(logical(logFlag));
             wtLog = WTLog();
             
-            if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
-                (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3))
+            if isempty(plotsPrms.Scale) || ...
+                ((abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
+                (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3)))
                 plotsPrms.Scale = WTUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
             answer = { ...
-                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Time)); ...
-                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Frequency)); ...
+                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Time)) ...
+                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Frequency)) ...
                 sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Scale)) ...
                 plotsPrms.PeripheralElectrodes ...
                 plotsPrms.Contours ... 
@@ -317,7 +318,7 @@ classdef WTPlotsGUI
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
-            while true
+            while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
                 if isempty(answer)
@@ -326,18 +327,19 @@ classdef WTPlotsGUI
 
                 try
                     plotsPrms.Time = WTUtils.str2nums(answer{1,1});
-                    plotsPrms.Frequencsy = WTUtils.str2nums(answer{1,2});
+                    plotsPrms.Frequency = WTUtils.str2nums(answer{1,2});
                     plotsPrms.Scale = WTUtils.str2nums(answer{1,3});
                     plotsPrms.PeripheralElectrodes = answer{1,4};
                     plotsPrms.Contours = answer{1,5};
                     plotsPrms.ElectrodesLabel = answer{1,6};
-                    plotsPrms.validate();
+                    success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                    continue
                 end
-                break
+
+                if ~success
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                end
             end
             success = true;
         end
@@ -348,14 +350,15 @@ classdef WTPlotsGUI
             logFlag = any(logical(logFlag));
             wtLog = WTLog();
             
-            if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
-                (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3))
+            if isempty(plotsPrms.Scale) || ...
+                ((abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
+                (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3)))
                 plotsPrms.Scale = WTUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
             answer = { ...
-                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Time)); ...
-                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Frequency)); ...
+                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Time)) ...
+                sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Frequency)) ...
                 sprintf(WTFormatter.FmtArray, num2str(plotsPrms.Scale)) ...
             };
 
@@ -374,7 +377,7 @@ classdef WTPlotsGUI
             
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
-            while true
+            while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
                 
                 if isempty(answer)
@@ -383,17 +386,17 @@ classdef WTPlotsGUI
 
                 try
                     plotsPrms.Time = WTUtils.str2nums(answer{1,1});
-                    plotsPrms.Frequencsy = WTUtils.str2nums(answer{1,2});
+                    plotsPrms.Frequency = WTUtils.str2nums(answer{1,2});
                     plotsPrms.Scale = WTUtils.str2nums(answer{1,3});
-                    plotsPrms.validate();
+                    success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                    continue
                 end
-                break
+
+                if ~success 
+                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                end
             end
-            success = true;
         end
     end
 end

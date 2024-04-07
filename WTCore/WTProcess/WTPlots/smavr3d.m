@@ -34,6 +34,8 @@ function smavr3d(subj,tMintMax,FrMinFrMax,scale,varargin)
 %
 % smavr3d(); to run via GUI
 
+wtProject = WTProject();
+
 if ~exist('headplot.m','file')    
     fprintf(2,'\nPlease, start EEGLAB first!!!\n');
     fprintf('\n');
@@ -147,7 +149,8 @@ if ~nargin
     end
 
     % CHECK if the data have been log-transformed
-    [logFlag] = wtCheckEvokLog();
+    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
+        wtProject.Config.BaselineChop.Log10Enable;
     enable_uV = WTUtils.ifThenElse(logFlag, 'off', 'on');
 
     % SET defaultanswer0
@@ -251,7 +254,7 @@ if ~nargin
 end
 
 % CHECK if difference and/or grand average files are up to date
-[diffConsistency grandConsistency]=wtCheckDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
+[diffConsistency grandConsistency]=WTPlotUtils.checkDiffAndGrandAvg(filenames, strcmp(subj,'grand'));
 if ~diffConsistency || ~grandConsistency
     return
 end

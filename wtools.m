@@ -399,7 +399,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.contextOn('ScalpMapPlots');
         try
-            smavr();
+            wtScalpMapPlots();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show scalp map plots');
