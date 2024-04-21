@@ -1,12 +1,13 @@
-function success = wtInit
+function [success, pathsContext] = wtInit
     warning('off', 'all');
+    success = true;
     crntDir = pwd();
-    
+    pathsContext = [];
+
     try
-        thisFileDir = fileparts(mfilename('fullpath'));
-        cd(fullfile(thisFileDir, 'WTCore'));
-        WTSession().open();
-        success = true;
+        wtoolsRootDir = fileparts(mfilename('fullpath'));
+        pathsContext = path();
+        addpath(genpath(wtoolsRootDir));
     catch me
         try
             wtLog = WTLog();
@@ -18,7 +19,11 @@ function success = wtInit
                           '|WTools bailed out due to internal error...|\n' ...
                           '+------------------------------------------+\n']);
         end
+        if ~isempty(pathsContext)
+            path(pathsContext);
+        end
         success = false;
     end
+
     cd(crntDir);
 end

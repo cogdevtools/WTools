@@ -200,7 +200,7 @@ if ~nargin
     
     geometry = { [1 1] [1 1]  [1 1] };
     
-    answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plotting parameters');
+    answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plots parameters');
     
     if isempty(answer)
         return % quit on cancel button

@@ -1,6 +1,6 @@
 function success = wtSetSampleRate(system, subjFileName, saveConfig)
     wtProject = WTProject();
-    saveConfig = nargin < 3 || any(logical(saveConfig));
+    saveConfig = nargin < 3 || saveConfig;
 
     [success, samplingRate] = readSampleRate(system, subjFileName);
     if ~success

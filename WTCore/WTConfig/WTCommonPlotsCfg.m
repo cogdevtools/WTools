@@ -20,7 +20,7 @@ classdef WTCommonPlotsCfg < matlab.mixin.Copyable
         end
 
         function success = validate(o, throwExcpt)
-            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+            throwExcpt = nargin > 1 && throwExcpt; 
             success = true;
 
             if o.TimeMin > o.TimeMax 

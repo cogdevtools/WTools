@@ -135,7 +135,7 @@ classdef WTIOProcessor < handle
         function [wType, extension] = getGrandAverageFileTypeAndExtension(perSubject, evokedOscillation)
             wType = WTUtils.ifThenElse(evokedOscillation, ...
                 WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
-            extension = WTUtils.ifThenElse(any(logical(perSubject)), ...
+            extension = WTUtils.ifThenElse(perSubject, ...
                 WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
         end
 
@@ -422,7 +422,7 @@ classdef WTIOProcessor < handle
             EEG = [];
             
             try
-                updateALLEEG = nargin < 4 || any(logical(updateALLEEG));
+                updateALLEEG = nargin < 4 || updateALLEEG;
                 [~, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
 
                 if ~updateALLEEG
@@ -475,7 +475,7 @@ classdef WTIOProcessor < handle
             EEG = [];
             
             try
-                updateALLEEG = nargin < 5 || any(logical(updateALLEEG));
+                updateALLEEG = nargin < 5 || updateALLEEG;
                 [~, filePath, fileName] = o.getConditionFile(filePrefix, subject, condition);
 
                 if ~updateALLEEG
@@ -547,7 +547,7 @@ classdef WTIOProcessor < handle
                     WTLog().err('Unknown file type %s', wType);
                     return
             end
-            extension = WTUtils.ifThenElse(any(logical(perSubject)), ...
+            extension = WTUtils.ifThenElse(perSubject, ...
                 WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
             fileName = strcat(condition, '_bc-', wType, extension);
             filePath = o.GrandAvgDir;

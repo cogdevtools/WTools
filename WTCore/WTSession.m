@@ -1,98 +1,66 @@
-classdef WTSession < handle
+classdef WTSession < WTClass
+
+    properties(Constant)
+        ClassUUID = '96e4e33f-11fb-4d07-9f1f-5b9d2a5029dd'
+    end
 
     properties(Access=private)
-        PathsContext
-        Workspace
-        SessionOpen
+        Workspace = [];
+    end
+
+    properties(GetAccess=public, SetAccess=private)
+        IsOpen = false;
+        Name char
     end
 
     methods(Access=private)
-        function savePaths(o)
-            o.PathsContext = path();
-            addpath(genpath(WTLayout.getToolsDir()));
-        end
-
-        function restorePaths(o)
-            if iaempty(o.PathsContext)
-                path(o.PathsContext);
-            end
-        end
-
-        function saveWorkspace(o)
+        function setWorkspace(o)
             o.Workspace = WTWorkspace();
             o.Workspace.pushBase(true);
         end
 
         function restoreWorkspace(o)
-            if iaempty(o.Workspace)
+            if ~isempty(o.Workspace)
                 o.Workspace.popToBase(true);
             end
         end
     end
 
     methods
-        function o = WTSession()
-            st = singleton();
-            if isempty(st) || ~isvalid(st)
-                singleton(o);
-            else 
-                o = st;
+        function o = WTSession(name)
+            o = o@WTClass(true, true);
+            if nargin > 0
+                o.Name = strip(name);
             end
         end
 
+        function delete(o)
+            o.close();
+        end
+
         function open(o)
-            if o.SessionOpen 
+            if o.IsOpen 
                 return
             end
-            o.SessionOpen = true;
-            o.savePaths();
-            o.saveWorkspace();
+            o.IsOpen = true;
+            o.setWorkspace();
             wtLog = WTLog();
-            wtAppConfig = WTAppConfig();
-            wtAppConfig.load();
+            wtLog.LogName = o.Name;
+            wtAppConfig = WTAppConfig().load();
             wtLog.ColorizeMessages = wtAppConfig.ColorizedLog;
             wtLog.UsrLogLevel = wtAppConfig.ProjectLogLevel;
             wtLog.StdLogLevel = wtAppConfig.DefaultStdLogLevel;
-            wtLog.info('Starting WTools session...');
+            WTLog().info('Opening WTools session...');
             WTProject();
         end
 
         function close(o)
-            if ~o.SessionOpen 
+            if ~o.IsOpen 
                 return
             end
-            o.SessionOpen = false;
-            wtAppConfig = WTAppConfig();
-            wtProject = WTProject();
-            wtLog = WTLog();
-            wtAppConfig.persist();
-            wtLog.info('Closing WTools session...');
-            wtAppConfig.clear()
-            wtProject.clear();
-            wtLog.clear();
+            o.IsOpen = false;
+            WTLog().info('Closing WTools session...');
             o.restoreWorkspace()
-            o.restorePaths();
-            o.clear();
         end
-    end
-
-    methods(Static)
-        function clear()
-            singleton();
-            munlock('singleton');
-        end
-    end
-end
-
-function o = singleton(obj)
-    mlock;
-    persistent uniqueInstance
-
-    if nargin > 0 
-        uniqueInstance = obj;
-    elseif nargout > 0 
-        o = uniqueInstance;
-    elseif ~isempty(uniqueInstance)
-        delete(uniqueInstance)
     end
 end

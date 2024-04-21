@@ -24,9 +24,6 @@ function varargout = wtools(varargin)
     % Edit the above text to modify the response to help wtools
     % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
     % Begin initialization code - DO NOT EDIT
-    if ~wtInit()
-        varargin = [varargin 'force-close'];
-    end
     gui_Singleton = 1;
     gui_State = struct('gui_Name',       mfilename, ...
                        'gui_Singleton',  gui_Singleton, ...
@@ -41,6 +38,7 @@ function varargout = wtools(varargin)
             switch varargin{i}
                 case 'no-splash'
                 case 'force-close'
+                case 'configure'
                 otherwise
                     gui_State.gui_Callback = str2func(varargin{i});
             end
@@ -60,13 +58,18 @@ function varargout = wtools(varargin)
         % hObject    handle to figure
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
+
+        % BailOut has been to true set within wtools_CreateFcn if wtinit has failed...
+        if hObject.UserData.BailOut
+            closereq();
+            return
+        end
         wtAppConfig = WTAppConfig();
         wtLog = WTLog();
         showSplash = wtAppConfig.ShowSplashScreen;
         forceClose = false;
-        bgColor = [];
-        fgColor = [];
-        
+        configure = false;
+
         try
             i = 1;
             while ~forceClose && i <= nargin-3
@@ -81,11 +84,16 @@ function varargout = wtools(varargin)
                     case 'force-close'
                         forceClose = true;
                         break
+                    case 'configure'
+                        configure = true;
+                        break
                 end
                 i = i+1;
             end
-        
 
+            if configure
+                forceClose = configureApp(hObject, handles);
+            end
             if ~forceClose && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))
                 if showSplash       
                     wtSplash();
@@ -95,12 +103,12 @@ function varargout = wtools(varargin)
                 end
             end
         catch me
-            WTLog().except(me);
+            wtLog.except(me);
             forceClose = true;
         end
         
-        if forceClose 
-            closereq()
+        if forceClose
+            closereq();
             return
         end
         
@@ -121,7 +129,7 @@ function varargout = wtools(varargin)
         % Get default command line output from handles structure
         % If ForceQuit was set the figure has been deleted at this point
         % so we need to check if handles is empty or not.
-        if ~isempty(handles) 
+        if ~isempty(handles) && any(strcmp(fieldnames(handles), 'output'))
             varargout{1} = handles.output;
         else
             varargout{1} = {};
@@ -470,8 +478,11 @@ function varargout = wtools(varargin)
         % hObject    handle to ProjectEdit (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        level = WTAppConfig().DefaultStdLogLevel;
-        set(hObject, 'Value', level);
+        try
+            level = WTAppConfig().DefaultStdLogLevel;
+            set(hObject, 'Value', level);
+        catch
+        end
         guidata(hObject, handles);
     
     % --- Executes on selection in LogLevelPopupMenu.
@@ -493,26 +504,49 @@ function varargout = wtools(varargin)
         % hObject    handle to WToolsMain (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        wtLog = WTLog();
-        wtLog.contextOn('Init');
-        try
-            WTSession().open();
-        catch me
-            wtLog.except(me);
+        hObject.UserData = struct();
+        hObject.UserData.BailOut = false;
+        [initOk, pathsContext] = wtInit();
+        hObject.UserData.PathsContext = pathsContext;
+        if ~initOk
+            % Note: all _CreateFcn must manage the fact that WTools class might not
+            % be in the paths, so if they reference one, they should protect the code
+            % within a try-catch. Idem for the _DeleteFcn;
+            hObject.UserData.BailOut = true;
+            return
         end
-        wtLog.reset();
+        try
+            wtLog = WTLog();
+            wtLog.contextOn('Init');
+            WTSession().open();
+            wtLog.reset();
+        catch me
+            try
+                wtLog.except(me);
+                wtLog.reset();
+            catch
+            end
+            hObject.UserData.BailOut = true;
+        end
     
     % --- Executes during object deletion, before destroying properties.
     function WToolsMain_DeleteFcn(hObject, eventdata, handles)
         % hObject    handle to WToolsMain (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        wtLog = WTLog();
-        try
-            wtLog.reset();
+        try 
+            WTLog().contextOn('Close');
+        catch
+        end
+        try 
             WTSession().close();
         catch
         end
+        try
+            WTSingletons.clear();
+        catch
+        end
+        restorePaths(hObject); 
     
     % --- Executes when user attempts to close WToolsMain.
     function WToolsMain_CloseRequestFcn(hObject, eventdata, handles)
@@ -528,9 +562,15 @@ function varargout = wtools(varargin)
             return
         end
         % Hint: delete(hObject) closes the figure
-        delete(hObject);
+        closereq();
     
     % --- Utilities
+    function restorePaths(hObject)
+        userData = hObject.UserData;
+        if isstruct(userData) && isfield(userData, 'PathsContext') && ~isempty(userData.PathsContext)
+            path(userData.PathsContext);
+        end
+    
     function updateProjectName(hObject, handles) 
         if isfield(handles,'ProjectEdit')
             wtProject = WTProject();
@@ -561,7 +601,16 @@ function varargout = wtools(varargin)
     function handles = unlock(hObject, handles)
         handles.wtoolsLocked = false;
         guidata(hObject, handles);
+
+    function closeAppAfter = configureApp(hObject, handles)
+        if ~lock(hObject, handles)
+            return
+        end
+        wtAppConf = WTAppConfigGUI.configureApplication(false, true);
+        if ~isempty(wtAppConf)
+            WTUtils.wrnDlg('Configuration update', 'The change to the configuration will be reflected on the next execution');
+        end
+        unlock(hObject, handles);
+        closeAppAfter = ~any(strcmp(fieldnames(handles), 'wtoolsOpen'));
         
-    
-    
-    
+        

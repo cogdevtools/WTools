@@ -47,7 +47,7 @@ classdef WTSubjectsCfg < WTConfigStorage & matlab.mixin.Copyable
             success = true;
             subjs = o.SubjectsList;
             files = o.FilesList;
-            throwExcpt = nargin > 1 && any(logical(throwExcpt));
+            throwExcpt = nargin > 1 && throwExcpt;
             objFld = @(fld)[class(o) '.' fld];
 
             if length(subjs) ~= length(files)

@@ -141,7 +141,7 @@ classdef WTPlotUtils
 
         % checkDiffAndGrandAvg() checks whether the data are up to date and ready for the grand average  
         function [diffConsistency, grandAvgConsistency] = checkDiffAndGrandAvg(conditions, chkGrandAvg)
-            chkGrandAvg = nargin < 2 || any(logical(chkGrandAvg));
+            chkGrandAvg = nargin < 2 || chkGrandAvg;
             diffConsistency = 1;
             grandAvgConsistency = 1;
             

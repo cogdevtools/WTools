@@ -8,8 +8,6 @@ classdef WTDifferenceGUI
 
             WTValidations.mustBeA(differencePrms, ?WTDifferenceCfg)
             WTValidations.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
-            evokFlag = any(logical(evokFlag));
-            logFlag = any(logical(logFlag));
 
             if differencePrms.exist()
                 answer = { differencePrms.Condition1,  differencePrms.Condition2, differencePrms.ConditionDiff, ...

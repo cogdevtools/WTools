@@ -26,16 +26,72 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 % -------------------------------------------------------------------------
 
-function vers = eegplugin_wtools(fig, trystrs, catchstrs)
+function vers = eegplugin_wtools(fig, tryStrs, catchStrs)
     if nargin < 1
         error('eegplugin_wtools requires figure argument');
     end
+
     cwd = pwd();
     thisFileDir = fileparts(mfilename('fullpath'));
     cd(fullfile(thisFileDir, 'WTCore'));
     vers = WTVersion().getVersionStr();
-    cd(cwd);
-    cmd = 'wtools no-splash';
+    cd(cwd);   
     toolsMenu = findobj(fig, 'tag', 'tools');
-    uimenu(toolsMenu, 'label', 'Wavelet Transform Tools', 'callback', cmd, 'userdata', 'startup:on');
+    createWToolsMenu(toolsMenu);
+    setMenuUserData(toolsMenu, 'startup', 'on');
+end
+
+function createWToolsMenu(parentMenu) 
+    wtMenu = uimenu(parentMenu, ...
+        'label', 'WTools (wavelet analysis)', ...
+        'tag', 'WTools', ...
+        'userdata', 'startup:on', ...
+        'separator', 'on');
+
+    wtMenuRun = uimenu(wtMenu, ...
+        'label', 'Run', ...
+        'tag', 'WToolsRun', ...
+        'userdata', 'startup:on');
+
+    wtMenuClose = uimenu(wtMenu, ...
+        'label', 'Close', ...
+        'tag', 'WToolsClose', ...
+        'userdata', 'startup:off');
+
+    wtMenuConfigure = uimenu(wtMenu, ...
+        'label', 'Configure', ...
+        'tag', 'WToolsConfigure', ...
+        'userdata', 'startup:on');
+
+    set(wtMenuRun, 'callback', {@wtRun, wtMenuClose});
+    set(wtMenuClose, 'callback', @wtClose);
+    set(wtMenuConfigure, 'callback',  @wtConfigure);
+end
+
+function wtRun(~, ~, menuClose) 
+    wtools('no-splash');
+    menuClose.Enable = true;
+end 
+
+function wtClose(menuClose, ~) 
+    if menuClose.Enable
+        wtools('force-close');
+        menuClose.Enable = false;
+    end
+end 
+
+function wtConfigure(~, ~) 
+    wtools('configure');
+end 
+
+function hMenu = setMenuUserData(hMenu, flag, value)
+    userDataItems = split(hMenu.UserData, ';')';
+    flag = [flag ':'];
+    idx = startsWith(userDataItems, flag);
+    if ~isempty(idx)
+        userDataItems{idx} = [flag value];
+    else
+        userDataItems = [ [flag value] userDataItems ]; 
+    end
+    hMenu.UserData = char(join(userDataItems, ';'));
 end

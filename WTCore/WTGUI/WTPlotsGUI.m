@@ -3,7 +3,6 @@ classdef WTPlotsGUI
     methods(Static)
         % subject = [] when the grand average directory is selected instead of a specific subject dir
         function [fileNames, filesPath, fileType, subject] = selectFilesToPlot(perSubject, averageOnly, maxFilesNum)
-            averageOnly = any(logical(averageOnly));
             wtProject = WTProject();
             ioProc = wtProject.Config.IOProc;
             subject = [];
@@ -45,7 +44,6 @@ classdef WTPlotsGUI
         function success = defineAvgPlotsSettings(plotsPrms, logFlag) 
             success = false;
             WTValidations.mustBeA(plotsPrms, ?WTAvgPlotsCfg);
-            logFlag = any(logical(logFlag));
             wtLog = WTLog();
             
             if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
@@ -87,7 +85,7 @@ classdef WTPlotsGUI
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
             
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -143,7 +141,7 @@ classdef WTPlotsGUI
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -169,7 +167,6 @@ classdef WTPlotsGUI
         function success = defineChansAvgPlotsSettings(plotsPrms, logFlag) 
             success = false;
             WTValidations.mustBeA(plotsPrms, ?WTChansAvgPlotsCfg);
-            logFlag = any(logical(logFlag));
             wtLog = WTLog();
             
             if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
@@ -206,7 +203,7 @@ classdef WTPlotsGUI
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -256,7 +253,7 @@ classdef WTPlotsGUI
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -281,7 +278,6 @@ classdef WTPlotsGUI
         function success = defineScalpMapPlotsSettings(plotsPrms, logFlag)
             success = false; 
             WTValidations.mustBeA(plotsPrms, ?WTScalpMapPlotsCfg);
-            logFlag = any(logical(logFlag));
             wtLog = WTLog();
             
             if isempty(plotsPrms.Scale) || ...
@@ -319,7 +315,7 @@ classdef WTPlotsGUI
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -347,7 +343,6 @@ classdef WTPlotsGUI
         function success = define3DScalpMapPlotsSettings(plotsPrms, logFlag)
             success = false; 
             WTValidations.mustBeA(plotsPrms, ?WTScalpMapPlotsCfg);
-            logFlag = any(logical(logFlag));
             wtLog = WTLog();
             
             if isempty(plotsPrms.Scale) || ...
@@ -378,7 +373,7 @@ classdef WTPlotsGUI
             geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
 
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plotting parameters');
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 

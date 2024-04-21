@@ -44,7 +44,6 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         subject = char(subject);
         conditionsToPlot = unique(conditionsToPlot);
         channelsToPlot = unique(channelsToPlot);
-        evokedOscillations = any(logical(evokedOscillations));
     end
     
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
@@ -229,7 +228,6 @@ end
 
 function success = setChansAvgPlotsParams(logFlag)
     success = false;
-    logFlag = any(logical(logFlag));
     wtProject = WTProject();
     plotsPrms = copy(wtProject.Config.ChannelsAveragePlots);
 

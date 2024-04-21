@@ -1,4 +1,8 @@
-classdef WTAppConfig < handle
+classdef WTAppConfig < WTClass & matlab.mixin.Copyable
+
+    properties(Constant)
+        ClassUUID = 'c6848e73-fb3c-48c6-a542-695ac2225339'
+    end
 
     properties (Constant,Hidden)
         ConfigFileName = 'wtools.json'
@@ -12,11 +16,11 @@ classdef WTAppConfig < handle
         FldPlotsColorMap = 'PlotsColorMap'
     end
 
-    properties (Access=private)
+    properties (SetAccess=private, GetAccess=public)
         ConfigFile
     end
 
-    properties(SetAccess=private,GetAccess=public)
+    properties(Access=public)
         ShowSplashScreen(1,1) logical
         DefaultStdLogLevel(1,1) uint8
         ProjectLogLevel(1,1) uint8
@@ -26,19 +30,75 @@ classdef WTAppConfig < handle
         PlotsColorMap char
     end 
 
+    methods(Static, Access=private)
+        function [level, valid] = validLogLevel(level, levelType, throwExcpt)
+            valid = false;
+            if ischar(level) 
+                code = WTLog.logLevelCode(level);
+                valid = ~isempty(code);
+                if ~valid
+                    excp = WTException.badValue('Not a valid %s log level: ''%s''', levelType, level);
+                else
+                    level = code;
+                end
+            elseif WTValidations.isInt(level) 
+                valid = ~isempty(WTLog.logLevelStr(level));
+                if ~valid
+                    excp = WTException.badValue('Not a valid %s log level: ''%d''', levelType, level);
+                end
+            else 
+                excp = WTException.badValue('Not a valid %s log level type: ''%s''', levelType, class(level));
+            end
+            if ~valid
+                WTUtils.throwOrLog(excp, ~throwExcpt);
+            end
+        end
+
+        function [colorMap, valid] = validColorMap(colorMap, throwExcpt)
+            % colormap needs a figure or it will open one
+            hFigure = figure('Visible', 'off');
+            oldColorMap = colormap();
+            try
+                colormap(colorMap);
+                valid = true;   
+            catch
+                valid = false;      
+            end
+            colormap(oldColorMap);
+            delete(hFigure);
+            if ~valid
+                excp = WTException.badValue('Not a valid colormap: ''%s''', colorMap);
+                WTUtils.throwOrLog(excp, ~throwExcpt);
+            end
+        end
+    end
+
     methods
-        function o = WTAppConfig()
-            st = singleton();
-            if isempty(st) || ~isvalid(st)
+        function o = WTAppConfig(singleton)
+            singleton = nargin < 1 || singleton;
+            o = o@WTClass(singleton, true);
+            if ~o.InstanceInitialised
                 o.ConfigFile = fullfile(WTLayout.getAppConfigDir(), o.ConfigFileName);
                 o.default();
                 o.load();
-                singleton(o);
-            else 
-                o = st;
             end
-         end
+        end
 
+        function copyFrom(o, oo)
+            WTValidations.mustBeA(oo, ?WTAppConfig);
+            o.ShowSplashScreen = oo.ShowSplashScreen;
+            o.DefaultStdLogLevel = oo.DefaultStdLogLevel;
+            o.ProjectLogLevel = oo.ProjectLogLevel;
+            o.MuteStdLog = oo.MuteStdLog;
+            o.ProjectLog = oo.ProjectLog;
+            o.ColorizedLog = oo.ColorizedLog;
+            o.PlotsColorMap = oo.PlotsColorMap;
+        end 
+
+        function copyTo(o, oo)
+            WTValidations.mustBeA(oo, ?WTAppConfig); 
+            oo.copyFrom(o)
+        end
         function o = default(o)
             o.ShowSplashScreen = false;
             o.DefaultStdLogLevel = WTLog.LevelInf;
@@ -46,77 +106,64 @@ classdef WTAppConfig < handle
             o.ProjectLog = false;
             o.MuteStdLog = false;
             o.ColorizedLog = false;
-            o.PlotsColorMap = '';
+            o.PlotsColorMap = 'parula';
         end
         
-        function o = load(o)
+        function set.ProjectLogLevel(o, level)
+            o.ProjectLogLevel = WTAppConfig.validLogLevel(level, 'project', true);
+        end
+
+        function set.DefaultStdLogLevel(o, level)
+            o.DefaultStdLogLevel = WTAppConfig.validLogLevel(level, 'standard', true);
+        end
+
+        function set.PlotsColorMap(o, colorMap)
+            o.PlotsColorMap = WTAppConfig.validColorMap(colorMap, true);
+        end
+
+        function [o, success] = load(o, throwExcpt)
+            throwExcpt = nargin > 1 && throwExcpt;
+            success = true;
             try
                 jsonText = fileread(o.ConfigFile, 'Encoding', 'UTF-8');
                 data = jsondecode(jsonText);
-                
-                splashScreen = o.ShowSplashScreen;
-                defaultStdLogLevel = o.DefaultStdLogLevel;
-                projectLogLevel = o.ProjectLogLevel;
-                muteStdLog = o.MuteStdLog;
-                projectLog = o.ProjectLog;
-                colorizedLog = o.ColorizedLog;
-                plotsColorMap = o.PlotsColorMap;
+                c = copy(o);
 
                 if isfield(data, o.FldShowSplashScreen)
-                    o.ShowSplashScreen = data.(o.FldShowSplashScreen);
+                    c.ShowSplashScreen = data.(o.FldShowSplashScreen);
                 end
                 if isfield(data, o.FldDefaultStdLogLevel)
-                    defaultLogLevelStr = char(data.(o.FldDefaultStdLogLevel));
-                    o.DefaultStdLogLevel = WTLog.logLevelCode(defaultLogLevelStr);
-                    if isempty(o.DefaultStdLogLevel) 
-                        WTLog.err('Not a valid std log level: ''%s''', defaultLogLevelStr);
-                        o.DefaultStdLogLevel = defaultStdLogLevel;  
-                    end
+                    logLevelStr = char(data.(o.FldDefaultStdLogLevel));
+                    c.DefaultStdLogLevel = WTAppConfig.validLogLevel(logLevelStr, 'standard', true);
                 end
                 if isfield(data, o.FldProjectLogLevel)
-                    defaultLogLevelStr = char(data.(o.FldProjectLogLevel));
-                    o.ProjectLogLevel = WTLog.logLevelCode(defaultLogLevelStr);
-                    if isempty(o.ProjectLogLevel) 
-                        WTLog.err('Not a valid project log level: ''%s''', defaultLogLevelStr);
-                        o.ProjectLogLevel = projectLogLevel;  
-                    end
+                    logLevelStr = char(data.(o.FldProjectLogLevel));
+                    c.ProjectLogLevel = WTAppConfig.validLogLevel(logLevelStr, 'project', true);
                 end
                 if isfield(data, o.FldMuteStdLog)
-                    o.MuteStdLog = data.(o.FldMuteStdLog);
+                    c.MuteStdLog = data.(o.FldMuteStdLog);
                 end
                 if isfield(data, o.FldProjectLog)
-                    o.ProjectLog = data.(o.FldProjectLog);
+                    c.ProjectLog = data.(o.FldProjectLog);
                 end
                 if isfield(data, o.FldColorizedLog)
-                    o.ColorizedLog = data.(o.FldColorizedLog);
+                    c.ColorizedLog = data.(o.FldColorizedLog);
                 end
                 if isfield(data, o.FldPlotsColorMap)
-                    colorMapName = data.(o.FldPlotsColorMap);
-                    hFigure = figure(); % colormap needs a figure or it will open one
-                    hFigure.Visible = 'off';
-                    oldColorMap = colormap();
-                    try
-                        colormap(colorMapName);
-                        o.PlotsColorMap = colorMapName;
-                    catch
-                        WTLog.err('Not a valid colormap: ''%s''', colorMap);
-                    end
-                    colormap(oldColorMap);
-                    delete(hFigure);
+                    colorMap = data.(o.FldPlotsColorMap);
+                    c.PlotsColorMap = WTAppConfig.validColorMap(colorMap, true);
                 end
             catch me
-                o.ShowSplashScreen = splashScreen;
-                o.DefaultStdLogLevel = defaultStdLogLevel;
-                o.ProjectLogLevel = projectLogLevel;
-                o.MuteStdLog = muteStdLog;
-                o.ProjectLog = projectLog;
-                o.ColorizedLog = colorizedLog;
-                o.PlotsColorMap = plotsColorMap;
-                WTLog().except(me);
+                success = false;
+                WTUtils.throwOrLog(me, ~throwExcpt);
+            end
+            if success
+                o.copyFrom(c);
             end
         end
  
-        function o = persist(o)
+        function success = persist(o)
+            success = false;
             try
                 data = struct(); 
                 data.(o.FldShowSplashScreen) = o.ShowSplashScreen;
@@ -127,29 +174,10 @@ classdef WTAppConfig < handle
                 data.(o.FldColorizedLog) = o.ColorizedLog;
                 jsonText = jsonencode(data, 'PrettyPrint', true);
                 writelines(jsonText, o.ConfigFile, 'Encoding', 'UTF-8');
+                success = true;
             catch me
                 WTLog().except(me);
             end
         end
-    end
-
-    methods(Static)
-        function clear()
-            singleton();
-            munlock('singleton');
-        end
-    end
-end
-
-function o = singleton(o)
-    mlock;
-    persistent uniqueInstance
-
-    if nargin > 0 
-        uniqueInstance = o;
-    elseif nargout > 0 
-        o = uniqueInstance;
-    elseif ~isempty(uniqueInstance)
-        delete(uniqueInstance)
     end
 end

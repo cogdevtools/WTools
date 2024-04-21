@@ -67,7 +67,7 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = validate(o, throwExcpt) 
-            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+            throwExcpt = nargin > 1 && throwExcpt; 
             success = true;
 
             if isempty(o.ChannelsLocationFile) 

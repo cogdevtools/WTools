@@ -41,7 +41,6 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         channelsToPlot = unique(channelsToPlot);
         conditionsToPlot = unique(conditionsToPlot);
         WTValidations.mustBeLTE(length(conditionsToPlot), 2); 
-        evokedOscillations = any(logical(evokedOscillations));
     end
     
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...

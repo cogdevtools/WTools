@@ -69,7 +69,6 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot, 1, -1, 0);
         subject = char(subject);
         conditionsToPlot = unique(conditionsToPlot);
-        evokedOscillations = any(logical(evokedOscillations));
     end
     
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
@@ -201,7 +200,6 @@ end
 
 function success = setScalpMapPlotsParams(logFlag)
     success = false;
-    logFlag = any(logical(logFlag));
     wtProject = WTProject();
     plotsPrms = copy(wtProject.Config.ScalpMapPlots);
 
@@ -373,7 +371,7 @@ function smavr(subj,tMintMax,FrMinFrMax,scale,varargin)
         
         geometry = { [1 1] [1 1]  [1 1] [1 1] [1 1] [1 1] };
         
-        answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plotting parameters');
+        answer = inputgui( 'geometry', geometry, 'uilist', parameters,'title', 'Set plots parameters');
         
         if isempty(answer)
             return %quit on cancel button

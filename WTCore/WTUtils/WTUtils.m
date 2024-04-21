@@ -102,7 +102,7 @@ classdef WTUtils
         end
 
         function value = str2double(str, allowEmptyStr)
-            allowEmptyStr = nargin > 1 && any(logical(allowEmptyStr));
+            allowEmptyStr = nargin > 1 && allowEmptyStr;
             if allowEmptyStr
                 [valid, value] = WTValidations.strIsEmptyOrNumber(str);
             else
@@ -114,7 +114,7 @@ classdef WTUtils
         end
 
         function value = str2int(str, allowEmptyStr)
-            allowEmptyStr = nargin > 1 && any(logical(allowEmptyStr));
+            allowEmptyStr = nargin > 1 && allowEmptyStr;
             if allowEmptyStr
                 [valid, value] = WTValidations.strIsEmptyOrInt(str);
             else 
@@ -140,7 +140,7 @@ classdef WTUtils
         end
 
         function throwOrLog(excpt, log)
-            if any(logical(log)) 
+            if log 
                 WTLog().fromCaller().err('Exception(%s): %s', excpt.identifier, getReport(excpt, 'extended'));
             else
                 excpt.throwAsCaller();
@@ -171,7 +171,7 @@ classdef WTUtils
         % - ifThenElse(condition, @()thenSet, @()elseSet)
         function varargout = ifThenElse(condition, thenSet, elseSet) 
             varargout = cell(1, nargout);
-            if any(logical(condition))
+            if condition
                 if isa(thenSet,'function_handle')
                     [varargout{:}] = thenSet();
                 elseif iscell(thenSet)
@@ -514,13 +514,13 @@ classdef WTUtils
             WTValidations.mustBeALinearCellArrayOfNonEmptyString(list);
             selection = list;
             indexes = WTUtils.ifThenElse(length(list) == 1, 1, []);
-            confirm =  nargin > 3 && any(logical(confirm));
+            confirm =  nargin > 3 && confirm;
             
             if isempty(list) || (length(list) < 2 && ~confirm)
                 return
             end
 
-            mode = WTUtils.ifThenElse(nargin > 2 && any(logical(single)), 'single', 'multiple');
+            mode = WTUtils.ifThenElse(nargin > 2 && single, 'single', 'multiple');
             prompt = strrep(prompt, '\n', newline);
             prompt = splitlines(prompt)';
 
@@ -577,7 +577,6 @@ classdef WTUtils
 
         % When 'safeMode' is true, exceptions are trapped and the first parameter returned is 'success'
         function varargout = eeglabRun(logLevel, safeMode, varargin) 
-            safeMode = any(logical(safeMode));
             varargout = cell(nargout,1);
             cmdArgOfs = WTUtils.ifThenElse(safeMode, 2, 1);
             wtLog = WTLog();
@@ -657,7 +656,7 @@ classdef WTUtils
             success = true;
             varargout = cell(nargout-1,1);
             ws = WTWorkspace();
-            ws.pushBase(true)
+            ws.pushBase(true);
             cwd = pwd;
             try
                 cd(dir);
@@ -673,7 +672,7 @@ classdef WTUtils
                 success = false;
             end
             cd(cwd)
-            ws.popToBase(true)
+            ws.popToBase(true);
         end
 
         % fileName: with trailing .m

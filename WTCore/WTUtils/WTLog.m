@@ -1,5 +1,9 @@
-classdef WTLog < handle
-    
+classdef WTLog < WTClass
+
+    properties(Constant)
+        ClassUUID = '1bbf9e0c-6b80-4166-b94e-50b6c523ed56'
+    end
+
     properties (Constant,Hidden)
         LevelErr = 1
         LevelWrn = 2
@@ -7,7 +11,7 @@ classdef WTLog < handle
         LevelDbg = 4
     end
    
-    properties (Constant,Hidden,Access=private)
+    properties (Constant)
         % string index must correspond to the relative level code value
         LevelStrs = {'ERROR','WARNING','INFO','DEBUG'}
     end
@@ -23,7 +27,8 @@ classdef WTLog < handle
         Stream(1,1) double
     end
 
-    properties (Hidden,Access=public)
+    properties (Access=public)
+        LogName char
         HeaderOn(1,1) logical
         ColorizeMessages(1,1) logical
         MuteStdStreams(1,1) logical
@@ -31,7 +36,7 @@ classdef WTLog < handle
         UsrLogLevel(1,1) uint8
     end
 
-    properties (Hidden,Dependent)
+    properties (Dependent)
         LogLevel(1,1) uint8
         StdLogLevelStr char
         UsrLogLevelStr char
@@ -69,7 +74,11 @@ classdef WTLog < handle
                 if ~isempty(ctx)
                     jctx = strcat('|', join(ctx,' >> '));
                 end
-                header = sprintf('[%s WTOOLS %s:%s(%d)%s|%s]', time, module, func, line, jctx{1}, level);
+                logName = 'WTOOLS';
+                if ~isempty(o.LogName)
+                    logName = [logName '.' o.LogName];
+                end
+                header = sprintf('[%s %s %s:%s(%d)%s|%s]', time, logName, module, func, line, jctx{1}, level);
             end
             if ~isempty(varargin)
                 msgout = sprintf(fmt, varargin{:});
@@ -135,9 +144,14 @@ classdef WTLog < handle
     end
 
     methods
-        function o = WTLog()
-            st = singleton();
-            if isempty(st) || ~isvalid(st)
+        function o = WTLog(singleton, logName)
+            singleton = nargin < 1 || singleton;
+            o = o@WTClass(singleton, true);
+            if ~o.InstanceInitialised
+                o.LogName = '';
+                if nargin > 1
+                    o.LogName = strip(logName);
+                end
                 o.Context = {};
                 o.StatusStack = {};
                 o.HeaderOn = true;
@@ -147,11 +161,14 @@ classdef WTLog < handle
                 o.ColorizeMessages = false;
                 o.MuteStdStreams = false;
                 o.Stream = -1;
-                singleton(o);
-            else 
-                o = st;
             end
          end
+
+        function delete(o)
+            if isvalid(o)
+                o.closeStream()
+            end
+        end
 
         function o = contextOn(o, ctx, varargin) 
             if nargin == 1
@@ -308,24 +325,5 @@ classdef WTLog < handle
                 levelStr = WTLog.LevelStrs{lvlCode};
             end
         end
-
-        function clear()
-            o = singleton();
-            o.closeStream();
-            munlock('singleton');
-        end
-    end
-end
-
-function o = singleton(o)
-    mlock;
-    persistent uniqueInstance
-
-    if nargin > 0 
-        uniqueInstance = o;
-    elseif nargout > 0 
-        o = uniqueInstance;
-    elseif ~isempty(uniqueInstance)
-        delete(uniqueInstance)
     end
 end

@@ -145,7 +145,7 @@ function success = wtPerformCWT()
                         timeMin = timeMax + extrapoints;
                     end
                     timeMax = find(EEG.times == timeMax);
-                    clear leftEdge rightEdge EEGtemp EEGnew
+                    clear leftEdge rightEdge EEGtemp EEGnew;
                 end
                 
             else % There is no edges padding

@@ -1,4 +1,8 @@
-classdef WTProject < handle
+classdef WTProject < WTClass
+
+    properties(Constant)
+        ClassUUID = '3569ead7-4a95-4393-8598-2428490215e1'
+    end
 
     properties (SetAccess=private, GetAccess=public)
         IsOpen logical
@@ -10,18 +14,16 @@ classdef WTProject < handle
     end
 
     methods
-        function o = WTProject()
-            st = singleton();
-            if isempty(st) || ~isvalid(st)
+        function o = WTProject(singleton)
+            singleton = nargin < 1 || singleton;
+            o = o@WTClass(singleton, true);
+            if ~o.InstanceInitialised
                 o.IsOpen = false;
                 o.Interactive = true;
                 o.Config = WTConfig();
-                singleton(o);
-            else 
-                o = st;
             end
         end
-
+        
         function open = checkIsOpen(o)
             open = o.IsOpen;
             if ~open
@@ -142,25 +144,5 @@ classdef WTProject < handle
                 o.notifyErr([], 'Failed to create project ''%s'' in dir ''%s''', name, parentDir);
             end
         end 
-    end
-
-    methods(Static)
-        function clear()
-            singleton();
-            munlock('singleton');
-        end
-    end
-end
-
-function o = singleton(o)
-    mlock;
-    persistent uniqueInstance
-
-    if nargin > 0 
-        uniqueInstance = o;
-    elseif nargout > 0 
-        o = uniqueInstance;
-    elseif ~isempty(uniqueInstance)
-        delete(uniqueInstance)
     end
 end

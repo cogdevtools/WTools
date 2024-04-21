@@ -45,7 +45,7 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
 
         function success = validate(o, throwExcpt) 
             success = true;
-            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+            throwExcpt = nargin > 1 && throwExcpt; 
 
             if ~isnan(o.MinTrialId) && ~isnan(o.MaxTrialId)
                 if o.MaxTrialId < o.MinTrialId;

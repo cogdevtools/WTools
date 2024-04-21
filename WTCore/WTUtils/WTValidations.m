@@ -63,7 +63,7 @@ classdef WTValidations
         end
 
         function [valid, values] = strIsNumberCellArray(strCellArray, allowEmptyStr)
-            isChkr = WTUtils.ifThenElse(nargin > 1 && any(logical(allowEmptyStr)), ...
+            isChkr = WTUtils.ifThenElse(nargin > 1 && allowEmptyStr, ...
                 @WTValidations.strIsNumber,  @WTValidations.strIsEmptyOrNumber);
             values = WTUtils.ifThenElse(nargout > 1, cell(size(strCellArray)), {});
             valid = true;
@@ -79,7 +79,7 @@ classdef WTValidations
         end
 
         function [valid, values] = strIsIntCellArray(strCellArray, allowEmptyStr) 
-            isChkr = WTUtils.ifThenElse(nargin > 1 && any(logical(allowEmptyStr)), ...
+            isChkr = WTUtils.ifThenElse(nargin > 1 && allowEmptyStr, ...
                 @WTValidations.strIsInt,  @WTValidations.strIsEmptyOrInt);
                 values = WTUtils.ifThenElse(nargout > 1, cell(size(strCellArray)), {});
             valid = true;
@@ -159,7 +159,7 @@ classdef WTValidations
             if ~is 
                 return
             end
-            is = nargin > 3 && any(logical(allowEmpty)) && isempty(v);
+            is = nargin > 3 && allowEmpty && isempty(v);
             if is 
                 return
             end
@@ -181,7 +181,7 @@ classdef WTValidations
             if ~is
                 return
             end
-            is = nargin > 3 && any(logical(allowEmpty)) && isempty(v);
+            is = nargin > 3 && allowEmpty && isempty(v);
             if is 
                 return
             end
@@ -241,7 +241,7 @@ classdef WTValidations
         end
 
         function mustBeLT(v, vMax, allowNaN)
-            if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
+            if nargin > 2 && allowNaN && isscalar(v) && isnan(v)
                 return
             end
             if ~isnumeric(v) || any(v >= vMax)
@@ -250,7 +250,7 @@ classdef WTValidations
         end
 
         function mustBeLTE(v, vMax, allowNaN)
-            if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
+            if nargin > 2 && allowNaN && isscalar(v) && isnan(v)
                 return
             end
             if ~isnumeric(v) || any(v > vMax)
@@ -259,7 +259,7 @@ classdef WTValidations
         end
 
         function mustBeGT(v, vMin, allowNaN)
-            if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
+            if nargin > 2 && allowNaN && isscalar(v) && isnan(v)
                 return
             end
             if ~isnumeric(v) || any(v <= vMin)
@@ -268,7 +268,7 @@ classdef WTValidations
         end
 
         function mustBeGTE(v, vMin, allowNaN)
-            if nargin > 2 && any(logical(allowNaN)) && isscalar(v) && isnan(v)
+            if nargin > 2 && allowNaN && isscalar(v) && isnan(v)
                 return
             end
             if ~isnumeric(v) || any(v < vMin)

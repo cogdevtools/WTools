@@ -10,8 +10,6 @@ classdef WTGrandAverageGUI
             
             useAllSubjects = wtGrandAveragePrms.UseAllSubjects;
             perSbjAvg = wtGrandAveragePrms.PerSubjectAgerage;
-            logFlag = any(logical(logFlag));
-            evokFlag = any(logical(evokFlag));
 
             parameters = { ...
                 { 'style' 'checkbox' 'string' 'Use all transformed subjects?'                   'value'   useAllSubjects } ...

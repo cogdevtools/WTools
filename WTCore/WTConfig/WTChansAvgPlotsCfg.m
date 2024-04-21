@@ -49,7 +49,7 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTCommon
         end
 
         function success = validate(o, throwExcpt)
-            throwExcpt = nargin > 1 && any(logical(throwExcpt)); 
+            throwExcpt = nargin > 1 && throwExcpt; 
             success = true;
 
             if ~validate@WTCommonPlotsCfg(o, throwExcpt)
