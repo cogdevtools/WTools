@@ -312,7 +312,7 @@ classdef WTPlotsGUI
                 { 'style' 'checkbox' 'value'   answer{1,6} } ...
             };
             
-            geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
+            geometry = { [1 1] [1 1] [1 1] [1 1] [1 1] [1 1] };
 
             while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
@@ -366,11 +366,9 @@ classdef WTPlotsGUI
                 { 'style' 'edit'     'string'  answer{1,2} } ...
                 { 'style' 'text'     'string'  scaleLabel } ...
                 { 'style' 'edit'     'string'  answer{1,3} } ...
-                { 'style' 'text'     'string' '' } ...
-                { 'style' 'text'     'string' '' } ...
             };
             
-            geometry = { [0.25 0.15 0.15 0.15] [0.25 0.15 0.15 0.15] };
+            geometry = { [1 1] [1 1] [1 1] };
 
             while ~success
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');

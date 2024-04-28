@@ -163,28 +163,19 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
 
         if nSubPlots > 1
-            % Matrix of indexes of the scalpmaps
-            nCols = ceil(sqrt(nSubPlots));
-            nRows = ceil(nSubPlots / nCols);
-            subPlotsIdxs = reshape(1:nRows * nCols, nCols, nRows)';
-            subPlotsIdxs = flip(subPlotsIdxs, 1);
             % Create struct to store all the useful params used here and by the callbacks
             prms = struct();
-            prms.timeIdxs = timeIdxs;
-            prms.freqIdxs = freqIdxs;
-            prms.downsampleFactor = downsampleFactor;
+            prms.whSubPlotRatio = 1;
             prms.plotsPrms = copy(plotsPrms);
-            prms.subPlotRelWidth = 0.1;
-            prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
             prms.xLabel = xLabel;
-            prms.colorMap = WTPlotUtils.getPlotsColorMap();
             prms.contours = contours;
             prms.labels = labels;
             prms.peripheralElectrodes = peripheralElectrodes;
             prms.nSubPlots = nSubPlots;
-            prms.nRows = nRows;
-            prms.nCols = nCols;
-            prms.subPlotsIdxs = subPlotsIdxs;
+            prms.nSubPlotsMatrixCols = ceil(sqrt(nSubPlots));;
+            prms.nSubPlotsMatrixRows = ceil(nSubPlots / prms.nSubPlotsMatrixCols);;
+            prms.data = WTHandle(cell(1, nConditionsToPlot));
+            prms.subPlotsData = WTHandle(cell(1, nSubPlots));
         end
 
         for cnd = 1:nConditionsToPlot
@@ -196,26 +187,33 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 continue
             end 
 
-            figureName = WTUtils.ifThenElse(grandAverage, ...
-                @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
+            figureNamePrefix = WTUtils.ifThenElse(grandAverage, ...
+                @()char(strcat(basicPrms.FilesPrefix, '.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
+
+            figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
             hFigure = figure('NumberTitle', 'off', 'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
-            mainPlots = [mainPlots hFigure];
+            hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
+            hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
+            hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'};
+            mainPlots(cnd) = hFigure;
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
             data.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             
-            if ~isempty(plotsPrms.TimeResolution)
+            if isempty(plotsPrms.TimeResolution)
                 % Average along times
                 data.WT = mean(data.WT(:,:,timeIdxs), 3);
-            elseif ~isempty(plotsPrms.FreqResolution)
+            end
+            if isempty(plotsPrms.FreqResolution)
                 % Average along frequencies
                 data.WT = mean(data.WT(:,freqIdxs,:), 2);
             end
            
             if nSubPlots == 1
-                topoplot(data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
+                WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
+                        data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
                         plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
                 pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
                 pace = pace(2) - pace(1);
@@ -225,24 +223,32 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             else
                 hFigure.UserData.OpenSubPlots = [];
                 hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
-                prms.data = data;
+                prms.data.Value{cnd} = data;
 
                 for i = 1:nSubPlots        
-                    subplot(nRows, nCols, i);
-    
-                    if size(data.WT, 3) > 1
-                        topoplot(data.WT(:,:,timeIdxs(i)), data.chanlocs, 'electrodes', labels, 'maplimits',...
-                            plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
-                        title(strcat(num2str(data.tim(timeIdxs(i))), 'ms'), 'FontSize', 8, 'FontWeight', 'bold');
-                        figure(hFigure);
-                        hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
-                    elseif size(data. WT, 2) > 1
-                        topoplot(data.WT(:,freqIdxs(i),:), data.chanlocs, 'electrodes', labels, 'maplimits',...
-                            plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
-                        title(strcat(num2str(data.Fa(freqIdxs(i))), 'Hz'), 'FontSize', 8, 'FontWeight', 'bold');
-                        figure(hFigure);
-                        hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
+                    subPlotData = struct();
+                    subPlotData.conditionIdx = cnd;
+
+                    % It's either one or the other condition
+                    if ~isempty(plotsPrms.TimeResolution)
+                        timeLabel = num2str(data.tim(timeIdxs(i)));
+                        subPlotData.figureName = [figureNamePrefix '.[' timeLabel ' ms].[' plotsPrms.FreqString ' Hz]' ];
+                        subPlotData.title = [timeLabel ' ms'];
+                        subPlotData.data = data.WT(:,:,timeIdxs(i));
+                    elseif ~isempty(plotsPrms.FreqResolution)  % redundant check
+                        freqLabel = num2str(data.Fa(freqIdxs(i)));
+                        subPlotData.figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' freqLabel ' Hz]'];
+                        subPlotData.title = [freqLabel ' Hz'];
+                        subPlotData.data = data.WT(:,freqIdxs(i),:);
                     end
+
+                    prms.subPlotsData.Value{i} = subPlotData;
+                    hFigureSubPlot = subplot(prms.nSubPlotsMatrixRows, prms.nSubPlotsMatrixCols, i);
+                    hFigureSubPlot.UserData = struct('FigureSubPlotIdx', i);
+                    WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
+                            subPlotData.data, data.chanlocs, 'electrodes', labels, 'maplimits',...
+                            plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
+                    title(subPlotData.title, 'FontSize', 8, 'FontWeight', 'bold');
                 end
             end
 
@@ -278,69 +284,72 @@ end
 
 function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
     try
-        crntPoint = hMainPlot.CurrentPoint;
-        position = hMainPlot.Position; 
-        subPlotWidth = position(4) / prms.nRows;
-        xBound = (1:prms.nRows) * subPlotWidth;
-        subPlotHeight = xBound(3) / prms.nCols;
-        yBound = (1:prms.nCols) * subPlotHeight;
-        row = length(find(crntPoint(2) < xBound));
-        col = length(find(crntPoint(1) < yBound));
-        if row == 0 || col == 0 
+        hGraphicObject = gca;
+        if ~isfield(hGraphicObject.UserData, 'FigureSubPlotIdx')
+            figure(hMainPlot);
             return
         end
-        subPlotIdx = prms.subPlotsIdxs(row, col);
-        if subPlotIdx > prms.nSubPlots
+        subPlotIdx = hGraphicObject.UserData.FigureSubPlotIdx;
+        % Determine if the subPlot has been already drawed, in which case put it in foreground and exit
+        openSubPlots = hMainPlot.UserData.OpenSubPlots;
+        figureTag = [ 'SubPlot.' num2str(subPlotIdx) ];
+        hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag), openSubPlots));
+        if ~isempty(hFigure)
+            figure(hFigure);
             return
         end
-
         % Determine position and size of the new subplot which opens on screen
-        % screenSize = get(groot, 'screensize');
-        % whScreenRatio =  screenSize(3)/screenSize(4);
-        % widthOnScreen = max(0.5 / sqrt(length(prms.x)), 0.15);
-        % heightOnScreen = widthOnScreen * whScreenRatio * subPlotAxesPos(4) / subPlotAxesPos(3);
-        % xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
-        % ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
-        % xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
-        % yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
+        row = ceil(subPlotIdx / prms.nSubPlotsMatrixCols);
+        col = subPlotIdx - (row-1) * prms.nSubPlotsMatrixCols;
         
-        % position = [ ...
-        %     (xOnScreen * (1 - widthOnScreen) * screenSize(3)) + 1 ... 
-        %     (yOnScreen * (1 - heightOnScreen) * screenSize(4)) + 1 ...
-        %     (widthOnScreen * screenSize(3)) ...
-        %     (heightOnScreen * screenSize(4)) ...
-        % ];
+        screenSize = get(groot, 'screensize');
+        whScreenRatio = screenSize(3)/screenSize(4);
+        if prms.nSubPlotsMatrixCols > prms.nSubPlotsMatrixRows 
+            widthOnScreen = screenSize(3) / prms.nSubPlotsMatrixCols;
+            heightOnScreen = (widthOnScreen / whScreenRatio) / prms.whSubPlotRatio;
+            xOnScreen = screenSize(3) - widthOnScreen * (prms.nSubPlotsMatrixCols - col + 1);
+            yOnScreen = screenSize(4) - screenSize(4)/prms.nSubPlotsMatrixRows * row; 
+        else
+            heightOnScreen = screenSize(4) / prms.nSubPlotsMatrixRows;
+            widthOnScreen = heightOnScreen * prms.whSubPlotRatio * whScreenRatio;
+            xOnScreen = screenSize(3) - screenSize(3)/prms.nSubPlotsMatrixCols * (prms.nSubPlotsMatrixCols - col + 1);
+            yOnScreen = screenSize(4) - heightOnScreen * row;   
+        end   
+        subPlotPosition = [ xOnScreen yOnScreen widthOnScreen heightOnScreen ];
+   
+        subPlotData = prms.subPlotsData.Value{subPlotIdx};
+        data = prms.data.Value{subPlotData.conditionIdx};
 
-        hFigure = figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
+        hFigure = figure('NumberTitle', 'off', ...
+            'Name', subPlotData.figureName, ...
+            'ToolBar','none', ...
+            'Position', subPlotPosition, ...
+            'Tag', figureTag);
+
         hMainPlot.UserData.OpenSubPlots = [hMainPlot.UserData.OpenSubPlots hFigure];
         hFigure.CloseRequestFcn = {@WTPlotUtils.childObjectCloseRequestCb, 'MainPlot', 'OpenSubPlots'};
         subPlotPrms = struct();
         subPlotPrms.MainPlot = hMainPlot;
+        subPlotPrms.OriginalPosition = subPlotPosition;
         hFigure.UserData = subPlotPrms;
 
         scale = prms.plotsPrms.Scale;
         xLabel = prms.xLabel;
 
-        if size(prms.data.WT, 3) > 1
-            topoplot(prms.data.WT(:,:,prms.timeIdxs(subPlotIdx)), ...
-                prms.data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
+        WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
+                subPlotData.data, data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
                 scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
-        elseif size(prms.data.WT, 2) > 1
-            topoplot(prms.data.WT(:,prms.freqIdxs(subPlotIdx),:), ...
-                prms.data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
-                scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
-        end
 
         pace = linspace(min(scale), max(scale), 64);
         pace = pace(2) - pace(1);
         colorBar = colorbar('peer', gca, 'YTick', sort([0 scale]));
-    
+        
         set(get(colorBar,'xlabel'), 'String', ...
             xLabel.String, 'Rotation', xLabel.Rotation, 'FontSize', 12, ...
             'FontWeight', 'bold', 'Position', [xLabel.Position 2 * pace]);
 
         set(colorBar, 'visible', 'on');
-        title(strcat(num2str(prms.data.tim(prms.timeIdxs(subPlotIdx))), 'ms'), 'FontSize', 12, 'FontWeight', 'bold');
+        title(subPlotData.title, 'FontSize', 12, 'FontWeight', 'bold');
     catch me
         WTLog().except(me);
     end 

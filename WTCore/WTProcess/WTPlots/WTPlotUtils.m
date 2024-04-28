@@ -1,7 +1,7 @@
 classdef WTPlotUtils
 
     methods(Static, Access=private)
-        
+
         function matVer = normalizedMatlabVersion()
             persistent vers
 
@@ -451,9 +451,14 @@ classdef WTPlotUtils
         % hChildrenObjects must be set by the caller.
         % To be used in pair with childObjectCloseRequestCb.
         function parentObjectCloseRequestCb(hObject, event, childrenObjField)
+            function closeChild(hChildObj)
+                if isvalid(hChildObj)
+                    close(hChildObj)
+                end
+            end
             try
                 hChildrenObjects = WTUtils.xGetField(hObject.UserData, childrenObjField);
-                arrayfun(@(hChildObj)close(hChildObj), hChildrenObjects); 
+                arrayfun(@closeChild, hChildrenObjects); 
                 WTUtils.xSetField('hObject.UserData', '[]', childrenObjField); 
             catch me
                 WTLog().except(me);

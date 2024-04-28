@@ -13,6 +13,8 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
         FreqMin
         FreqMax
         FreqResolution
+        TimeString
+        FreqString
      end
 
     methods
@@ -70,6 +72,10 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
             end
         end
 
+        function str = get.TimeString(o) 
+            str = regexprep(num2str(o.Time), '\s+', ':');
+        end
+
         function setFreqMin(o, value)
             o.Frequency(1) = value;
         end
@@ -112,6 +118,10 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
             if length(o.Frequency) > 2 
                 freqResolution = o.Frequency(2);
             end
+        end
+
+        function str = get.FreqString(o) 
+            str = regexprep(num2str(o.Frequency), '\s+', ':');
         end
 
         function success = validate(o, throwExcpt)
