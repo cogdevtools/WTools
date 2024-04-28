@@ -1,22 +1,25 @@
 classdef WTAppConfigGUI
 
     methods(Static)
-        function wtAppConfig = configureApplication(updateCurrent, persist)
+        function wtAppConfig = configureApplication(updateCurrent, persist, warnReload)
             updateCurrent = nargin > 0 && updateCurrent;
             persist = nargin > 1 && persist;
+            warnReload =  nargin > 2 && warnReload;
             wtLog = WTLog();
-            wtProject = WTProject();
-            
+            wtAppConfig = [];
+
             if updateCurrent
-                wtAppConfig = copy(WTAppConfig());
+                wtAppConfigCrnt = WTAppConfig();
             else
-                [wtAppConfig, success] = WTAppConfig(false).load(false);
+                [wtAppConfigCrnt, success] = WTAppConfig(false).load(false);
                 if ~success
-                    wtProject.notifyErr([], 'Failed load the application configuration!');
+                    WTUtils.errDlg('Application configuration', 'Failed load the application configuration!');
                     return
                 end
             end
 
+            wtAppConfig = copy(wtAppConfigCrnt);
+            
             cbPrjLog = [ ...
                 'status = ''off'';' ...
                 'if get(findobj(gcbf, ''tag'', ''kPrjLog''), ''value''),' ... 
@@ -33,8 +36,6 @@ classdef WTAppConfigGUI
             logLvlStrs = WTLog.LevelStrs;   
             prjLogLvl = wtAppConfig.ProjectLogLevel;
             stdLogLvl = wtAppConfig.DefaultStdLogLevel;
-            enablePrjLogOpt = WTUtils.ifThenElse(wtAppConfig.ProjectLog, 'on', 'off');
-            enableStdLogOpt = WTUtils.ifThenElse(wtAppConfig.MuteStdLog, 'off', 'on');
 
             answer = { ...
                 wtAppConfig.ShowSplashScreen ...
@@ -46,28 +47,35 @@ classdef WTAppConfigGUI
                 stdLogLvl ...
             };
 
-            parameters = { ...
-                { 'style' 'text'      'string' 'Show splash screen' } ...
-                { 'style' 'checkbox'  'value'  answer{1,1} } ...
-                { 'style' 'text'      'string' 'Plots color map' } ...
-                { 'style' 'edit'      'string' answer{1,2} }...
-                { 'style' 'text'      'string' 'Project log' } ...
-                { 'style' 'checkbox'  'value'  answer{1,3} 'tag' 'kPrjLog' 'callback' cbPrjLog } ...
-                { 'style' 'text'      'string' 'Project log level' 'tag' 'prjLogLvlTxt' 'enable' enablePrjLogOpt } ...
-                { 'style' 'popupmenu' 'string' logLvlStrs 'value' answer{1,4} 'tag' 'prjLogLvl' 'enable' enablePrjLogOpt }...
-                { 'style' 'text'      'string' 'Mute standard log'  } ...
-                { 'style' 'checkbox'  'value'  answer{1,5} 'tag' 'kStdLogMute' 'callback' cbMuteStdLog } ...
-                { 'style' 'text'      'string' 'Colorised standard log' 'tag' 'stdLogColorTxt' } ...
-                { 'style' 'checkbox'  'value'  answer{1,6} 'tag' 'stdLogColor' 'enable' enableStdLogOpt } ...
-                { 'style' 'text'      'string' 'Default standard log level' 'tag' 'stdLogLvlTxt' 'enable' enableStdLogOpt } ...
-                { 'style' 'popupmenu' 'string' logLvlStrs 'value' answer{1,7} 'tag' 'stdLogLvl' 'enable' enableStdLogOpt } ...
-            };
+            function parameters = setParameters()
+                enablePrjLogOpt = WTUtils.ifThenElse(wtAppConfig.ProjectLog, 'on', 'off');
+                enableStdLogOpt = WTUtils.ifThenElse(wtAppConfig.MuteStdLog, 'off', 'on');
+                
+                parameters = { ...
+                    { 'style' 'text'      'string' 'Show splash screen' } ...
+                    { 'style' 'checkbox'  'value'  answer{1,1} } ...
+                    { 'style' 'text'      'string' 'Plots color map' } ...
+                    { 'style' 'edit'      'string' answer{1,2} }...
+                    { 'style' 'text'      'string' 'Project log' } ...
+                    { 'style' 'checkbox'  'value'  answer{1,3} 'tag' 'kPrjLog' 'callback' cbPrjLog } ...
+                    { 'style' 'text'      'string' 'Project log level' 'tag' 'prjLogLvlTxt' 'enable' enablePrjLogOpt } ...
+                    { 'style' 'popupmenu' 'string' logLvlStrs 'value' answer{1,4} 'tag' 'prjLogLvl' 'enable' enablePrjLogOpt }...
+                    { 'style' 'text'      'string' 'Mute standard log'  } ...
+                    { 'style' 'checkbox'  'value'  answer{1,5} 'tag' 'kStdLogMute' 'callback' cbMuteStdLog } ...
+                    { 'style' 'text'      'string' 'Colorised standard log' 'tag' 'stdLogColorTxt' } ...
+                    { 'style' 'checkbox'  'value'  answer{1,6} 'tag' 'stdLogColor' 'enable' enableStdLogOpt } ...
+                    { 'style' 'text'      'string' 'Default standard log level' 'tag' 'stdLogLvlTxt' 'enable' enableStdLogOpt } ...
+                    { 'style' 'popupmenu' 'string' logLvlStrs 'value' answer{1,7} 'tag' 'stdLogLvl' 'enable' enableStdLogOpt } ...
+                };
+            end
             
             geometry = { [0.6 0.4] [0.6 0.4] [0.6 0.4] [0.6 0.4] [0.6 0.4] [0.6 0.4] [0.6 0.4] };
             success = false;
+            anyChange = false;
 
             while ~success
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set application configuration');
+                parameters = setParameters();
+                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'WTools configuration');
                 
                 if isempty(answer)
                     wtAppConfig = [];
@@ -82,14 +90,23 @@ classdef WTAppConfigGUI
                     wtAppConfig.MuteStdLog = answer{1,5};
                     wtAppConfig.ColorizedLog = answer{1,6};
                     wtAppConfig.DefaultStdLogLevel = answer{1,7};
+                    anyChange = ~wtAppConfigCrnt.equalTo(wtAppConfig);
                     success = true;
                 catch me
                     wtLog.except(me);
                 end
-                
+
                 if ~success
                     WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                elseif wtAppConfig.MuteStdLog && ~WTUtils.eeglabYesNoDlg('Confirm parameter', ...
+                    'Muting standard log might hide important information! Continue?')
+                    success = false;
+                    anyChange = false;
                 end
+            end
+
+            if ~anyChange
+                return
             end
 
             if updateCurrent
@@ -97,9 +114,10 @@ classdef WTAppConfigGUI
             end
 
             if persist && ~wtAppConfig.persist()
-                wtProject.notifyErr([], 'Failed to save the application configuration!');
+                WTUtils.errDlg('Application configuration', 'Failed to save the application configuration!');
                 wtAppConfig = [];
-                return
+            elseif warnReload && WTSession().IsOpen
+                WTUtils.wrnDlg('Application configuration', 'Quit and open again wtools to load the updated configuration');
             end
         end
     end

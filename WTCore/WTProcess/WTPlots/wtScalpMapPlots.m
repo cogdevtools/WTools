@@ -64,7 +64,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     interactive = wtProject.Interactive;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 4);
+        mustBeGreaterThanOrEqual(nargin, 3);
         WTValidations.mustBeAStringOrChar(subject);
         WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot, 1, -1, 0);
         subject = char(subject);
@@ -146,29 +146,48 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin) : data.Fa(end);
     end
 
-    allChannelsLabels = {data.chanlocs.labels}';
+    peripheralElectrodes = WTUtils.ifThenElse(plotsPrms.PeripheralElectrodes, 1, 0.5);
+    contours = WTUtils.ifThenElse(plotsPrms.Contours, 6, 0);
+    labels = WTUtils.ifThenElse(plotsPrms.ElectrodesLabel, 'labels', 'on');
+    nSubPlots = WTUtils.ifThenElse(isempty(plotsPrms.TimeResolution), 1, length(timeIdxs));
+    nSubPlots = WTUtils.ifThenElse(isempty(plotsPrms.FreqResolution), nSubPlots, length(freqIdxs));
 
     wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
-   
+
     try
         % The width / height ratio of the main figure
         figureWHRatio = 1; 
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
-        % Create struct to store all the useful params used here and by the callbacks
-        prms = struct();
-        prms.timeIdxs = timeIdxs;
-        prms.freqIdxs = freqIdxs;
-        prms.downsampleFactor = downsampleFactor;
-        prms.channelsToPlotIdxs = channelsToPlotIdxs;
-        prms.plotsPrms = copy(plotsPrms);
-        prms.subPlotRelWidth = 0.1;
-        prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
-        prms.xLabel = WTPlotUtils.getXLabelParams(logFlag);
-        prms.colorMap =  WTPlotUtils.getPlotsColorMap();
-        
-        for cnd = 1: nConditionsToPlot
+        xLabel = WTPlotUtils.getXLabelParams(logFlag);
+
+        if nSubPlots > 1
+            % Matrix of indexes of the scalpmaps
+            nCols = ceil(sqrt(nSubPlots));
+            nRows = ceil(nSubPlots / nCols);
+            subPlotsIdxs = reshape(1:nRows * nCols, nCols, nRows)';
+            subPlotsIdxs = flip(subPlotsIdxs, 1);
+            % Create struct to store all the useful params used here and by the callbacks
+            prms = struct();
+            prms.timeIdxs = timeIdxs;
+            prms.freqIdxs = freqIdxs;
+            prms.downsampleFactor = downsampleFactor;
+            prms.plotsPrms = copy(plotsPrms);
+            prms.subPlotRelWidth = 0.1;
+            prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
+            prms.xLabel = xLabel;
+            prms.colorMap = WTPlotUtils.getPlotsColorMap();
+            prms.contours = contours;
+            prms.labels = labels;
+            prms.peripheralElectrodes = peripheralElectrodes;
+            prms.nSubPlots = nSubPlots;
+            prms.nRows = nRows;
+            prms.nCols = nCols;
+            prms.subPlotsIdxs = subPlotsIdxs;
+        end
+
+        for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
             [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
@@ -181,9 +200,51 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
-           % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            prms.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            hFigure = figure('NumberTitle', 'off', 'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
+            mainPlots = [mainPlots hFigure];
+
+            % Convert the data back to non-log scale straight in percent change in case logFlag is set
+            data.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             
+            if ~isempty(plotsPrms.TimeResolution)
+                % Average along times
+                data.WT = mean(data.WT(:,:,timeIdxs), 3);
+            elseif ~isempty(plotsPrms.FreqResolution)
+                % Average along frequencies
+                data.WT = mean(data.WT(:,freqIdxs,:), 2);
+            end
+           
+            if nSubPlots == 1
+                topoplot(data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
+                        plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
+                pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
+                pace = pace(2) - pace(1);
+                colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
+                set(get(colorBar,'xlabel'), 'String', xLabel.String, 'FontSize', 12, ...
+                    'FontWeight', 'bold', 'Rotation', xLabel.Rotation, 'Position', [xLabel.Position 2 * pace]);
+            else
+                hFigure.UserData.OpenSubPlots = [];
+                hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
+                prms.data = data;
+
+                for i = 1:nSubPlots        
+                    subplot(nRows, nCols, i);
+    
+                    if size(data.WT, 3) > 1
+                        topoplot(data.WT(:,:,timeIdxs(i)), data.chanlocs, 'electrodes', labels, 'maplimits',...
+                            plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
+                        title(strcat(num2str(data.tim(timeIdxs(i))), 'ms'), 'FontSize', 8, 'FontWeight', 'bold');
+                        figure(hFigure);
+                        hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
+                    elseif size(data. WT, 2) > 1
+                        topoplot(data.WT(:,freqIdxs(i),:), data.chanlocs, 'electrodes', labels, 'maplimits',...
+                            plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
+                        title(strcat(num2str(data.Fa(freqIdxs(i))), 'Hz'), 'FontSize', 8, 'FontWeight', 'bold');
+                        figure(hFigure);
+                        hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
+                    end
+                end
+            end
 
             wtLog.contextOff();
         end
@@ -196,7 +257,6 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     WTPlotUtils.waitUIs(mainPlots);
     wtLog.info('Plotting done.');
 end
-
 
 function success = setScalpMapPlotsParams(logFlag)
     success = false;
@@ -214,6 +274,76 @@ function success = setScalpMapPlotsParams(logFlag)
 
     wtProject.Config.ScalpMapPlots = plotsPrms;
     success = true;
+end
+
+function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
+    try
+        crntPoint = hMainPlot.CurrentPoint;
+        position = hMainPlot.Position; 
+        subPlotWidth = position(4) / prms.nRows;
+        xBound = (1:prms.nRows) * subPlotWidth;
+        subPlotHeight = xBound(3) / prms.nCols;
+        yBound = (1:prms.nCols) * subPlotHeight;
+        row = length(find(crntPoint(2) < xBound));
+        col = length(find(crntPoint(1) < yBound));
+        if row == 0 || col == 0 
+            return
+        end
+        subPlotIdx = prms.subPlotsIdxs(row, col);
+        if subPlotIdx > prms.nSubPlots
+            return
+        end
+
+        % Determine position and size of the new subplot which opens on screen
+        % screenSize = get(groot, 'screensize');
+        % whScreenRatio =  screenSize(3)/screenSize(4);
+        % widthOnScreen = max(0.5 / sqrt(length(prms.x)), 0.15);
+        % heightOnScreen = widthOnScreen * whScreenRatio * subPlotAxesPos(4) / subPlotAxesPos(3);
+        % xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        % ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+        % xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
+        % yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
+        
+        % position = [ ...
+        %     (xOnScreen * (1 - widthOnScreen) * screenSize(3)) + 1 ... 
+        %     (yOnScreen * (1 - heightOnScreen) * screenSize(4)) + 1 ...
+        %     (widthOnScreen * screenSize(3)) ...
+        %     (heightOnScreen * screenSize(4)) ...
+        % ];
+
+        hFigure = figure('NumberTitle', 'off', 'Name', figurename, 'ToolBar','none');
+        hMainPlot.UserData.OpenSubPlots = [hMainPlot.UserData.OpenSubPlots hFigure];
+        hFigure.CloseRequestFcn = {@WTPlotUtils.childObjectCloseRequestCb, 'MainPlot', 'OpenSubPlots'};
+        subPlotPrms = struct();
+        subPlotPrms.MainPlot = hMainPlot;
+        hFigure.UserData = subPlotPrms;
+
+        scale = prms.plotsPrms.Scale;
+        xLabel = prms.xLabel;
+
+        if size(prms.data.WT, 3) > 1
+            topoplot(prms.data.WT(:,:,prms.timeIdxs(subPlotIdx)), ...
+                prms.data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
+                scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
+        elseif size(prms.data.WT, 2) > 1
+            topoplot(prms.data.WT(:,prms.freqIdxs(subPlotIdx),:), ...
+                prms.data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
+                scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
+        end
+
+        pace = linspace(min(scale), max(scale), 64);
+        pace = pace(2) - pace(1);
+        colorBar = colorbar('peer', gca, 'YTick', sort([0 scale]));
+    
+        set(get(colorBar,'xlabel'), 'String', ...
+            xLabel.String, 'Rotation', xLabel.Rotation, 'FontSize', 12, ...
+            'FontWeight', 'bold', 'Position', [xLabel.Position 2 * pace]);
+
+        set(colorBar, 'visible', 'on');
+        title(strcat(num2str(prms.data.tim(prms.timeIdxs(subPlotIdx))), 'ms'), 'FontSize', 12, 'FontWeight', 'bold');
+    catch me
+        WTLog().except(me);
+    end 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -181,7 +181,7 @@ classdef WTPlotUtils
 
         % getFiguresPositions() given a number of figures (nFigures), their width/height ratio (whRation)
         % their relative width (rWidth: [0,1]) and the relative width offset between each other (rWidthOffs) 
-        % returns a cell array sotring their position [x y w h] on screen. The positions are such that the 
+        % returns a cell array sorting their position [x y w h] on screen. The positions are such that the 
         % figures will appear along the screen diagonal, with a certain offset which depends on rWidthOffs
         % (although the function might correct rWidthOffs if the window fall off the screen). The window 
         % size is a constant.
@@ -195,15 +195,15 @@ classdef WTPlotUtils
             absSize = get(groot, 'screensize');
             WHRatio = absSize(3)/absSize(4);
             rHeight = rWidth * WHRatio / whRatio;
-            rWOffsMax = (1-rWidth)/nFigures;
-            rHOffsMax = (1-rHeight)/nFigures;
-            if rHOffsMax < rWOffsMax/WHRatio
+            rWOffsMax = (1-rWidth) / nFigures;
+            rHOffsMax = (1-rHeight) / nFigures;
+            if rHOffsMax < rWOffsMax / WHRatio
                 rWOffsMax = rHOffsMax / WHRatio;
             end
             rWOffs = min(rWidthOffs, rWOffsMax);
             rHOffs = rWOffs/WHRatio;
-            xC = (1-((nFigures-1)*rWOffs + rWidth))/2;
-            yC = 1-((1-((nFigures-1)*rHOffs + rHeight))/2)-rHeight;
+            xC = (1-((nFigures-1)*rWOffs + rWidth)) / 2;
+            yC = 1-((1-((nFigures-1)*rHOffs + rHeight)) / 2)-rHeight;
             positions = cell(1, nFigures);
             for i = 1:nFigures
                 xRel = xC + (i-1)*rWOffs;
@@ -356,7 +356,7 @@ classdef WTPlotUtils
                 paramsTime.NameMax = [objType, '.Time(end)'];
             end
             if ~isempty(srcPlotParams.TimeResolution) 
-                paramsTime.Resolution = srcPlotParams.Time(2);
+                paramsTime.Resolution = srcPlotParams.TimeResolution;
                 paramsTime.NameResolution = [objType, '.Time(2)'];
             end
 

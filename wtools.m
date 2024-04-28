@@ -36,8 +36,9 @@ function varargout = wtools(varargin)
     while i <= nargin
         if ischar(varargin{i})
             switch varargin{i}
+                case 'help'
                 case 'no-splash'
-                case 'force-close'
+                case 'close'
                 case 'configure'
                 otherwise
                     gui_State.gui_Callback = str2func(varargin{i});
@@ -61,58 +62,78 @@ function varargout = wtools(varargin)
 
         % BailOut has been to true set within wtools_CreateFcn if wtinit has failed...
         if hObject.UserData.BailOut
-            closereq();
+            quitApp(hObject);
             return
         end
-        wtAppConfig = WTAppConfig();
-        wtLog = WTLog();
-        showSplash = wtAppConfig.ShowSplashScreen;
-        forceClose = false;
+
+        wtoolsOpen = isfield(hObject.UserData, 'WToolsOpen');
+        help = false;
+        close = false;
+        showSplash = true;
         configure = false;
+        wtLog = [];
+
+        if wtoolsOpen 
+            wtLog = WTLog();
+        end
 
         try
-            i = 1;
-            while ~forceClose && i <= nargin-3
-                if ~ischar(varargin{i})
-                    wtLog.warn('Unexpected command line option: %s', num2str(varargin{i}));
-                    i = i+1;
-                    continue;
-                end
+            for i = 1:nargin-3
                 switch varargin{i}
+                    case 'help'
+                        help = true;
+                        break
                     case 'no-splash'
                         showSplash = false;
-                    case 'force-close'
-                        forceClose = true;
+                        break
+                    case 'close'
+                        close = true;
                         break
                     case 'configure'
                         configure = true;
                         break
+                    otherwise
+                        fprintf(2, 'WTools: some options were ignored as unknown!\n');
+                        fprintf(2, '        Run ''wtools help''...\n');
                 end
-                i = i+1;
             end
 
             if configure
-                forceClose = configureApp(hObject, handles);
-            end
-            if ~forceClose && ~any(strcmp(fieldnames(handles),'wtoolsOpen'))
-                if showSplash       
+                close = configureApp(hObject, handles) && ~wtoolsOpen;
+            elseif help 
+                displayHelp();
+                close = ~wtoolsOpen;
+            elseif ~wtoolsOpen
+                wtLog = WTLog();
+                wtLog.contextOn('Open');
+                WTSession().open();
+                wtAppConfig = WTAppConfig();
+
+                if showSplash && wtAppConfig.ShowSplashScreen       
                     wtSplash();
                 end
                 if ~WTUtils.eeglabDep()
-                    forceClose = true;
+                    close = true;
                 end
+                wtLog.reset();
             end
+
         catch me
-            wtLog.except(me);
-            forceClose = true;
+            try
+                wtLog.except(me);
+                wtLog.reset();
+            catch
+            end
+            close = true;
         end
-        
-        if forceClose
-            closereq();
-            return
+
+        if close
+            quitApp(hObject);
+            % return as hObject and the handles have been freed
+            return 
         end
-        
-        handles.wtoolsOpen = 1;
+
+        hObject.UserData.WToolsOpen = true;
         % Choose default command line output for wtools
         handles.output = hObject;
         % Update handles structure
@@ -515,19 +536,6 @@ function varargout = wtools(varargin)
             hObject.UserData.BailOut = true;
             return
         end
-        try
-            wtLog = WTLog();
-            wtLog.contextOn('Init');
-            WTSession().open();
-            wtLog.reset();
-        catch me
-            try
-                wtLog.except(me);
-                wtLog.reset();
-            catch
-            end
-            hObject.UserData.BailOut = true;
-        end
     
     % --- Executes during object deletion, before destroying properties.
     function WToolsMain_DeleteFcn(hObject, eventdata, handles)
@@ -561,10 +569,14 @@ function varargout = wtools(varargin)
         if strcmp(option, 'Continue')
             return
         end
-        % Hint: delete(hObject) closes the figure
-        closereq();
+        quitApp(hObject);
     
     % --- Utilities
+    function quitApp(hObject)
+        % hObject must be the handle to the figure... Do not use closereq() as it close the gcbf
+        % which is not necessarily the WTools figure.
+        delete(hObject);
+
     function restorePaths(hObject)
         userData = hObject.UserData;
         if isstruct(userData) && isfield(userData, 'PathsContext') && ~isempty(userData.PathsContext)
@@ -590,7 +602,7 @@ function varargout = wtools(varargin)
     
     function success = lock(hObject, handles)
         if any(strcmp(fieldnames(handles),'wtoolsLocked')) && handles.wtoolsLocked
-            WTUtils.wrnDlg('Blocked', 'There''s already an ongoing operation or a\ndialog is waiting for your response...');
+            WTUtils.wrnDlg('Blocked', 'There''s an ongoing operation or a\ndialog is waiting for your response...');
             success = false;
         else
             handles.wtoolsLocked = true;
@@ -603,14 +615,28 @@ function varargout = wtools(varargin)
         guidata(hObject, handles);
 
     function closeAppAfter = configureApp(hObject, handles)
+        closeAppAfter = false;
         if ~lock(hObject, handles)
             return
         end
-        wtAppConf = WTAppConfigGUI.configureApplication(false, true);
-        if ~isempty(wtAppConf)
-            WTUtils.wrnDlg('Configuration update', 'The change to the configuration will be reflected on the next execution');
-        end
+        WTAppConfigGUI.configureApplication(false, true, true);
         unlock(hObject, handles);
-        closeAppAfter = ~any(strcmp(fieldnames(handles), 'wtoolsOpen'));
-        
-        
+        closeAppAfter = true;
+
+    function displayHelp()
+        v = WTVersion();
+        help = {
+            '', ...
+            ['WTools v' v.getVersionStr() ' - ' v.getReleaseDateStr()], ... 
+            'Usage: wtools [ no-splash | configure | close | help ]', ...
+            '', ...
+            '       no-splash : do not display splash screen on start', ...  
+            '                   (when the relative configuration option is on)', ...   
+            '       configure : configure the application', ...
+            '       close     : force close the application', ...
+            '       help      : display this help', ...
+            '', ...
+        };
+        fprintf(1, [char(join(help, '\n')) '\n']);
+
+    

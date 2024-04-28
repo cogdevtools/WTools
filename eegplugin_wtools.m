@@ -53,32 +53,28 @@ function createWToolsMenu(parentMenu)
         'tag', 'WToolsRun', ...
         'userdata', 'startup:on');
 
-    wtMenuClose = uimenu(wtMenu, ...
-        'label', 'Close', ...
-        'tag', 'WToolsClose', ...
-        'userdata', 'startup:off');
+    % wtMenuClose = uimenu(wtMenu, ...
+    %     'label', 'Close', ...
+    %     'tag', 'WToolsClose', ...
+    %     'userdata', 'startup:on');
 
     wtMenuConfigure = uimenu(wtMenu, ...
         'label', 'Configure', ...
         'tag', 'WToolsConfigure', ...
         'userdata', 'startup:on');
 
-    set(wtMenuRun, 'callback', {@wtRun, wtMenuClose});
-    set(wtMenuClose, 'callback', @wtClose);
+    set(wtMenuRun, 'callback', @wtRun);
+    % set(wtMenuClose, 'callback', @wtClose);
     set(wtMenuConfigure, 'callback',  @wtConfigure);
 end
 
-function wtRun(~, ~, menuClose) 
+function wtRun(~, ~) 
     wtools('no-splash');
-    menuClose.Enable = true;
 end 
 
-function wtClose(menuClose, ~) 
-    if menuClose.Enable
-        wtools('force-close');
-        menuClose.Enable = false;
-    end
-end 
+% function wtClose(~, ~) 
+%     wtools('close');
+% end 
 
 function wtConfigure(~, ~) 
     wtools('configure');

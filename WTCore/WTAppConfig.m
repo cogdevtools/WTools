@@ -99,6 +99,18 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
             WTValidations.mustBeA(oo, ?WTAppConfig); 
             oo.copyFrom(o)
         end
+
+        function same = equalTo(o, oo)
+            WTValidations.mustBeA(oo, ?WTAppConfig); 
+            same = o.ShowSplashScreen == oo.ShowSplashScreen && ...
+                o.DefaultStdLogLevel == oo.DefaultStdLogLevel && ...
+                o.ProjectLogLevel == oo.ProjectLogLevel && ...
+                o.MuteStdLog == oo.MuteStdLog && ...
+                o.ProjectLog == oo.ProjectLog && ...
+                o.ColorizedLog == oo.ColorizedLog && ...
+                strcmp(o.PlotsColorMap, oo.PlotsColorMap);
+        end
+
         function o = default(o)
             o.ShowSplashScreen = false;
             o.DefaultStdLogLevel = WTLog.LevelInf;
@@ -118,7 +130,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         end
 
         function set.PlotsColorMap(o, colorMap)
-            o.PlotsColorMap = WTAppConfig.validColorMap(colorMap, true);
+            o.PlotsColorMap = WTAppConfig.validColorMap(strip(colorMap), true);
         end
 
         function [o, success] = load(o, throwExcpt)
