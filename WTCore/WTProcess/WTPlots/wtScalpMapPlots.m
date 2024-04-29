@@ -62,6 +62,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
 
     interactive = wtProject.Interactive;
+    maxNumSubPlots = 100;
 
     if ~interactive 
         mustBeGreaterThanOrEqual(nargin, 3);
@@ -79,7 +80,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         if isempty(fileNames)
             return
         end
-        if ~setScalpMapPlotsParams(logFlag) 
+        if ~setScalpMapPlotsParams(logFlag, maxNumSubPlots) 
             return
         end
     else
@@ -131,6 +132,11 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     if ~isempty(plotsPrms.TimeResolution)
         downsampleFactor = floor(plotsPrms.TimeResolution / (data.tim(2) - data.tim(1)));
         timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
+        n = length(timeIdxs);
+        if n > maxNumSubPlots
+            wtProject.notifyWrn([],'Too long time serie: can''t manage efficiently %d plots (max %d)', n, maxNumSubPlots);
+            return
+        end
     elseif ~isempty(plotsPrms.TimeMax)
         timeIdxs = find(data.tim == plotsPrms.TimeMin) : find(data.tim == plotsPrms.TimeMax);
     else 
@@ -140,6 +146,11 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     if ~isempty(plotsPrms.FreqResolution)
         downsampleFactor = floor(plotsPrms.FreqResolution / (data.Fa(2) - data.Fa(1)));
         freqIdxs = find(data.Fa == plotsPrms.FreqMin) : downsampleFactor : find(data.Fa == plotsPrms.FreqMax);
+        n = length(freqIdxs);
+        if n > maxNumSubPlots
+            wtProject.notifyWrn([],'Too long frequency serie: can''t manage efficiently %d plots (max %d)', n, maxNumSubPlots);
+            return
+        end
     elseif ~isempty(plotsPrms.FreqMax)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     else 
@@ -158,8 +169,8 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
     try
         % The width / height ratio of the main figure
-        figureWHRatio = 1; 
-        figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
+        [figureRelWidth, figureWHRatio] = getMainFigureRelativeSize(nSubPlots, 150);
+        figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, figureRelWidth, 0.1);
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
 
         if nSubPlots > 1
@@ -172,7 +183,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             prms.labels = labels;
             prms.peripheralElectrodes = peripheralElectrodes;
             prms.nSubPlots = nSubPlots;
-            prms.nSubPlotsMatrixCols = ceil(sqrt(nSubPlots));;
+            prms.nSubPlotsMatrixCols = ceil(sqrt(nSubPlots));
             prms.nSubPlotsMatrixRows = ceil(nSubPlots / prms.nSubPlotsMatrixCols);;
             prms.data = WTHandle(cell(1, nConditionsToPlot));
             prms.subPlotsData = WTHandle(cell(1, nSubPlots));
@@ -224,6 +235,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 hFigure.UserData.OpenSubPlots = [];
                 hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
                 prms.data.Value{cnd} = data;
+                wtLog.contextOn();
 
                 for i = 1:nSubPlots        
                     subPlotData = struct();
@@ -235,21 +247,27 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                         subPlotData.figureName = [figureNamePrefix '.[' timeLabel ' ms].[' plotsPrms.FreqString ' Hz]' ];
                         subPlotData.title = [timeLabel ' ms'];
                         subPlotData.data = data.WT(:,:,timeIdxs(i));
+                        wtLog.dbg('Plotting time %s ms', timeLabel);
                     elseif ~isempty(plotsPrms.FreqResolution)  % redundant check
                         freqLabel = num2str(data.Fa(freqIdxs(i)));
                         subPlotData.figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' freqLabel ' Hz]'];
                         subPlotData.title = [freqLabel ' Hz'];
                         subPlotData.data = data.WT(:,freqIdxs(i),:);
+                        wtLog.dbg('Plotting frequency %s Hz', freqLabel);
                     end
 
                     prms.subPlotsData.Value{i} = subPlotData;
-                    hFigureSubPlot = subplot(prms.nSubPlotsMatrixRows, prms.nSubPlotsMatrixCols, i);
+                    hFigure.NextPlot = 'new';
+                    hFigureSubPlot = subplot(prms.nSubPlotsMatrixRows, prms.nSubPlotsMatrixCols, i, 'Parent', hFigure);
                     hFigureSubPlot.UserData = struct('FigureSubPlotIdx', i);
                     WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
                             subPlotData.data, data.chanlocs, 'electrodes', labels, 'maplimits',...
                             plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
                     title(subPlotData.title, 'FontSize', 8, 'FontWeight', 'bold');
+                    figure(hFigure);
                 end
+
+                wtLog.contextOff();
             end
 
             wtLog.contextOff();
@@ -264,12 +282,12 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtLog.info('Plotting done.');
 end
 
-function success = setScalpMapPlotsParams(logFlag)
+function success = setScalpMapPlotsParams(logFlag, maxNumSubPlots)
     success = false;
     wtProject = WTProject();
     plotsPrms = copy(wtProject.Config.ScalpMapPlots);
 
-    if ~WTPlotsGUI.defineScalpMapPlotsSettings(plotsPrms, logFlag)
+    if ~WTPlotsGUI.defineScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
         return
     end
     
@@ -280,6 +298,15 @@ function success = setScalpMapPlotsParams(logFlag)
 
     wtProject.Config.ScalpMapPlots = plotsPrms;
     success = true;
+end
+
+function [relWidth, whRatio] = getMainFigureRelativeSize(nSubPlots, maxSubPlotWidth)
+    screenSize = get(groot, 'screensize');
+    nSubPlotsMatrixCols = ceil(sqrt(nSubPlots));
+    width = screenSize(3) / nSubPlotsMatrixCols;
+    relWidth = WTUtils.ifThenElse(width < maxSubPlotWidth, 1, ...
+        (maxSubPlotWidth * nSubPlotsMatrixCols) / screenSize(3));
+    whRatio = screenSize(3)/screenSize(4);
 end
 
 function mainPlotOnButtonDownCb(hMainPlot, ~, prms)

@@ -166,7 +166,7 @@ classdef WTLog < WTClass
 
         function delete(o)
             if isvalid(o)
-                o.closeStream()
+                o.closeStream();
             end
         end
 

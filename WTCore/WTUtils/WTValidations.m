@@ -233,7 +233,7 @@ classdef WTValidations
         end
 
         function mustBeInRange(v, vMin, vMax, includeMin, includeMax)
-            if ~WTValidations.isInRange(v, vMin, vMax, includeMin, includeMin)
+            if ~WTValidations.isInRange(v, vMin, vMax, includeMin, includeMax)
                 if includeMin brkMin = '['; else brkMin = '('; end
                 if includeMax brkMax = ']'; else brkMax = ')'; end
                 WTException.badValue(['Value must be numeric and in the range' brkMin num2str(vMin) ',' num2str(vMax) brkMax]).throw();
