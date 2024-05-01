@@ -2,24 +2,6 @@ classdef WTPlotUtils
 
     methods(Static, Access=private)
 
-        function matVer = normalizedMatlabVersion()
-            persistent vers
-
-            if ~isempty(vers)
-                matVer = vers;
-                return
-            end
-            % same as in eeglab's icadefs.m
-            vTemp = version();
-            pointIdxs = find(vTemp == '.');
-            if WTUtils.str2double(vTemp(pointIdxs(1)+1)) > 1 
-                vTemp = [ vTemp(1:pointIdxs(1)) '0' vTemp(pointIdxs(1)+1:end) ]; 
-                pointIdxs = find(vTemp == '.');
-            end
-            vers = WTUtils.str2double(vTemp(1:pointIdxs(2)-1));
-            matVer = vers;
-        end
-
         % Adjust 'edge' to the closest value in the ORDERED vector 'values'.
         function adjEdge = adjustEdge(edge, values)
             edgeL = values(find(values <= edge, 1, 'last'));
@@ -230,8 +212,7 @@ classdef WTPlotUtils
                 params.String = '\muV';
                 params.Rotation = 0;
             end
-            vers = WTPlotUtils.normalizedMatlabVersion();
-            params.Position = WTUtils.ifThenElse(vers < 8.04, 5, 2);
+            params.Position = WTUtils.ifThenElse(verLessThan('matlab', '8.4'), 5, 2);
         end
 
         function plotsColorMap = getPlotsColorMap()

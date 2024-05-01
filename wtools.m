@@ -25,6 +25,7 @@ function varargout = wtools(varargin)
     % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
+    guiPresets();
     gui_State = struct('gui_Name',       mfilename, ...
                        'gui_Singleton',  gui_Singleton, ...
                        'gui_OpeningFcn', @wtools_OpeningFcn, ...
@@ -639,4 +640,24 @@ function varargout = wtools(varargin)
         };
         fprintf(1, [char(join(help, '\n')) '\n']);
 
-    
+    function guiPresets() 
+        guiFontSize = 10;
+        textFontSize = 10;
+        
+        if ~verLessThan('matlab','8.4')
+            comp = computer;
+
+            if strcmpi(comp(1:3), 'MAC')
+                screenSize = get(0, 'ScreenSize');
+                retinaDisplay = screenSize(3) >= 1920;
+                guiFontSize  = 12;
+                textFontSize = 12;
+
+                if retinaDisplay
+                    guiFontSize = 14;
+                    textFontSize = 14;
+                end
+            end
+        end
+        set(0, 'defaulttextfontsize', textFontSize);
+        set(0, 'DefaultUicontrolFontSize', guiFontSize);
