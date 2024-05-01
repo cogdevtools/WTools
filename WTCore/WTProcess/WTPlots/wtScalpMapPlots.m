@@ -419,6 +419,14 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
 
         set(colorBar, 'visible', 'on');
         title(subPlotData.title, 'FontSize', 12, 'FontWeight', 'bold');
+
+        % Bring all open subplots to front
+        subPlots = hMainPlot.UserData.OpenSubPlots;
+        for i=1:length(subPlots)
+            if isvalid(subPlots(i))
+                figure(subPlots(i));
+            end
+        end
     catch me
         WTLog().except(me);
     end 
