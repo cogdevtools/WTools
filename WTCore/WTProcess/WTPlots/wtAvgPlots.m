@@ -211,7 +211,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             % Create axes for the main figure
             hFigureAxes = axes('position', [0 0 1 1]);
             hFigureAxes.Visible = 'off';
-            % Create label which display the sub plot name when hovering on it with the mouse
+            % Create label which displays the sub plot name when hovering on it with the mouse
             hWhichSubPlotAnnotation = annotation('textbox', [0.9, 0.95 .09 channelAnnotationHeight]);
             hWhichSubPlotAnnotation.Color = [1 0 0];
             hWhichSubPlotAnnotation.String = '';

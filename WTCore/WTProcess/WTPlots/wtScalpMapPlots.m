@@ -169,9 +169,10 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
     try
         % The width / height ratio of the main figure
-        [figureRelWidth, figureWHRatio] = getMainFigureRelativeSize(nSubPlots, 150);
+        [figureRelWidth, figureWHRatio] = getMainFigureRelativeSize(nSubPlots);
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, figureRelWidth, 0.1);
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        channelAnnotationHeight = 0.05;
 
         if nSubPlots > 1
             % Create struct to store all the useful params used here and by the callbacks
@@ -183,10 +184,10 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             prms.labels = labels;
             prms.peripheralElectrodes = peripheralElectrodes;
             prms.nSubPlots = nSubPlots;
-            prms.nSubPlotsMatrixCols = ceil(sqrt(nSubPlots));
-            prms.nSubPlotsMatrixRows = ceil(nSubPlots / prms.nSubPlotsMatrixCols);;
+            prms.nSubPlotsGridCols = ceil(sqrt(nSubPlots));
+            prms.nSubPlotsGridRows = ceil(nSubPlots / prms.nSubPlotsGridCols);;
             prms.data = WTHandle(cell(1, nConditionsToPlot));
-            prms.subPlotsData = WTHandle(cell(1, nSubPlots));
+            prms.subPlotsPrms = WTHandle(cell(1, nSubPlots));
         end
 
         for cnd = 1:nConditionsToPlot
@@ -204,10 +205,9 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
             figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
-            hFigure = figure('NumberTitle', 'off', 'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
-            hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
-            hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
-            hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'};
+            hFigure = figure('NumberTitle', 'off', ...
+                'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
+
             mainPlots(cnd) = hFigure;
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
@@ -232,9 +232,19 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 set(get(colorBar,'xlabel'), 'String', xLabel.String, 'FontSize', 12, ...
                     'FontWeight', 'bold', 'Rotation', xLabel.Rotation, 'Position', [xLabel.Position 2 * pace]);
             else
-                hFigure.UserData.OpenSubPlots = [];
-                hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
+                % Set annotation for multi-plots case
+                hWhichSubPlotAnnotation = annotation('textbox',[0.9, 0.95 .09 channelAnnotationHeight]);
+                hWhichSubPlotAnnotation.Color = [1 0 0];
+                hWhichSubPlotAnnotation.String = '';
+                hWhichSubPlotAnnotation.EdgeColor = 'none';
+                hWhichSubPlotAnnotation.HorizontalAlignment = 'right';
+                hWhichSubPlotAnnotation.VerticalAlignment = 'middle';
+                hWhichSubPlotAnnotation.FontName = 'Courier';
+                hWhichSubPlotAnnotation.FontSize = 15;
+                hWhichSubPlotAnnotation.FontWeight = 'bold';
+                
                 prms.data.Value{cnd} = data;
+                subPlotTiles = cell(1, nSubPlots);
                 wtLog.contextOn();
 
                 for i = 1:nSubPlots        
@@ -256,20 +266,36 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                         wtLog.dbg('Plotting frequency %s Hz', freqLabel);
                     end
 
-                    prms.subPlotsData.Value{i} = subPlotData;
+                    % Speed up sub plot tiles creation
                     hFigure.NextPlot = 'new';
-                    hFigureSubPlot = subplot(prms.nSubPlotsMatrixRows, prms.nSubPlotsMatrixCols, i, 'Parent', hFigure);
-                    hFigureSubPlot.UserData = struct('FigureSubPlotIdx', i);
+                    hSubPlotFigure = subplot(prms.nSubPlotsGridRows, prms.nSubPlotsGridCols, i, 'Parent', hFigure);
+
+                    hSubPlotFigure.UserData = struct('FigureSubPlotIdx', i);
                     WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
                             subPlotData.data, data.chanlocs, 'electrodes', labels, 'maplimits',...
                             plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
                     title(subPlotData.title, 'FontSize', 8, 'FontWeight', 'bold');
                     figure(hFigure);
+
+                    subPlotTiles{i} = hSubPlotFigure;
+                    prms.subPlotsPrms.Value{i} = subPlotData;
                 end
 
+                hFigure.Position = figuresPosition{cnd};
+
+                % Set main figure user data
+                hFigure.UserData.OpenSubPlots = [];
+                hFigure.UserData.Annotation = hWhichSubPlotAnnotation;
+                hFigure.UserData.SubPlotsPolys = cellfun(@(x)[ x(1), x(1)+x(3), x(1)+x(3), x(1); x(2), x(2), x(2)+x(4), x(2)+x(4) ], ...
+                    get([subPlotTiles{:}], 'position'), 'uniformoutput', false);
+                % Set callbacks
+                hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
+                hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
+                hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
+                hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'};
+                hFigure.WindowButtonMotionFcn = {@setSubPlotAnnotationSetCb, prms};
                 wtLog.contextOff();
             end
-
             wtLog.contextOff();
         end
     catch me
@@ -282,31 +308,52 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtLog.info('Plotting done.');
 end
 
-function success = setScalpMapPlotsParams(logFlag, maxNumSubPlots)
-    success = false;
-    wtProject = WTProject();
-    plotsPrms = copy(wtProject.Config.ScalpMapPlots);
 
-    if ~WTPlotsGUI.defineScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
-        return
-    end
-    
-    if ~plotsPrms.persist()
-        wtProject.notifyErr([], 'Failed to save 2D scalp map plots params');
-        return
+function setSubPlotAnnotationSetCb(hMainPlot, ~, prms)
+    cp = hMainPlot.CurrentPoint ./ hMainPlot.Position(3:4);
+    polys = hMainPlot.UserData.SubPlotsPolys;
+    in = cellfun(@(x)inpolygon(cp(1), cp(2), x(1,:)', x(2,:)'), polys);
+    text = hMainPlot.UserData.Annotation.String;
+    newText = '';
+
+    if any(in) 
+        subPlotData = prms.subPlotsPrms.Value{in};
+        newText = subPlotData.title;
     end
 
-    wtProject.Config.ScalpMapPlots = plotsPrms;
-    success = true;
+    if ~strcmp(text, newText)
+        hMainPlot.UserData.Annotation.String = newText;
+        drawnow();
+    end
 end
 
-function [relWidth, whRatio] = getMainFigureRelativeSize(nSubPlots, maxSubPlotWidth)
+function [relWidth, whRatio] = getMainFigureRelativeSize(nSubPlots)
     screenSize = get(groot, 'screensize');
-    nSubPlotsMatrixCols = ceil(sqrt(nSubPlots));
-    width = screenSize(3) / nSubPlotsMatrixCols;
+    maxSubPlotWidth = WTUtils.ifThenElse(nSubPlots == 1, screenSize(3)/2, screenSize(3)/4);
+    nSubPlotsGridCols = ceil(sqrt(nSubPlots));
+    width = screenSize(3) / nSubPlotsGridCols;
     relWidth = WTUtils.ifThenElse(width < maxSubPlotWidth, 1, ...
-        (maxSubPlotWidth * nSubPlotsMatrixCols) / screenSize(3));
+        (maxSubPlotWidth * nSubPlotsGridCols) / screenSize(3));
     whRatio = screenSize(3)/screenSize(4);
+end
+
+function position = getSubPlotPosition(row, col, nGridRows, nGridCols, whRatio) 
+    screenSize = get(groot, 'screensize');
+    whScreenRatio = screenSize(3)/screenSize(4);
+
+    if nGridCols > nGridRows 
+        widthOnScreen = screenSize(3) / nGridCols;
+        heightOnScreen = (widthOnScreen / whScreenRatio) / whRatio;
+        xOnScreen = screenSize(3) - widthOnScreen * (nGridCols - col + 1);
+        yOnScreen = screenSize(4) - screenSize(4)/nGridRows * row; 
+    else
+        heightOnScreen = screenSize(4) / nGridRows;
+        widthOnScreen = heightOnScreen * whRatio * whScreenRatio;
+        xOnScreen = screenSize(3) - screenSize(3)/nGridCols * (nGridCols - col + 1);
+        yOnScreen = screenSize(4) - heightOnScreen * row;   
+    end
+
+    position = [ xOnScreen yOnScreen widthOnScreen heightOnScreen ];   
 end
 
 function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
@@ -326,25 +373,12 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
             return
         end
         % Determine position and size of the new subplot which opens on screen
-        row = ceil(subPlotIdx / prms.nSubPlotsMatrixCols);
-        col = subPlotIdx - (row-1) * prms.nSubPlotsMatrixCols;
-        
-        screenSize = get(groot, 'screensize');
-        whScreenRatio = screenSize(3)/screenSize(4);
-        if prms.nSubPlotsMatrixCols > prms.nSubPlotsMatrixRows 
-            widthOnScreen = screenSize(3) / prms.nSubPlotsMatrixCols;
-            heightOnScreen = (widthOnScreen / whScreenRatio) / prms.whSubPlotRatio;
-            xOnScreen = screenSize(3) - widthOnScreen * (prms.nSubPlotsMatrixCols - col + 1);
-            yOnScreen = screenSize(4) - screenSize(4)/prms.nSubPlotsMatrixRows * row; 
-        else
-            heightOnScreen = screenSize(4) / prms.nSubPlotsMatrixRows;
-            widthOnScreen = heightOnScreen * prms.whSubPlotRatio * whScreenRatio;
-            xOnScreen = screenSize(3) - screenSize(3)/prms.nSubPlotsMatrixCols * (prms.nSubPlotsMatrixCols - col + 1);
-            yOnScreen = screenSize(4) - heightOnScreen * row;   
-        end   
-        subPlotPosition = [ xOnScreen yOnScreen widthOnScreen heightOnScreen ];
+        row = ceil(subPlotIdx / prms.nSubPlotsGridCols);
+        col = subPlotIdx - (row-1) * prms.nSubPlotsGridCols;
+        subPlotPosition = getSubPlotPosition(row, col, ...
+            prms.nSubPlotsGridRows, prms.nSubPlotsGridCols, prms.whSubPlotRatio);
    
-        subPlotData = prms.subPlotsData.Value{subPlotIdx};
+        subPlotData = prms.subPlotsPrms.Value{subPlotIdx};
         data = prms.data.Value{subPlotData.conditionIdx};
 
         hFigure = figure('NumberTitle', 'off', ...
@@ -380,6 +414,24 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
     catch me
         WTLog().except(me);
     end 
+end
+
+function success = setScalpMapPlotsParams(logFlag, maxNumSubPlots)
+    success = false;
+    wtProject = WTProject();
+    plotsPrms = copy(wtProject.Config.ScalpMapPlots);
+
+    if ~WTPlotsGUI.defineScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
+        return
+    end
+    
+    if ~plotsPrms.persist()
+        wtProject.notifyErr([], 'Failed to save 2D scalp map plots params');
+        return
+    end
+
+    wtProject.Config.ScalpMapPlots = plotsPrms;
+    success = true;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
