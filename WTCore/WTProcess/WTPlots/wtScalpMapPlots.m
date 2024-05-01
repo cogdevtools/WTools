@@ -206,7 +206,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
             hFigure = figure('NumberTitle', 'off', ...
-                'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
+                'Name', figureName, 'ToolBar', 'none', 'Units', 'normalized', 'Position', figuresPosition{cnd});
 
             mainPlots(cnd) = hFigure;
 
@@ -307,7 +307,7 @@ end
 
 
 function setSubPlotAnnotationSetCb(hMainPlot, ~, prms)
-    cp = hMainPlot.CurrentPoint ./ hMainPlot.Position(3:4);
+    cp = hMainPlot.CurrentPoint;
     polys = hMainPlot.UserData.SubPlotsPolys;
     in = cellfun(@(x)inpolygon(cp(1), cp(2), x(1,:)', x(2,:)'), polys);
     text = hMainPlot.UserData.Annotation.String;
@@ -338,19 +338,37 @@ function position = getSubPlotPosition(row, col, nGridRows, nGridCols, whRatio)
     screenSize = get(groot, 'screensize');
     whScreenRatio = screenSize(3)/screenSize(4);
 
-    if nGridCols > nGridRows 
-        widthOnScreen = screenSize(3) / nGridCols;
-        heightOnScreen = (widthOnScreen / whScreenRatio) / whRatio;
-        xOnScreen = screenSize(3) - widthOnScreen * (nGridCols - col + 1);
-        yOnScreen = screenSize(4) - screenSize(4)/nGridRows * row; 
+    if nGridCols * whScreenRatio / whRatio <= nGridRows
+        widthOnScreen = 1 / nGridCols;
+        heightOnScreen = (widthOnScreen * whScreenRatio) / whRatio;
+        xOnScreen = 1 - widthOnScreen * (nGridCols - col + 1);
+        yOnScreen = 1 - (1/nGridRows * row) + (1/nGridRows - heightOnScreen)/2; 
     else
-        heightOnScreen = screenSize(4) / nGridRows;
-        widthOnScreen = heightOnScreen * whRatio * whScreenRatio;
-        xOnScreen = screenSize(3) - screenSize(3)/nGridCols * (nGridCols - col + 1);
-        yOnScreen = screenSize(4) - heightOnScreen * row;   
+        heightOnScreen = 1 / nGridRows;
+        widthOnScreen = (heightOnScreen * whRatio) / whScreenRatio;
+        xOnScreen = 1 - (1/nGridCols * (nGridCols - col + 1)) + (1/nGridCols - widthOnScreen)/2;
+        yOnScreen = 1 - heightOnScreen * row;   
     end
 
     position = [ xOnScreen yOnScreen widthOnScreen heightOnScreen ];   
+end
+
+function bringSubPlotsToFront(hMainPlot)
+    subPlots = hMainPlot.UserData.OpenSubPlots;
+    for i=1:length(subPlots)
+        if isvalid(subPlots(i))
+            figure(subPlots(i));
+        end
+    end
+end
+
+function is = isPointInCurrentAxes(point)
+    hCurrentAxes = gca;
+    pos = hCurrentAxes.Position;
+    is = point(1) >= pos(1) && ...
+         point(1) <= pos(1) + pos(3) && ...
+         point(2) >= pos(2) && ...
+         point(2) <= pos(2) + pos(4); 
 end
 
 function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
@@ -363,12 +381,9 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         % If the click of the mouse is off any sub plot, gca returns the main plot current axes.
         % In such case we want to avoid opening the corresponding sub-plot so we have to check 
         % if the position of the moouse is inside the gca object. If not, we return.
-        if hGraphicObject == hMainPlot.CurrentAxes 
-            pt = hMainPlot.CurrentPoint ./ hMainPlot.Position(3:4);
-            pos = hGraphicObject.Position;
-            if pt(1) < pos(1) || pt(1) > pos(1) + pos(3) || pt(2) < pos(2) || pt(2) > pos(2) + pos(4) 
-                return
-            end
+        if hGraphicObject == hMainPlot.CurrentAxes && ...
+            ~isPointInCurrentAxes(hMainPlot.CurrentPoint)
+            return
         end
 
         subPlotIdx = hGraphicObject.UserData.FigureSubPlotIdx;
@@ -377,7 +392,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         figureTag = [ 'SubPlot.' num2str(subPlotIdx) ];
         hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag), openSubPlots));
         if ~isempty(hFigure)
-            figure(hFigure);
+            bringSubPlotsToFront(hMainPlot);
             return
         end
         % Determine position and size of the new subplot which opens on screen
@@ -392,6 +407,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         hFigure = figure('NumberTitle', 'off', ...
             'Name', subPlotData.figureName, ...
             'ToolBar','none', ...
+            'Units', 'normalized', ...
             'Position', subPlotPosition, ...
             'Tag', figureTag);
 
@@ -421,12 +437,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         title(subPlotData.title, 'FontSize', 12, 'FontWeight', 'bold');
 
         % Bring all open subplots to front
-        subPlots = hMainPlot.UserData.OpenSubPlots;
-        for i=1:length(subPlots)
-            if isvalid(subPlots(i))
-                figure(subPlots(i));
-            end
-        end
+        bringSubPlotsToFront(hMainPlot);
     catch me
         WTLog().except(me);
     end 
