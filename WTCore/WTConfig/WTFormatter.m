@@ -12,7 +12,7 @@ classdef WTFormatter
 
     methods(Static)
 
-        function txt = StringCellsField(fieldName, cells)
+        function txt = stringCellsField(fieldName, cells)
             try
                 quoted = WTUtils.quoteMany(cells{:});
                 content = char(join(quoted, ' '));
@@ -23,11 +23,11 @@ classdef WTFormatter
             end   
         end
 
-        function txt = StringCellsFieldArgs(fieldName, varargin)
-            txt = WTFormatter.StringCellsField(fieldName, varargin);
+        function txt = stringCellsFieldArgs(fieldName, varargin)
+            txt = WTFormatter.stringCellsField(fieldName, varargin);
         end
 
-        function txt = IntCellsField(fieldName, cells)
+        function txt = intCellsField(fieldName, cells)
             if isempty(cells)
                 txt = sprintf('%s = { };', fieldName);
                 return
@@ -41,11 +41,11 @@ classdef WTFormatter
             end   
         end
 
-        function txt = IntCellsFieldArgs(fieldName, varargin)
-            txt = WTFormatter.IntCellsField(fieldName, varargin);
+        function txt = intCellsFieldArgs(fieldName, varargin)
+            txt = WTFormatter.intCellsField(fieldName, varargin);
         end
 
-        function txt = GenericCellsFieldArgs(fieldName, varargin)
+        function txt = genericCellsFieldArgs(fieldName, varargin)
             if isempty(varargin)
                 txt = sprintf('%s = { };', fieldName);
                 return

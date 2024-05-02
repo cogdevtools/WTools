@@ -47,10 +47,10 @@ classdef WTAppConfigGUI
                 stdLogLvl ...
             };
 
-            function parameters = setParameters()
+            function parameters = setParameters(answer)
                 enablePrjLogOpt = WTUtils.ifThenElse(wtAppConfig.ProjectLog, 'on', 'off');
                 enableStdLogOpt = WTUtils.ifThenElse(wtAppConfig.MuteStdLog, 'off', 'on');
-                
+
                 parameters = { ...
                     { 'style' 'text'      'string' 'Show splash screen' } ...
                     { 'style' 'checkbox'  'value'  answer{1,1} } ...
@@ -74,7 +74,7 @@ classdef WTAppConfigGUI
             anyChange = false;
 
             while ~success
-                parameters = setParameters();
+                parameters = setParameters(answer);
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'WTools configuration');
                 
                 if isempty(answer)

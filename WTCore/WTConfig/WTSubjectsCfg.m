@@ -68,8 +68,8 @@ classdef WTSubjectsCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt1 = WTFormatter.StringCellsField(o.FldSubjects, o.SubjectsList);
-            txt2 = WTFormatter.StringCellsField(o.FldFiles, o.FilesList);
+            txt1 = WTFormatter.stringCellsField(o.FldSubjects, o.SubjectsList);
+            txt2 = WTFormatter.stringCellsField(o.FldFiles, o.FilesList);
             success = ~any(cellfun(@isempty,{txt1 txt2})) && o.write(txt1,txt2);
         end
     end

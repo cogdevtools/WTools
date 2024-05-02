@@ -47,7 +47,7 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.IntCellsFieldArgs(o.FldDefaultAnswer, o.UseAllSubjects, o.PerSubjectAgerage, o.Log10Enable, o.EvokedOscillations);
+            txt = WTFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.UseAllSubjects, o.PerSubjectAgerage, o.Log10Enable, o.EvokedOscillations);
             success = ~isempty(txt) && o.write(txt);
         end
     end

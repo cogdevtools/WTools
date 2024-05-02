@@ -53,7 +53,7 @@
 % define plot params
 % checkDiffAndGrandAvg
 % laoad first file to fix params
-function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
+function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -80,7 +80,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         if isempty(fileNames)
             return
         end
-        if ~setScalpMapPlotsParams(logFlag, maxNumSubPlots) 
+        if ~set2DScalpMapPlotsParams(logFlag, maxNumSubPlots) 
             return
         end
     else
@@ -123,11 +123,11 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
 
     [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{1}, measure);
-    if ~success || ~WTPlotUtils.adjustScalpMapPlotTimeFreqRanges(wtProject.Config.ScalpMapPlots, data) 
+    if ~success || ~WTPlotUtils.adjustScalpMapPlotTimeFreqRanges(wtProject.Config.TwoDimensionalScalpMapPlots, data) 
         return
     end
 
-    plotsPrms = wtProject.Config.ScalpMapPlots;
+    plotsPrms = wtProject.Config.TwoDimensionalScalpMapPlots;
 
     if ~isempty(plotsPrms.TimeResolution)
         downsampleFactor = floor(plotsPrms.TimeResolution / (data.tim(2) - data.tim(1)));
@@ -140,7 +140,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     elseif ~isempty(plotsPrms.TimeMax)
         timeIdxs = find(data.tim == plotsPrms.TimeMin) : find(data.tim == plotsPrms.TimeMax);
     else 
-        timeIdxs = find(data.tim == plotsPrms.TimeMin) : data.tim(end);
+        timeIdxs = find(data.tim == plotsPrms.TimeMin);
     end
 
     if ~isempty(plotsPrms.FreqResolution)
@@ -154,7 +154,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     elseif ~isempty(plotsPrms.FreqMax)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     else 
-        freqIdxs = find(data.Fa == plotsPrms.FreqMin) : data.Fa(end);
+        freqIdxs = find(data.Fa == plotsPrms.FreqMin);
     end
 
     peripheralElectrodes = WTUtils.ifThenElse(plotsPrms.PeripheralElectrodes, 1, 0.5);
@@ -170,7 +170,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     try
         % The width / height ratio of the main figure
         [figureRelWidth, figureWHRatio] = getMainFigureRelativeSize(nSubPlots);
-        figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, figureRelWidth, 0.1);
+        figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, figureRelWidth, 0.1, true);
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
         channelAnnotationHeight = 0.05;
 
@@ -223,7 +223,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             end
            
             if nSubPlots == 1
-                WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
+                WTUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                         data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
                         plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
                 pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
@@ -271,7 +271,7 @@ function wtScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                     hSubPlotFigure = subplot(prms.nSubPlotsGridRows, prms.nSubPlotsGridCols, i, 'Parent', hFigure);
 
                     hSubPlotFigure.UserData = struct('FigureSubPlotIdx', i);
-                    WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
+                    WTUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                             subPlotData.data, data.chanlocs, 'electrodes', labels, 'maplimits',...
                             plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
                     title(subPlotData.title, 'FontSize', 8, 'FontWeight', 'bold');
@@ -326,7 +326,7 @@ end
 
 function [relWidth, whRatio] = getMainFigureRelativeSize(nSubPlots)
     screenSize = get(groot, 'screensize');
-    maxSubPlotWidth = WTUtils.ifThenElse(nSubPlots == 1, screenSize(3)/2, screenSize(3)/4);
+    maxSubPlotWidth = WTUtils.ifThenElse(nSubPlots == 1, screenSize(3)/3, screenSize(3)/6);
     nSubPlotsGridCols = ceil(sqrt(nSubPlots));
     width = screenSize(3) / nSubPlotsGridCols;
     relWidth = WTUtils.ifThenElse(width < maxSubPlotWidth, 1, ...
@@ -362,15 +362,6 @@ function bringSubPlotsToFront(hMainPlot)
     end
 end
 
-function is = isPointInCurrentAxes(point)
-    hCurrentAxes = gca;
-    pos = hCurrentAxes.Position;
-    is = point(1) >= pos(1) && ...
-         point(1) <= pos(1) + pos(3) && ...
-         point(2) >= pos(2) && ...
-         point(2) <= pos(2) + pos(4); 
-end
-
 function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
     try
         hGraphicObject = gca;
@@ -382,7 +373,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         % In such case we want to avoid opening the corresponding sub-plot so we have to check 
         % if the position of the moouse is inside the gca object. If not, we return.
         if hGraphicObject == hMainPlot.CurrentAxes && ...
-            ~isPointInCurrentAxes(hMainPlot.CurrentPoint)
+            ~WTPlotUtils.isPointInCurrentAxes(hMainPlot.CurrentPoint)
             return
         end
 
@@ -421,7 +412,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         scale = prms.plotsPrms.Scale;
         xLabel = prms.xLabel;
 
-        WTUtils.eeglabRun(WTLog.LevelDbg, true, 'topoplot', ...
+        WTUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                 subPlotData.data, data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
                 scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
 
@@ -443,12 +434,12 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
     end 
 end
 
-function success = setScalpMapPlotsParams(logFlag, maxNumSubPlots)
+function success = set2DScalpMapPlotsParams(logFlag, maxNumSubPlots)
     success = false;
     wtProject = WTProject();
-    plotsPrms = copy(wtProject.Config.ScalpMapPlots);
+    plotsPrms = copy(wtProject.Config.TwoDimensionalScalpMapPlots);
 
-    if ~WTPlotsGUI.defineScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
+    if ~WTPlotsGUI.define2DScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
         return
     end
     
@@ -457,6 +448,6 @@ function success = setScalpMapPlotsParams(logFlag, maxNumSubPlots)
         return
     end
 
-    wtProject.Config.ScalpMapPlots = plotsPrms;
+    wtProject.Config.TwoDimensionalScalpMapPlots = plotsPrms;
     success = true;
 end

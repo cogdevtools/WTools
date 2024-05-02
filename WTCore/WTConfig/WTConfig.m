@@ -22,8 +22,8 @@ classdef WTConfig < matlab.mixin.Copyable
         AverageStdErrPlots WTAvgStdErrPlotsCfg
         ChannelsAveragePlots WTChansAvgPlotsCfg
         ChannelsAverageStdErrPlots WTChansAvgStdErrPlotsCfg
-        ScalpMapPlots WTScalpMapPlotsCfg
-        ThreeDimensionsScalpMapPlots WT3DScalpMapPlotsCfg
+        TwoDimensionalScalpMapPlots WT2DScalpMapPlotsCfg
+        ThreeDimensionalScalpMapPlots WT3DScalpMapPlotsCfg
     end
 
     properties(SetAccess=private,GetAccess=public)
@@ -53,8 +53,8 @@ classdef WTConfig < matlab.mixin.Copyable
             o.AverageStdErrPlots.default();
             o.ChannelsAveragePlots.default();
             o.ChannelsAverageStdErrPlots.default();
-            o.ScalpMapPlots.default();
-            o.ThreeDimensionsScalpMapPlots.default();
+            o.TwoDimensionalScalpMapPlots.default();
+            o.ThreeDimensionalScalpMapPlots.default();
         end
 
         function success = load(o) 
@@ -149,12 +149,12 @@ classdef WTConfig < matlab.mixin.Copyable
                 wtLog.err('Failed to load configuration file: ''%s'' ', o.ChannelsAverageStdErrPlots.getFileName());
                 return
             end
-            if o.ScalpMapPlots.exist() && ~o.ScalpMapPlots.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.ScalpMapPlots.getFileName());
+            if o.TwoDimensionalScalpMapPlots.exist() && ~o.TwoDimensionalScalpMapPlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.TwoDimensionalScalpMapPlots.getFileName());
                 return
             end
-            if o.ThreeDimensionsScalpMapPlots.exist() && ~o.ThreeDimensionsScalpMapPlots.load()
-                wtLog.err('Failed to load configuration file: ''%s'' ', o.ThreeDimensionsScalpMapPlots.getFileName());
+            if o.ThreeDimensionalScalpMapPlots.exist() && ~o.ThreeDimensionalScalpMapPlots.load()
+                wtLog.err('Failed to load configuration file: ''%s'' ', o.ThreeDimensionalScalpMapPlots.getFileName());
                 return
             end
             success = true;
@@ -186,8 +186,8 @@ classdef WTConfig < matlab.mixin.Copyable
             cp.AverageStdErrPlots = copy(o.AverageStdErrPlots);
             cp.ChannelsAveragePlots = copy(o.ChannelsAveragePlots);
             cp.ChannelsAverageStdErrPlots = copy(o.ChannelsAverageStdErrPlots);
-            cp.ScalpMapPlots = copy(o.ScalpMapPlots);
-            cp.ThreeDimensionsScalpMapPlots = copy(o.ThreeDimensionsScalpMapPlots);
+            cp.TwoDimensionalScalpMapPlots = copy(o.TwoDimensionalScalpMapPlots);
+            cp.ThreeDimensionalScalpMapPlots = copy(o.ThreeDimensionalScalpMapPlots);
         end
      end
 
@@ -216,8 +216,8 @@ classdef WTConfig < matlab.mixin.Copyable
             o.AverageStdErrPlots = WTAvgStdErrPlotsCfg(ioProc);
             o.ChannelsAveragePlots = WTChansAvgPlotsCfg(ioProc);
             o.ChannelsAverageStdErrPlots = WTChansAvgStdErrPlotsCfg(ioProc);
-            o.ScalpMapPlots = WTScalpMapPlotsCfg(ioProc);
-            o.ThreeDimensionsScalpMapPlots = WT3DScalpMapPlotsCfg(ioProc);
+            o.TwoDimensionalScalpMapPlots = WT2DScalpMapPlotsCfg(ioProc);
+            o.ThreeDimensionalScalpMapPlots = WT3DScalpMapPlotsCfg(ioProc);
         end
         
         function name = getName(o) 

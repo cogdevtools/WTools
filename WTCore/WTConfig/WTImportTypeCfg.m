@@ -47,7 +47,7 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.IntCellsFieldArgs(o.FldDefaultAnswer, o.EEPFlag, o.EGIFlag, o.BRVFlag, o.EEGLabFlag);
+            txt = WTFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.EEPFlag, o.EGIFlag, o.BRVFlag, o.EEGLabFlag);
             success = ~isempty(txt) && o.write(txt);
         end
     end

@@ -32,7 +32,7 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.GenericCellsFieldArgs(o.FldDefaultAnswer, WTFormatter.FmtFloatStr, o.TriggerLatency);
+            txt = WTFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, WTFormatter.FmtFloatStr, o.TriggerLatency);
             success = ~isempty(txt) && o.write(txt);
         end
     end

@@ -25,7 +25,9 @@ classdef WTIOProcessor < handle
         SystemEEGLab = 'EEGLab'
         SystemBRV    = 'BRV'
 
-        SplineFileTypeFlt = '*.spl'
+        SplineFileExt = '.spl'
+        SplineFileTypeFlt = ['*' WTIOProcessor.SplineFileExt]
+        MeshFileExt = '.mat'
         GrandAvgFileExt = '.mat'
         PerSbjGrandAvgFileExt = '.ss'
         SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTUtils.ifThenElse(ispc, '\\','/'));
@@ -132,6 +134,18 @@ classdef WTIOProcessor < handle
             end
         end
 
+        function [success, meshFile] = getMeshFileFromSplineFile(splineFile) 
+            meshFile = [];
+            lenSplineFile = length(splineFile);
+            lenSplineFileExt = length(WTIOProcessor.SplineFileExt);
+            success = lenSplineFile > lenSplineFileExt && ... 
+                endsWith(splineFile, WTIOProcessor.SplineFileExt);
+            if ~success 
+                return
+            end
+            meshFile = [splineFile(1:lenSplineFile - lenSplineFileExt) WTIOProcessor.MeshFileExt];
+        end
+        
         function [wType, extension] = getGrandAverageFileTypeAndExtension(perSubject, evokedOscillation)
             wType = WTUtils.ifThenElse(evokedOscillation, ...
                 WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
@@ -678,6 +692,13 @@ classdef WTIOProcessor < handle
             end
         end
 
+        function is = isGrandAvgDir(o, path)
+            [analysisDir, grandAvgSubDir] = WTUtils.splitPath(path, 1);
+            analysisAbsPath = WTUtils.getAbsPath(analysisDir);
+            is = strcmp(analysisAbsPath, o.AnalysisDir) && ...
+                 strcmp(grandAvgSubDir, o.GrandAvgSubDir);
+        end
+
         function subject = getSubjectFromPath(o, path) 
             [analysisDir, subjectSubDir] = WTUtils.splitPath(path, 1);
             analysisAbsPath = WTUtils.getAbsPath(analysisDir);
@@ -690,13 +711,6 @@ classdef WTIOProcessor < handle
                 return
             end
             subject = match.subject;
-        end
-
-        function is = isGrandAvgDir(o, path)
-            [analysisDir, grandAvgSubDir] = WTUtils.splitPath(path, 1);
-            analysisAbsPath = WTUtils.getAbsPath(analysisDir);
-            is = strcmp(analysisAbsPath, o.AnalysisDir) && ...
-                 strcmp(grandAvgSubDir, o.GrandAvgSubDir);
         end
 
         function subjects = getAnalysedSubjects(o)

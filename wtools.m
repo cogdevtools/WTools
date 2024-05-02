@@ -427,9 +427,9 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.contextOn('ScalpMapPlots');
+        wtLog.contextOn('TwoDimensionalScalpMapPlots');
         try
-            wtScalpMapPlots();
+            wt2DScalpMapPlots();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show scalp map plots');
@@ -448,7 +448,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.contextOn('3DScalpMapPlots');
         try
-            smavr3d();
+            wt3DScalpMapPlots();
         catch me
             wtLog.except(me);
             WTProject().notifyErr([], 'Failed to show 3D scalp map plots');

@@ -50,7 +50,7 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.IntCellsFieldArgs(o.FldDefaultAnswer, o.Condition1, o.Condition2, o.ConditionDiff, o.LogDiff, o.EvokedOscillations);
+            txt = WTFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.Condition1, o.Condition2, o.ConditionDiff, o.LogDiff, o.EvokedOscillations);
             success = ~isempty(txt) && o.write(txt);
         end
     end

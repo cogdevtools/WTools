@@ -36,8 +36,8 @@ classdef WTConditionsGrandCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt1 = WTFormatter.StringCellsField(o.FldConditions, o.ConditionsList);
-            txt2 = WTFormatter.StringCellsField(o.FldConditionsDiff, o.ConditionsDiff);
+            txt1 = WTFormatter.stringCellsField(o.FldConditions, o.ConditionsList);
+            txt2 = WTFormatter.stringCellsField(o.FldConditionsDiff, o.ConditionsDiff);
             success = ~isempty(txt1) && ~isempty(txt2) && o.write(txt1, txt2);
         end
     end

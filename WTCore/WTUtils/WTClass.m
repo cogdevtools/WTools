@@ -28,12 +28,12 @@ classdef WTClass < handle
             end
         end
 
-        function is = IsSingleton(o)
+        function is = isSingleton(o)
             is = o.InstanceType == WTClass.Singleton || ...
                  o.InstanceType == WTClass.LockedSingleton;
         end
 
-        function is = IsLockedSingleton(o)
+        function is = isLockedSingleton(o)
             is = o.InstanceType == WTClass.LockedSingleton;
         end
 
@@ -49,7 +49,7 @@ classdef WTClass < handle
         end
 
         function o = unregisterSingleton(o)
-            WTSingletons.unregister(o, o.IsLockedSingleton);
+            WTSingletons.unregister(o, o.isLockedSingleton);
             o.InstanceType = WTClass.NonSingleton;
         end
     end

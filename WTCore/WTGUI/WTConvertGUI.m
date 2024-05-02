@@ -34,14 +34,18 @@ classdef WTConvertGUI
             rb = arrayfun(@(i)sprintf('RB%d',i), 1:length(systems), 'UniformOutput', false);
             cb = @(n)sprintf('for i=1:%d; set(findobj(gcbf, ''tag'', sprintf(''RB%%d'', i)), ''Value'', i==%d); end', length(rb), n);
             geometry = repmat({1}, 1, 2+length(systems));
-            params = cell(1, 2+length(systems));
-            params{1} = { 'style' 'text' 'string' 'Import segmented files from the following system:' };
-            params{2} = { 'style' 'text' 'string' '' };
-            for i = 1:length(systems) 
-                params{2+i} = { 'style' 'radiobutton' 'tag' rb{i} 'string' systems{i} 'value' answer{1,i} 'callback' cb(i), 'enable', enabled{i} };
+
+           function params = setParameters(answer) 
+                params = cell(1, 2+length(systems));
+                params{1} = { 'style' 'text' 'string' 'Import segmented files from the following system:' };
+                params{2} = { 'style' 'text' 'string' '' };
+                for i = 1:length(systems) 
+                    params{2+i} = { 'style' 'radiobutton' 'tag' rb{i} 'string' systems{i} 'value' answer{1,i} 'callback' cb(i), 'enable', enabled{i} };
+                end
             end
-            
+
             while true
+                params = setParameters(answer);
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Import segmented EEG');
 
                 if ~strcmp(strhalt,'retuninginputui')
@@ -69,18 +73,25 @@ classdef WTConvertGUI
             wtLog = WTLog();
             
             answer = {num2str(samplingData.SamplingRate)};
-            params = { ...
-                { 'style' 'text' 'string' 'Sampling rate (Hz):' } ...
-                { 'style' 'edit' 'string' answer{1,1} } ...
-                { 'style' 'text' 'string' 'Enter the recording sampling rate' } };
+
+            function params = setParameters(answer) 
+                params = { ...
+                    { 'style' 'text' 'string' 'Sampling rate (Hz):' } ...
+                    { 'style' 'edit' 'string' answer{1,1} } ...
+                    { 'style' 'text' 'string' 'Enter the recording sampling rate' } };
+            end
+
             geometry = { [1 0.5] 1 };
             
             while true
+                params = setParameters(answer);
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set sampling rate');
+                
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set sampling rate configuration dialog');
                     return
                 end
+
                 try
                     samplingData.SamplingRate = WTUtils.str2double(answer{1,1});
                     break
@@ -97,20 +108,27 @@ classdef WTConvertGUI
             wtLog = WTLog();
             
             answer = {num2str(egi2eeglData.TriggerLatency)};
-            params = { ...
-                { 'style' 'text' 'string' 'Trigger latency (ms):' } ...
-                { 'style' 'edit' 'string' answer{1,1} } ...
-                { 'style' 'text' 'string' 'Enter nothing to time lock to the onset of the stimulus,' } ...
-                { 'style' 'text' 'string' 'enter a positive value to time lock to any point from' } ...
-                { 'style' 'text' 'string' 'the beginning of the segment.' } };
+
+            function params = setParameters(answer) 
+                params = { ...
+                    { 'style' 'text' 'string' 'Trigger latency (ms):' } ...
+                    { 'style' 'edit' 'string' answer{1,1} } ...
+                    { 'style' 'text' 'string' 'Enter nothing to time lock to the onset of the stimulus,' } ...
+                    { 'style' 'text' 'string' 'enter a positive value to time lock to any point from' } ...
+                    { 'style' 'text' 'string' 'the beginning of the segment.' } };
+            end
+
             geometry = { [1 0.5] 1 1 1 };
             
             while true
+                params = setParameters(answer);
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set trigger');
+
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set trigger latency configuration dialog');
                     return
                 end
+
                 try
                     egi2eeglData.TriggerLatency = WTUtils.str2double(answer{1,1});
                     break
@@ -144,24 +162,28 @@ classdef WTConvertGUI
 
             answer = { minId  maxId };
 
-            params = { ...
-                { 'style' 'text' 'string' 'Min Trial ID:' } ...
-                { 'style' 'edit' 'string' answer{1,1} } ...
-                { 'style' 'text' 'string' 'Max Trial ID:' } ...
-                { 'style' 'edit' 'string' answer{1,2} } ...
-                { 'style' 'text' 'string' 'Enter nothing to process all available trials.' } ...
-                { 'style' 'text' 'string' 'Enter only min or max to process trials above/below a trial ID.' } ...
-                { 'style' 'text' 'string' 'Enter min/max positive integers to set the min/max trial ID to' } ...
-                { 'style' 'text' 'string' 'process.' } };
+            function params = setParameters(answer) 
+                params = { ...
+                    { 'style' 'text' 'string' 'Min Trial ID:' } ...
+                    { 'style' 'edit' 'string' answer{1,1} } ...
+                    { 'style' 'text' 'string' 'Max Trial ID:' } ...
+                    { 'style' 'edit' 'string' answer{1,2} } ...
+                    { 'style' 'text' 'string' 'Enter nothing to process all available trials.' } ...
+                    { 'style' 'text' 'string' 'Enter only min or max to process trials above/below a trial ID.' } ...
+                    { 'style' 'text' 'string' 'Enter min/max positive integers to set the min/max trial ID to' } ...
+                    { 'style' 'text' 'string' 'process.' } };
+            end
 
             geometry = { [1 0.5] [1 0.5] 1 1 1 1 };
             
             while true
+                params = setParameters(answer);
                 [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set min/Max trial ID');
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set min/max trial ID configuration dialog');
                     return
                 end
+
                 try
                     minId = WTUtils.str2double(answer{1,1}, true);
                     maxId = WTUtils.str2double(answer{1,2}, true);
@@ -188,17 +210,20 @@ classdef WTConvertGUI
                 { WTUtils.ifThenElse(isnan(EpochLimitsAndFreqFilterData.HighPassFilter), [], double2str(EpochLimitsAndFreqFilterData.HighPassFilter)) } ...
                 { WTUtils.ifThenElse(isnan(EpochLimitsAndFreqFilterData.LowPassFilter), [], double2str(EpochLimitsAndFreqFilterData.LowPassFilter)) }};
 
-            params = { ...
-                { 'style' 'text' 'string' 'Epochs limits' } ...
-                { 'style' 'edit' 'string' answer{1,1} } ...
-                { 'style' 'text' 'string' 'High-pass filter' } ...
-                { 'style' 'edit' 'string' answer{1,2} }...
-                { 'style' 'text' 'string' 'Low-pass filter' } ...
-                { 'style' 'edit' 'string' answer{1,3} }};
+            function params = setParameters(answer) 
+                params = { ...
+                    { 'style' 'text' 'string' 'Epochs limits' } ...
+                    { 'style' 'edit' 'string' answer{1,1} } ...
+                    { 'style' 'text' 'string' 'High-pass filter' } ...
+                    { 'style' 'edit' 'string' answer{1,2} }...
+                    { 'style' 'text' 'string' 'Low-pass filter' } ...
+                    { 'style' 'edit' 'string' answer{1,3} }};
+            end
 
             geometry = { [1 1] [1 1]  [1 1] };
 
             while true
+                params = setParameters(answer);
                 answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params,'title', 'Set epochs & band filter params');
 
                 if isempty(answer)

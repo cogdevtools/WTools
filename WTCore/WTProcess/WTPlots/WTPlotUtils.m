@@ -167,15 +167,16 @@ classdef WTPlotUtils
         % figures will appear along the screen diagonal, with a certain offset which depends on rWidthOffs
         % (although the function might correct rWidthOffs if the window fall off the screen). The window 
         % size is a constant.
-        function positions = getFiguresPositions(nFigures, whRatio, rWidth, rWidthOffs)
+        function positions = getFiguresPositions(nFigures, whRatio, rWidth, rWidthOffs, relative)
             WTValidations.mustBeInt(nFigures);
             WTValidations.mustBeGTE(nFigures, 1, false);
             WTValidations.mustBeGT(whRatio, 0);
             WTValidations.mustBeInRange(rWidth, 0, 1, false, true);
             WTValidations.mustBeInRange(rWidthOffs, 0, 1, true, true);
+            relative = nargin > 4 && relative;
 
-            absSize = get(groot, 'screensize');
-            WHRatio = absSize(3)/absSize(4);
+            screenSize = get(groot, 'screensize');
+            WHRatio = screenSize(3)/screenSize(4);
             rHeight = rWidth * WHRatio / whRatio;
             rWOffsMax = (1-rWidth) / nFigures;
             rHOffsMax = (1-rHeight) / nFigures;
@@ -187,14 +188,16 @@ classdef WTPlotUtils
             xC = (1-((nFigures-1)*rWOffs + rWidth)) / 2;
             yC = 1-((1-((nFigures-1)*rHOffs + rHeight)) / 2)-rHeight;
             positions = cell(1, nFigures);
+            sizeFactors = WTUtils.ifThenElse(relative, [1 1], screenSize(3:4));
+            minPos = WTUtils.ifThenElse(relative, 0, 1);
             for i = 1:nFigures
                 xRel = xC + (i-1)*rWOffs;
                 yRel = yC - (i-1)*rHOffs;
                 positions{i} = [ ...
-                    min(max(xRel * absSize(3), 1), absSize(3)) ... 
-                    min(max(yRel * absSize(4), 1), absSize(4)) ...
-                    rWidth * absSize(3) ...
-                    rHeight * absSize(4)];
+                    min(max(xRel * sizeFactors(1), minPos), sizeFactors(1)) ... 
+                    min(max(yRel * sizeFactors(2), minPos), sizeFactors(2)) ...
+                    rWidth * sizeFactors(1) ...
+                    rHeight * sizeFactors(2) ];
             end
         end
 
@@ -394,6 +397,15 @@ classdef WTPlotUtils
         
             setParams(srcPlotParams);
             success = true;
+        end
+
+        function is = isPointInCurrentAxes(point)
+            hCurrentAxes = gca;
+            pos = hCurrentAxes.Position;
+            is = point(1) >= pos(1) && ...
+                 point(1) <= pos(1) + pos(3) && ...
+                 point(2) >= pos(2) && ...
+                 point(2) <= pos(2) + pos(4); 
         end
 
         % --- Callbacks -- ON ---

@@ -32,7 +32,7 @@ classdef WTSamplingCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.GenericCellsFieldArgs(o.FldDefaultAnswer, WTFormatter.FmtStr, num2str(o.SamplingRate));
+            txt = WTFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, WTFormatter.FmtStr, num2str(o.SamplingRate));
             success = ~isempty(txt) && o.write(txt);
         end
     end

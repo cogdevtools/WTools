@@ -287,9 +287,9 @@ classdef WTPlotsGUI
             end
         end
 
-        function success = defineScalpMapPlotsSettings(plotsPrms, logFlag, maxSerieLength)
+        function success = define2DScalpMapPlotsSettings(plotsPrms, logFlag, maxSerieLength)
             success = false; 
-            WTValidations.mustBeA(plotsPrms, ?WTScalpMapPlotsCfg);
+            WTValidations.mustBeA(plotsPrms, ?WT2DScalpMapPlotsCfg);
             maxSerieLength = WTUtils.ifThenElse(nargin > 2, @()maxSerieLength, 0);
             wtLog = WTLog();
             
@@ -383,7 +383,7 @@ classdef WTPlotsGUI
 
         function success = define3DScalpMapPlotsSettings(plotsPrms, logFlag)
             success = false; 
-            WTValidations.mustBeA(plotsPrms, ?WTScalpMapPlotsCfg);
+            WTValidations.mustBeA(plotsPrms, ?WT3DScalpMapPlotsCfg);
             wtLog = WTLog();
             
             if isempty(plotsPrms.Scale) || ...

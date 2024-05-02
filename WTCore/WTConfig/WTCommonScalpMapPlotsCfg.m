@@ -1,8 +1,11 @@
 classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
 
+    % When Time and Frequency contain only 1 value, then they represent a single point set.
+    % When they contain 2 values they represent a range, when they contain 3 values they 
+    % represent a range of paced values, where the pace is the middle value.
     properties
-        Time(1,:) {WTValidations.mustBeALimitedLinearArray(Time, 1, 3, 1)}
-        Frequency(1,:) {WTValidations.mustBeALimitedLinearArray(Frequency, 1, 3, 1)}
+        Time(1,:)
+        Frequency(1,:)
         Scale(1,:) single {WTValidations.mustBeALimitedLinearArray(Scale, 1, 2, 1)} 
     end
 
@@ -15,7 +18,12 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
         FreqResolution
         TimeString
         FreqString
-     end
+    end
+
+    properties (GetAccess = public, SetAccess = protected)
+        AllowTimeResolution logical
+        AllowFreqResolution logical
+    end
 
     methods
         function o = WTCommonScalpMapPlotsCfg()
@@ -26,6 +34,14 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
             o.Time = [];
             o.Frequency = [];
             o.Scale = [];
+            o.AllowTimeResolution = true;
+            o.AllowFreqResolution = true; 
+        end
+
+        function set.Time(o, value)
+            nMaxValues = WTUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
+            WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
+            o.Time = value;
         end
 
         function setTimeMin(o, value)
@@ -42,6 +58,9 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
 
          % Time resolution can be set only TimeMin and TimeMax have been already 
         function setTimeResolution(o, value)
+            if ~o.AllowTimeResolution 
+                WTException.unsupported('Time resolution is not supported').throw();
+            end
             nTime = length(o.Time);
             WTValidations.mustBeGTE(nTime, 2)
             if nTime > 2
@@ -76,6 +95,12 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
             str = regexprep(num2str(o.Time), '\s+', ':');
         end
 
+        function set.Frequency(o, value)
+            nMaxValues = WTUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
+            WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
+            o.Frequency = value;
+        end
+
         function setFreqMin(o, value)
             o.Frequency(1) = value;
         end
@@ -90,6 +115,9 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
 
         % Frequency resolution can be set only FreqMin and FreqMax have been already 
         function setFreqResolution(o, value)
+            if ~o.AllowFreqResolution 
+                WTException.unsupported('Frequency resolution is not supported').throw();
+            end
             nFreq = length(o.Frequency);
             WTValidations.mustBeGTE(nFreq, 2)
             if nFreq > 2
@@ -131,12 +159,14 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
             nTime = numel(o.Time);
             nFreq = numel(o.Frequency);
 
-            if nTime == 0
-                WTUtils.throwOrLog(WTException.badValue('Field Time should contain between 1 and 3 values'), ~throwExcpt);
+            if nTime == 0 
+                WTUtils.throwOrLog(WTException.badValue('Field Time should contain between 1 and %d values', ...
+                    WTUtils.ifThenElse(o.AllowTimeResolution, 3, 2)), ~throwExcpt);
                 return
             end
             if nFreq == 0
-                WTUtils.throwOrLog(WTException.badValue('Field Frequency should contain between 1 and 3 values'), ~throwExcpt);
+                WTUtils.throwOrLog(WTException.badValue('Field Frequency should contain between 1 and %d values', ... 
+                    WTUtils.ifThenElse(o.AllowFreqResolution, 3, 2)), ~throwExcpt);
                 return
             end
             if nTime == 3 && nFreq == 3 

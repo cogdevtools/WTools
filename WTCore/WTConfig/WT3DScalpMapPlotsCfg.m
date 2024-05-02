@@ -9,6 +9,8 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTComm
             o@WTConfigStorage(ioProc, 'smavr3d_cfg.m');
             o@WTCommonScalpMapPlotsCfg();
             o.default()
+            o.AllowTimeResolution = false;
+            o.AllowFreqResolution = false;
         end
 
         function default(o) 
@@ -38,7 +40,7 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTComm
         end
 
         function success = persist(o)
-            txt = WTFormatter.GenericCellsFieldArgs(o.FldDefaultAnswer, ...
+            txt = WTFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, ...
                 WTFormatter.FmtArrayStr, num2str(o.Time), ...
                 WTFormatter.FmtArrayStr, num2str(o.Frequency), ...
                 WTFormatter.FmtArrayStr, num2str(o.Scale));

@@ -1,4 +1,4 @@
-classdef WTScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTCommonScalpMapPlotsCfg
+classdef WT2DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTCommonScalpMapPlotsCfg
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
@@ -11,10 +11,12 @@ classdef WTScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTCommon
     end
 
     methods
-        function o = WTScalpMapPlotsCfg(ioProc)
+        function o = WT2DScalpMapPlotsCfg(ioProc)
             o@WTConfigStorage(ioProc, 'smavr_cfg.m');
             o@WTCommonScalpMapPlotsCfg();
             o.default()
+            o.AllowTimeResolution = true;
+            o.AllowFreqResolution = true;
         end
 
         function default(o) 
@@ -47,7 +49,7 @@ classdef WTScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTCommon
         end
 
         function success = persist(o)
-            txt = WTFormatter.GenericCellsFieldArgs(o.FldDefaultAnswer, ...
+            txt = WTFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, ...
                 WTFormatter.FmtArrayStr, num2str(o.Time), ...
                 WTFormatter.FmtArrayStr, num2str(o.Frequency), ...
                 WTFormatter.FmtArrayStr, num2str(o.Scale), ...

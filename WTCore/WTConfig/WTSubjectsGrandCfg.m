@@ -32,7 +32,7 @@ classdef WTSubjectsGrandCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTFormatter.StringCellsField(o.FldSubjects, o.SubjectsList);
+            txt = WTFormatter.stringCellsField(o.FldSubjects, o.SubjectsList);
             success = ~isempty(txt) && o.write(txt);
         end
     end

@@ -39,9 +39,11 @@ classdef WTProject < WTClass
 
             subjectsPrms = o.Config.Subjects;
             conditionsPrms = o.Config.Conditions;
+            channelsPrms = o.Config.Channels;
 
             done = subjectsPrms.exist() && ...
                 conditionsPrms.exist() && ...
+                channelsPrms.exist() && ...
                 ~isempty(subjectsPrms.FilesList) && ... 
                 ~isempty(conditionsPrms.ConditionsList);
             if ~done
@@ -50,11 +52,11 @@ classdef WTProject < WTClass
         end
 
         function done = checkWaveletAnalysisDone(o)
-            done = o.checkIsOpen();
+            done = o.checkImportDone();
             if ~done 
                 return
-            end  
-                      
+            end
+            
             waveletPrms = o.Config.WaveletTransform;
             condsGrandPrms = o.Config.ConditionsGrand;
             subjsGrandPrms = o.Config.SubjectsGrand;

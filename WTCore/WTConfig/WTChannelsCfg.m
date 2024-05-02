@@ -91,12 +91,12 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt1 = WTFormatter.GenericCellsFieldArgs(o.FldChannelsLocationFile, WTFormatter.FmtStr, o.ChannelsLocationFile);
-            txt2 = WTFormatter.GenericCellsFieldArgs(o.FldFileType, WTFormatter.FmtStr, o.ChannelsLocationFileType);
-            txt3 = WTFormatter.GenericCellsFieldArgs(o.FldSplineFile, WTFormatter.FmtStr, o.SplineFile);
-            txt4 = WTFormatter.GenericCellsFieldArgs(o.FldReReference, WTFormatter.FmtInt, o.ReReference);
-            txt5 = WTFormatter.StringCellsField(o.FldNewChannelsReference, o.NewChannelsReference);
-            txt6 = WTFormatter.StringCellsField(o.FldCutChannels, o.CutChannels);
+            txt1 = WTFormatter.genericCellsFieldArgs(o.FldChannelsLocationFile, WTFormatter.FmtStr, o.ChannelsLocationFile);
+            txt2 = WTFormatter.genericCellsFieldArgs(o.FldFileType, WTFormatter.FmtStr, o.ChannelsLocationFileType);
+            txt3 = WTFormatter.genericCellsFieldArgs(o.FldSplineFile, WTFormatter.FmtStr, o.SplineFile);
+            txt4 = WTFormatter.genericCellsFieldArgs(o.FldReReference, WTFormatter.FmtInt, o.ReReference);
+            txt5 = WTFormatter.stringCellsField(o.FldNewChannelsReference, o.NewChannelsReference);
+            txt6 = WTFormatter.stringCellsField(o.FldCutChannels, o.CutChannels);
             success = ~any(cellfun(@isempty,{txt1 txt2 txt3 txt4 txt5 txt6})) && ... 
                       o.write(txt1,txt2,txt3,txt4,txt5,txt6);
         end
