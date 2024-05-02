@@ -14,9 +14,9 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTComm
         function o = WT2DScalpMapPlotsCfg(ioProc)
             o@WTConfigStorage(ioProc, 'smavr_cfg.m');
             o@WTCommonScalpMapPlotsCfg();
-            o.default()
             o.AllowTimeResolution = true;
             o.AllowFreqResolution = true;
+            o.default()
         end
 
         function default(o) 
@@ -30,8 +30,8 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTComm
             end 
             try
                 if length(cells) >= 6
-                    o.Time = WTUtils.str2nums(cells{1});
-                    o.Frequency = WTUtils.str2nums(cells{2});
+                    o.Time = cells{1};
+                    o.Frequency = cells{2};
                     o.Scale = WTUtils.str2nums(cells{3});
                     o.PeripheralElectrodes = cells{4};
                     o.Contours = cells{5};

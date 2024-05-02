@@ -338,8 +338,8 @@ classdef WTPlotsGUI
                 end
 
                 try
-                    plotsPrms.Time = WTUtils.str2nums(answer{1,1});
-                    plotsPrms.Frequency = WTUtils.str2nums(answer{1,2});
+                    plotsPrms.Time = answer{1,1};
+                    plotsPrms.Frequency =answer{1,2};
                     plotsPrms.Scale = WTUtils.str2nums(answer{1,3});
                     plotsPrms.PeripheralElectrodes = answer{1,4};
                     plotsPrms.Contours = answer{1,5};
@@ -422,8 +422,8 @@ classdef WTPlotsGUI
                 end
 
                 try
-                    plotsPrms.Time = WTUtils.str2nums(answer{1,1});
-                    plotsPrms.Frequency = WTUtils.str2nums(answer{1,2});
+                    plotsPrms.Time = answer{1,1};
+                    plotsPrms.Frequency = answer{1,2};
                     plotsPrms.Scale = WTUtils.str2nums(answer{1,3});
                     success = plotsPrms.validate(); 
                 catch me

@@ -6,7 +6,7 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
     properties
         Time(1,:)
         Frequency(1,:)
-        Scale(1,:) single {WTValidations.mustBeALimitedLinearArray(Scale, 1, 2, 1)} 
+        Scale(1,:) single {WTValidations.mustBeALimitedLinearArray(Scale, 1, 2, 1)}
     end
 
     properties (Dependent)
@@ -27,6 +27,8 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
 
     methods
         function o = WTCommonScalpMapPlotsCfg()
+            o.AllowTimeResolution = true;
+            o.AllowFreqResolution = true; 
             o.default();
         end
 
@@ -34,11 +36,12 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
             o.Time = [];
             o.Frequency = [];
             o.Scale = [];
-            o.AllowTimeResolution = true;
-            o.AllowFreqResolution = true; 
         end
 
         function set.Time(o, value)
+            if ischar(value)
+                value = WTUtils.str2numsRep(value, '[]');
+            end
             nMaxValues = WTUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
             WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
             o.Time = value;
@@ -96,6 +99,9 @@ classdef WTCommonScalpMapPlotsCfg < matlab.mixin.Copyable
         end
 
         function set.Frequency(o, value)
+            if ischar(value)
+                value = WTUtils.str2numsRep(value, '[]');
+            end
             nMaxValues = WTUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
             WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
             o.Frequency = value;
