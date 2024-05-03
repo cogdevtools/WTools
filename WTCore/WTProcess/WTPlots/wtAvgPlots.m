@@ -45,7 +45,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     if ~interactive 
         mustBeGreaterThanOrEqual(nargin, 4);
         WTValidations.mustBeAStringOrChar(subject);
-        WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot, 1, -1, 0);
+        WTValidations.mustBeALinearCellArrayOfString(conditionsToPlot);
         WTValidations.mustBeALinearCellArrayOfString(channelsToPlot);
         subject = char(subject);
         conditionsToPlot = unique(conditionsToPlot);
@@ -97,13 +97,13 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         return
     end
 
-    [diffConsistency, grandConsistency] = WTPlotUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{1}, measure);
-    if ~success || ~WTPlotUtils.adjustPlotTimeFreqRanges(wtProject.Config.AveragePlots, data) 
+    [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{1}, measure);
+    if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.AveragePlots, data) 
         return
     end
 
@@ -166,7 +166,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTPlotUtils.loadDataToPlot(false, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff();
                 continue

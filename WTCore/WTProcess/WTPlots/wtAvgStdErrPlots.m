@@ -41,7 +41,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
 
     if ~interactive 
         mustBeGreaterThanOrEqual(nargin, 3);
-        WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot, 1, -1, 0);
+        WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot);
         WTValidations.mustBeALinearCellArrayOfString(channelsToPlot);
         conditionsToPlot = unique(conditionsToPlot);
         WTValidations.mustBeLTE(length(conditionsToPlot), 2); 
@@ -94,13 +94,13 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         return
     end
 
-    [diffConsistency, grandConsistency] = WTPlotUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTPlotUtils.loadDataToPlot(true, subject, conditionsToPlot{1}, measure);
-    if ~success || ~WTPlotUtils.adjustPlotTimeFreqRanges(wtProject.Config.AverageStdErrPlots, data) 
+    [success, data] = WTMiscUtils.loadData(true, subject, conditionsToPlot{1}, measure);
+    if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.AverageStdErrPlots, data) 
         return
     end
 
@@ -233,7 +233,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTPlotUtils.loadDataToPlot(true, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTMiscUtils.loadData(true, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff(); 
                 break

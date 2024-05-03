@@ -1,6 +1,6 @@
 classdef WTLayout
     properties (Constant, Access=private)
-        ResourcesSubDir = 'WTRsrcs'
+        ResourcesSubDir = 'WTResources'
         PicturesSubDir = 'WTPictures'
         CoreSubDir = 'WTCore'
         DevicesSubDir = 'WTDevices'

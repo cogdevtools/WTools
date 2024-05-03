@@ -467,7 +467,7 @@ function varargout = wtools(varargin)
         wtLog = WTLog();
         wtLog.contextOn('Statistics');
         try
-            avrretrieve();
+            wtStatistics();
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
