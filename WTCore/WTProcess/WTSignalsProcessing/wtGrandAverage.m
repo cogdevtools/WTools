@@ -104,7 +104,7 @@ function wtGrandAverage(subjects, conditions)
         for sbj = 1:nSubjects
             [success, data] = ioProc.loadBaselineCorrection(subjects{sbj}, conditions{cnd}, measure);
             if ~success 
-                wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{s}, conditions{cnd});
+                wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{sbj}, conditions{cnd});
                 wtLog.popStatus();
                 return
             end         
