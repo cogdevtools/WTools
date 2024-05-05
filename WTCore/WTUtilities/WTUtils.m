@@ -355,6 +355,8 @@ classdef WTUtils
         function success = writeTxtFile(dirName, fileName, mode, varargin)
             success = false;
             fullName = [];
+            wtLog = WTLog();
+
             try
                 if nargin < 4
                     varargin = {''};
@@ -366,6 +368,7 @@ classdef WTUtils
                 fullName = fullfile(dirName, fileName);
                 file = fopen(fullName, mode, 'native', 'UTF-8');
                 if file >= 0 
+                    varargin = cellfun(@(a)WTUtils.ifThenElse(iscell(a), char(join(a, '\n')), a), varargin, 'UniformOutput', false);
                     text = join(varargin, '\n');
                     fprintf(file, strcat(text{1}, newline));
                     fclose(file);
@@ -374,8 +377,9 @@ classdef WTUtils
             catch me
                 wtLog.except(me);
             end
+
             if ~success 
-                wtLog.err('Failed to write text to file ''%s''', WTUtils.ifThenElse(isempty(fullName), '<?>', fullName))
+                wtLog.err('Failed to write text to file ''%s''', WTUtils.ifThenElse(isempty(fullName), '<?>', fullName));
             end
         end
 
@@ -561,9 +565,9 @@ classdef WTUtils
 
         function [selection, indexes] = stringsSelectDlg(prompt, list, single, confirm, varargin)
             WTValidations.mustBeALinearCellArrayOfNonEmptyString(list);
+            confirm =  nargin > 3 && confirm;
             selection = list;
             indexes = WTUtils.ifThenElse(length(list) == 1, 1, []);
-            confirm =  nargin > 3 && confirm;
             
             if isempty(list) || (length(list) < 2 && ~confirm)
                 return

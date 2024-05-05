@@ -1,13 +1,14 @@
 classdef WTIOProcessor < handle
 
     properties(Constant,Access=private)
-        LogSubDir       = 'Logs'
-        ConfigSubDir    = 'Config';
-        ImportSubDir    = 'Import';
-        WaveletsSubDir  = 'Wavelets';
-        AnalysisSubDir  = 'Analysis';
-        GrandAvgSubDir  = 'GrandAvg';
-        TemporarySubDir = 'Tmp';
+        LogSubDir        = 'Logs'
+        ConfigSubDir     = 'Config'
+        ImportSubDir     = 'Import'
+        WaveletsSubDir   = 'Wavelets'
+        AnalysisSubDir   = 'Analysis'
+        GrandAvgSubDir   = 'GrandAvg'
+        StatisticsSubDir = 'Statistics'
+        TemporarySubDir  = 'Tmp'
     end
 
     properties(Constant, Hidden)
@@ -43,6 +44,7 @@ classdef WTIOProcessor < handle
         ImportDir char
         AnalysisDir char
         GrandAvgDir char
+        StatisticsDir char
         TemporaryDir char
     end
 
@@ -61,7 +63,7 @@ classdef WTIOProcessor < handle
             end
         end
 
-        function success = writeModule(dir, file, varargin) 
+        function success = writeTxtFile(dir, file, varargin) 
             fName = fullfile(dir, file);
             success = WTUtils.writeTxtFile(dir, file, 'wt', varargin{:});
             if ~success 
@@ -145,7 +147,7 @@ classdef WTIOProcessor < handle
             end
             meshFile = [splineFile(1:lenSplineFile - lenSplineFileExt) WTIOProcessor.MeshFileExt];
         end
-        
+
         function [wType, extension] = getGrandAverageFileTypeAndExtension(perSubject, evokedOscillation)
             wType = WTUtils.ifThenElse(evokedOscillation, ...
                 WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
@@ -250,6 +252,7 @@ classdef WTIOProcessor < handle
             o.ImportDir = '';
             o.AnalysisDir = '';
             o.GrandAvgDir = '';
+            o.StatisticsDir = '';
             o.TemporaryDir = '';
         end
     end
@@ -267,6 +270,7 @@ classdef WTIOProcessor < handle
             o.ImportDir = fullfile(o.RootDir, o.ImportSubDir);
             o.AnalysisDir = fullfile(o.RootDir, o.AnalysisSubDir);
             o.GrandAvgDir = fullfile(o.AnalysisDir, o.GrandAvgSubDir);
+            o.StatisticsDir = fullfile(o.RootDir, o.StatisticsSubDir);
             o.TemporaryDir = fullfile(o.RootDir, o.TemporarySubDir);
             wtLog = WTLog();
             
@@ -319,13 +323,16 @@ classdef WTIOProcessor < handle
         end
 
         function success = configWrite(o, cfgFile, varargin) 
-            success = WTIOProcessor.writeModule(o.ConfigDir, cfgFile, varargin{:});
+            success = WTIOProcessor.writeTxtFile(o.ConfigDir, cfgFile, varargin{:});
+        end
+
+        function success = statsWrite(o, statsFile, varargin) 
+            success = WTIOProcessor.writeTxtFile(o.StatisticsDir, statsFile, varargin{:});
         end
 
         function [fName, fileExist] = configExist(o, shouldExist, cfgFile)
             [fName, fileExist] = WTIOProcessor.exist(shouldExist, o.ConfigDir, cfgFile);
         end
-
 
         function [fullPath, filePath] = getTemporaryFile(o, fileName, extension)
             filePath = o.TemporaryDir;
@@ -690,6 +697,23 @@ classdef WTIOProcessor < handle
             if ~isempty(fullPath)
                 [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
+        end
+
+        function [fullPath, filePath, fileName] = getStatisticsFile(o, filePrefix, logFlag, timeMin, timeMax, freqMin, freqMax, freqPace, wType)
+            dt = datetime();
+            dtStr = sprintf('%d-%02d-%02d.h%02dm%02ds%02d', year(dt), month(dt), day(dt), hour(dt), minute(dt), ceil(second(dt)));
+            logStr = WTUtils.ifThenElse(logFlag, '_[log10]_', '_');
+            timeStr = WTUtils.ifThenElse(timeMin ~= timeMax, ...
+                @()sprintf('[%s,%s]ms', num2str(timeMin), num2str(timeMax)), ...
+                @()sprintf('[%s]ms',  num2str(timeMin)));
+            freqStr = WTUtils.ifThenElse(freqMin ~= freqMax, ...
+                @()WTUtils.ifThenElse(freqPace > 0, ...
+                    @()sprintf('[%s,%s;%%%s]Hz', num2str(freqMin), num2str(freqMax), num2str(freqPace)), ...
+                    @()sprintf('[%s,%s]Hz', num2str(freqMin), num2str(freqMax))), ...
+                @()sprintf('[%s]Hz',  num2str(freqMin)));
+            fileName =  [filePrefix logStr timeStr '_' freqStr '_bc_' wType '.' dtStr '.tab'];
+            filePath = o.StatisticsDir;
+            fullPath = fullfile(filePath, fileName);
         end
 
         function is = isGrandAvgDir(o, path)
