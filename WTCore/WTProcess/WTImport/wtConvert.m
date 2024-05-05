@@ -27,13 +27,13 @@ function success = wtConvert()
     wtProject.Config.ImportType = convertToEEGLabData;
 
     if convertToEEGLabData.EEPFlag 
-        wtEEPToEEGLab;
+        wtEEPToEEGLab();
     elseif convertToEEGLabData.EGIFlag 
-        wtEGIToEEGLab;
+        wtEGIToEEGLab();
     elseif convertToEEGLabData.BRVFlag 
-        wtBRVToEEGLab;
+        wtBRVToEEGLab();
     elseif convertToEEGLabData.EEGLabFlag 
-        wtEEGLabToEEGLab;
+        wtEEGLabToEEGLab();
     end
     success = true;
 end
