@@ -16,7 +16,7 @@
 %   wtEGIToEEGLab();
 
 function wtEGIToEEGLab()
-    wtProject = WTProject().addContext('EGIToEEGLab');
+    wtProject = WTProject();
     wtLog = WTLog();
    
     if ~wtProject.checkIsOpen()

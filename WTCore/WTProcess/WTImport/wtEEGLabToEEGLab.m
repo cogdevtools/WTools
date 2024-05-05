@@ -20,7 +20,7 @@
 % wtEEGLabToEEGLab();
 
 function wtEEGLabToEEGLab()
-    wtProject = WTProject().addContext('EEGLabToEEGLab');
+    wtProject = WTProject();
     wtLog = WTLog();
    
     if ~wtProject.checkIsOpen()
@@ -145,8 +145,6 @@ function wtEEGLabToEEGLab()
             wtLog.popStatus();
             return
         end
-
-        wtLog.popStatus();
     end
 
     wtLog.popStatus();

@@ -15,7 +15,7 @@
 % wtEEPToEEGLab([],[-200 1000],0.3,65)
 
 function wtEEPToEEGLab()
-    wtProject = WTProject().addContext('EEPToEEGLab');
+    wtProject = WTProject();
     wtLog = WTLog();
    
     if ~wtProject.checkIsOpen()
