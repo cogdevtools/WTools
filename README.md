@@ -14,7 +14,7 @@ A Matlab® based toolbox & an EEGLab plugin for time-frequency analysis
     + WTSubjectsManager: subjects management
   + WTStorage: global storage manager
   + WTUtilities: general and less general utilities
-+ WTExternal: external (3rd party) code)
++ WTExternal: external (3rd party) code
   + Modified: code that have been improved
   + Original: non modified code
 + WTResources: general project resources
