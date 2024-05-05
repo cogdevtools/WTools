@@ -15,7 +15,7 @@
 % wtEEPToEEGLab([],[-200 1000],0.3,65)
 
 function wtEEPToEEGLab()
-    wtProject = WTProject();
+    wtProject = WTProject().addContext('EEPToEEGLab');
     wtLog = WTLog();
    
     if ~wtProject.checkIsOpen()
@@ -40,12 +40,12 @@ function wtEEPToEEGLab()
         end
     else
         if ~wtProject.Config.Subjects.validate()
-            wtProject.notifyErr('Subjects params are not valid');
+            wtProject.notifyErr([], 'Subjects params are not valid');
             wtLog.popStatus();
             return
         end
         if ~wtProject.Config.EEPToEEGLab.validate()
-            wtProject.notifyErr('EEP to EEGLab conversinos params are not valid');
+            wtProject.notifyErr([], 'EEP to EEGLab conversions params are not valid');
             wtLog.popStatus();
             return
         end

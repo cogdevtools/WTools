@@ -20,7 +20,7 @@
 % wtEEGLabToEEGLab();
 
 function wtEEGLabToEEGLab()
-    wtProject = WTProject();
+    wtProject = WTProject().addContext('EEGLabToEEGLab');
     wtLog = WTLog();
    
     if ~wtProject.checkIsOpen()
@@ -43,7 +43,7 @@ function wtEEGLabToEEGLab()
         end
     else
         if ~wtProject.Config.Subjects.validate()
-            wtProject.notifyErr('Subjects params are not valid');
+            wtProject.notifyErr([], 'Subjects params are not valid');
             wtLog.popStatus();
             return
         end

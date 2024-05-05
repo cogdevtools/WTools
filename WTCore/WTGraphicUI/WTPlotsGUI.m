@@ -60,7 +60,7 @@ classdef WTPlotsGUI
                 plotsPrms.AllChannels ... 
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (�x% change)', 'Scale (mV)');
+            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -188,7 +188,7 @@ classdef WTPlotsGUI
                 plotsPrms.Contours ...
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (�x% change)', 'Scale (mV)');
+            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -307,7 +307,7 @@ classdef WTPlotsGUI
                 plotsPrms.ElectrodesLabel ... 
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (�x% change)', 'Scale (mV)');
+            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -397,7 +397,7 @@ classdef WTPlotsGUI
                 sprintf(WTConfigFormatter.FmtArray, num2str(plotsPrms.Scale)) ...
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (�x% change)', 'Scale (mV)');
+            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...

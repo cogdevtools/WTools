@@ -18,7 +18,7 @@
 % wtBRVToEEGLab()
 
 function wtBRVToEEGLab()
-    wtProject = WTProject();
+    wtProject = WTProject().addContext('BRVToEEGLab');
     wtLog = WTLog();
     
     if ~wtProject.checkIsOpen()
@@ -43,12 +43,12 @@ function wtBRVToEEGLab()
         end
     else
         if ~wtProject.Config.Subjects.validate()
-            wtProject.notifyErr('Subjects params are not valid');
+            wtProject.notifyErr([], 'Subjects params are not valid');
             wtLog.popStatus();
             return
         end
         if ~wtProject.Config.BRVToEEGLab.validate()
-            wtProject.notifyErr('BRV to EEGLab conversinos params are not valid');
+            wtProject.notifyErr([], 'BRV to EEGLab conversinos params are not valid');
             wtLog.popStatus();
             return
         end

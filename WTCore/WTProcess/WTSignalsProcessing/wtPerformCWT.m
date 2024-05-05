@@ -51,8 +51,8 @@ function success = wtPerformCWT()
     basicParams = wtProject.Config.Basic;
     waveletTransformParams = wtProject.Config.WaveletTransform;
     
-    timeMin = waveletTransformParams.TimeMin;
-    timeMax = waveletTransformParams.TimeMax;
+    timeMin = single(waveletTransformParams.TimeMin);
+    timeMax = single(waveletTransformParams.TimeMax);
     channelsList = waveletTransformParams.ChannelsList;
 
     if isempty(channelsList)
@@ -63,13 +63,13 @@ function success = wtPerformCWT()
     conditions = wtProject.Config.ConditionsGrand.ConditionsList;
     subjectsCount = length(subjects);
     conditionsCount = length(conditions);
-    
+
     wtLog.info('Performing time/frequency analysis...');
 
     for i = 1:subjectsCount
         for j = 1:conditionsCount
             wtLog.info('Processing subject/condition: %d/%d', i, j);
-            wtLog.pushStatus().contextOn('Subj(%d)/Cond(%d)', i, j);
+            wtLog.pushStatus().contextOn('Subj(%s)/Cond(%s)', subjects{i}, conditions{j});
             doItOnce = i == 1 && j == 1;
 
             [success, EEG] = ioProc.loadCondition(basicParams.FilesPrefix, subjects{i}, conditions{j});
@@ -94,7 +94,7 @@ function success = wtPerformCWT()
     
             % ENLARGE the edges before starting the wavelet transformation
             if (waveletTransformParams.EdgePadding / waveletTransformParams.FreqMin) >= 1 % There is edges padding
-                timeToAdd = ceil(waveletTransformParams.EdgePadding / 1); % This value will be used
+                timeToAdd = single(waveletTransformParams.EdgePadding);
                 % to enlarge the edges and avoid distortions.
                 % It will be added to the left and to the right of the epoch.
                 try
@@ -104,48 +104,32 @@ function success = wtPerformCWT()
                     timeRes = EEG.times(2) - EEG.times(1);
                 end
                 
-                pointsToAdd = timeToAdd/timeRes; % number of points to add to the left and to the right
-                
-                % check that the number of time points to add is
-                % still a multiple of the sampling rate
-                if mod(pointsToAdd,timeRes) ~= 0
-                    pointsToAdd = pointsToAdd - mod(pointsToAdd,timeRes);
-                    timeToAdd = timeRes*pointsToAdd;
-                end
-                
+                pointsToAdd = floor(timeToAdd/timeRes); % number of points to add to the left and to the right
+                timeToAdd = pointsToAdd * timeRes;
+
                 leftEdge = EEG.data(:,1:pointsToAdd,:); % we double the edges of the actual signal...
-                leftEdge = leftEdge(:,end:-1:1,:);       % ... and revert them
+                leftEdge = leftEdge(:,end:-1:1,:);      % ... and revert them
                 rightEdge = EEG.data(:,end-pointsToAdd+1:end,:);
                 rightEdge = rightEdge(:,end:-1:1,:);
                 
                 EEGtemp = EEG.data;
-                EEGnew = cat(2,leftEdge,EEGtemp); % add to the left
-                EEGnew = cat(2,EEGnew,rightEdge);  % add to the right
+                EEGnew = cat(2, leftEdge, EEGtemp); % add to the left
+                EEGnew = cat(2, EEGnew, rightEdge);  % add to the right
                 EEG.data = EEGnew;
                 
                 % adjust other EEGlab variables accordingly (for consistency)
-                EEG.times = single((min(EEG.times)-timeToAdd)) : timeRes : single((max(EEG.times)+timeToAdd));
-                EEG.xmin = min(EEG.times)/1000;
-                EEG.xmax = max(EEG.times)/1000;
+                EEG.times = min(EEG.times)-timeToAdd : timeRes : max(EEG.times)+timeToAdd;
+                EEG.xmin = EEG.times(1)/1000;
+                EEG.xmax = EEG.times(end)/1000;
                 EEG.pnts = EEG.pnts + 2*pointsToAdd; % 2 because we add both to left and right of the segment
                 
                 % Adjust times limits according to the sampling and the new edges
                 % and find them as timepoints in EEG.times
                 if doItOnce 
-                    extrapoints = mod(timeMin,timeRes);
+                    timeMin = floor(timeMin/timeRes) * timeRes;
                     timeMin = timeMin - timeToAdd;
-                    if isempty(find(EEG.times == timeMin,1))
-                        timeMin = timeMin - extrapoints;
-                    end
-                    timeMin = find(EEG.times == timeMin);
-                    
-                    extrapoints = mod(timeMax,timeRes);
+                    timeMax = ceil(timeMax/timeRes) * timeRes;
                     timeMax = timeMax + timeToAdd;
-                    if isempty(find(EEG.times == timeMax,1))
-                        timeMin = timeMax + extrapoints;
-                    end
-                    timeMax = find(EEG.times == timeMax);
-                    clear leftEdge rightEdge EEGtemp EEGnew;
                 end
                 
             else % There is no edges padding
@@ -156,29 +140,24 @@ function success = wtPerformCWT()
                     timeRes = EEG.times(2) - EEG.times(1);
                 end
                 
-                EEG.times = single(min(EEG.times)):timeRes:single(max(EEG.times));
+                EEG.times = min(EEG.times): timeRes : max(EEG.times);
                 
                 % Adjust times limits according to the sampling and the new edges
                 % and find them as timepoints in EEG.times
                 if doItOnce 
-                    if ~find(EEG.times == timeMin)
-                        timeMin = timeMin - mod(timeMin,timeRes);
-                    end
-                    timeMin = find(EEG.times == timeMin);
-                    
-                    if ~find(EEG.times == timeMax)
-                        timeMax = timeMax + mod(timeMax,timeRes);
-                    end
-                    timeMax = find(EEG.times == timeMax); 
+                    timeMin = floor(timeMin/timeRes) * timeRes;   
+                    timeMax = ceil(timeMax/timeRes) * timeRes;                
                 end
             end
     
             % Calculate wavelets at each frequency (once)
             if doItOnce
+                timeMinIdx = find(EEG.times == timeMin);
+                timeMaxIdx = find(EEG.times == timeMax);  
                 [cwMatrix, Fa] = generateMorletWavelets(EEG.srate);     
             end
             
-            [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMin, timeMax, 'cwt', ...
+            [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMinIdx, timeMaxIdx, 'cwt', ...
                 channelsList, {WTIOProcessor.WaveletsAnalisys_avWT}, 0, adjEpochsList, cwMatrix);
 
             if ~success

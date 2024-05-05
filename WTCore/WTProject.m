@@ -7,10 +7,30 @@ classdef WTProject < WTClass
     properties (SetAccess=private, GetAccess=public)
         IsOpen logical
         Config WTConfig
+        Context cell
     end
 
     properties
         Interactive logical
+    end
+
+    methods (Access=private)
+        function msg = getContextMsg(o, fmt, varargin)
+            msg = WTUtils.ifThenElse(~isempty(o.Context), @()char(join(o.Context,':')), '');
+            if isempty(fmt)
+                return
+            end
+            tail = sprintf(fmt, varargin{:});
+            msg = WTUtils.ifThenElse(isempty(msg), tail, @()[msg ': ' tail]);
+        end
+
+        function msg = getAlternativeMsg(o, msg, fmt, varargin) 
+            msg = WTUtils.ifThenElse(~isempty(msg), msg, sprintf(fmt, varargin{:}));
+            if isempty(msg)
+                return
+            end
+            msg(1) = WTUtils.ifThenElse(isempty(o.Context), upper(msg(1)), lower(msg(1)));
+        end
     end
 
     methods
@@ -20,10 +40,25 @@ classdef WTProject < WTClass
             if ~o.InstanceInitialised
                 o.IsOpen = false;
                 o.Interactive = true;
+                o.Context = {};
                 o.Config = WTConfig();
             end
         end
         
+        function o = newContext(o, ctx)
+            o.Context = { ctx };
+        end
+
+        function o = addContext(o, ctx)
+            o.Context = [ o.Context ctx ];
+        end
+
+        function o = delContext(o)
+            if ~isempty( o.Context)
+                o.Context(1:end) = [];
+            end
+        end
+
         function open = checkIsOpen(o)
             open = o.IsOpen;
             if ~open
@@ -56,7 +91,7 @@ classdef WTProject < WTClass
             if ~done 
                 return
             end
-            
+
             waveletPrms = o.Config.WaveletTransform;
             condsGrandPrms = o.Config.ConditionsGrand;
             subjsGrandPrms = o.Config.SubjectsGrand;
@@ -95,7 +130,8 @@ classdef WTProject < WTClass
             wtLog = WTLog(); 
             if wtLog.LogLevel >= WTLog.LevelErr 
                 WTLog().err(fmt, varargin{:});
-                o.notify(WTUtils.ifThenElse(isempty(title), 'Error', title), fmt, varargin{:});
+                title = o.getContextMsg(o.getAlternativeMsg(title, 'error'));
+                o.notify(title, fmt, varargin{:});
             end
         end
 
@@ -103,15 +139,16 @@ classdef WTProject < WTClass
             wtLog = WTLog(); 
             if wtLog.LogLevel >= WTLog.LevelWrn 
                 WTLog().warn(fmt, varargin{:});
-                o.notify(WTUtils.ifThenElse(isempty(title), 'Warning', title), fmt, varargin{:});
+                title = o.getContextMsg(o.getAlternativeMsg(title, 'warning'));
+                o.notify(title, fmt, varargin{:});
             end
         end
 
         function notifyInf(o, title, fmt, varargin)
             wtLog = WTLog(); 
             if wtLog.LogLevel >= WTLog.LevelInf 
-                WTLog().info(fmt, varargin{:});
-                o.notify(WTUtils.ifThenElse(isempty(title), 'Info', title), fmt, varargin{:});
+                title = o.getContextMsg(o.getAlternativeMsg(title, 'info'));
+                o.notify(title, fmt, varargin{:});
             end
         end
 

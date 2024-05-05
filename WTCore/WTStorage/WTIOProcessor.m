@@ -509,7 +509,7 @@ classdef WTIOProcessor < handle
                 end
                 success = true;
             catch me
-                WTLog().except(me)
+                WTLog().except(me);
             end 
         end
 
@@ -708,7 +708,7 @@ classdef WTIOProcessor < handle
                 @()sprintf('[%s]ms',  num2str(timeMin)));
             freqStr = WTUtils.ifThenElse(freqMin ~= freqMax, ...
                 @()WTUtils.ifThenElse(freqPace > 0, ...
-                    @()sprintf('[%s,%s#%s]Hz', num2str(freqMin), num2str(freqMax), num2str(freqPace)), ...
+                    @()sprintf('[%s,+%s,%s]Hz', num2str(freqMin), num2str(freqPace), num2str(freqMax)), ...
                     @()sprintf('[%s,%s]Hz', num2str(freqMin), num2str(freqMax))), ...
                 @()sprintf('[%s]Hz',  num2str(freqMin)));
             fileName =  [filePrefix logStr timeStr '_' freqStr '_bc_' wType '.' dtStr '.tsv'];

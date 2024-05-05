@@ -192,6 +192,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('NEW PROJECT');
         wtLog.contextOn('NewProject');
         try
             wtNewProject();
@@ -199,7 +200,7 @@ function varargout = wtools(varargin)
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to create a new project');
+            wtProject.notifyErr([], 'Failed to create a new project');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -213,6 +214,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('OPEN PROJECT');
         wtLog.contextOn('OpenProject');
         try
             wtOpenProject();
@@ -220,7 +222,7 @@ function varargout = wtools(varargin)
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to open a project');
+            wtProject.notifyErr([], 'Failed to open a project');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -234,12 +236,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('DATA IMPORT');
         wtLog.contextOn('Import');
         try
             wtConvert();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to import data');
+            wtProject.notifyErr([], 'Failed to import data');
         end
         wtLog.reset();  
         unlock(hObject, handles);
@@ -253,13 +256,14 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.contextOn('SubjectManager');
+        wtProject = WTProject().newContext('SUBJECTS MANAGER');
+        wtLog.contextOn('SubjectsManager');
         try
             wtRebuildSubjects();
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to rebuild subjects');
+            wtProject.notifyErr([], 'Failed to rebuild subjects');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -273,13 +277,14 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('TIME/FREQ ANALYSIS');
         wtLog.contextOn('TimeFreqAnalysis');
         try
             wtPerformCWT();
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to perform time/frequency analysis');
+            wtProject.notifyErr([], 'Failed to perform time/frequency analysis');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -293,12 +298,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.contextOn('BaselineChop');
+        wtProject = WTProject().newContext('BASELINE/CHOPPING');
+        wtLog.contextOn('Baseline/Chopping');
         try
             wtBaselineChop();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to perform calculate baseline or perform chopping');
+            wtProject.notifyErr([], 'Failed to perform calculate baseline or perform chopping');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -312,12 +318,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('CONDITIONS DIFFERENCE');
         wtLog.contextOn('ConditionsDifference');
         try
             wtDifference();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to perform conditions difference');
+            wtProject.notifyErr([], 'Failed to perform conditions difference');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -331,13 +338,14 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('SUBJECTS GRAND AVERAGE');
         wtLog.contextOn('SubjectsGrandAverage');
         try
             wtGrandAverage();
             updateTotalSubjects(hObject, handles)
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to perform grand average');
+            wtProject.notifyErr([], 'Failed to perform grand average');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -351,12 +359,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('AVERAGE PLOTS');
         wtLog.contextOn('AveragePlots');
         try
             wtAvgPlots();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show average plots');
+            wtProject.notifyErr([], 'Failed to show average plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -370,12 +379,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.contextOn('ChannelsPlots');
+        wtProject = WTProject().newContext('CHANNELS AVERAGE PLOTS');
+        wtLog.contextOn('ChannelsAveragePlots');
         try
             wtChansAvgPlots();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show channels average plots');
+            wtProject.notifyErr([], 'Failed to show channels average plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -389,12 +399,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.contextOn('GlobalPlotsWithStdError');
+        wtProject = WTProject().newContext('AVERAGE WITH STDERR PLOTS');
+        wtLog.contextOn('AveragePlotsWithStdError');
         try
             wtAvgStdErrPlots();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show average with stderr plots');
+            wtProject.notifyErr([], 'Failed to show average with stderr plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -408,12 +419,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtLog.contextOn('ChannelsPlotsWithStdError');
+        wtProject = WTProject().newContext('CHANNELS AVERAGE WITH STDERR PLOTS');
+        wtLog.contextOn('ChannelsAveragePlotsWithStdError');
         try
             wtChansAvgStdErrPlots();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show channels average with stderr plots');
+            wtProject.notifyErr([], 'Failed to show channels average with stderr plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -427,12 +439,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('2D SCALP MAP PLOTS');
         wtLog.contextOn('TwoDimensionalScalpMapPlots');
         try
             wt2DScalpMapPlots();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show scalp map plots');
+            wtProject.notifyErr([], 'Failed to show scalp map plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -446,12 +459,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('3D SCALP MAP PLOTS');
         wtLog.contextOn('3DScalpMapPlots');
         try
             wt3DScalpMapPlots();
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show 3D scalp map plots');
+            wtProject.notifyErr([], 'Failed to show 3D scalp map plots');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -465,13 +479,14 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('STATISTICS');
         wtLog.contextOn('Statistics');
         try
             wtStatistics();
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to calculate statistics');
+            wtProject.notifyErr([], 'Failed to calculate statistics');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -485,12 +500,13 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
+        wtProject = WTProject().newContext('HELP');
         wtLog.contextOn('Help');
         try
             web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
         catch me
             wtLog.except(me);
-            WTProject().notifyErr([], 'Failed to show help');
+            wtProject.notifyErr([], 'Failed to show help');
         end
         wtLog.reset();
         unlock(hObject, handles);
@@ -586,7 +602,7 @@ function varargout = wtools(varargin)
     
     function updateProjectName(hObject, handles) 
         if isfield(handles,'ProjectEdit')
-            wtProject = WTProject();
+            wtProject = WTProject().newContext('');
             prjName = WTUtils.ifThenElse(wtProject.IsOpen, wtProject.Config.getName(), '?');
             set(handles.ProjectEdit, 'String', prjName);
             guidata(hObject, handles);
@@ -594,7 +610,7 @@ function varargout = wtools(varargin)
     
     function updateTotalSubjects(hObject, handles) 
         if isfield(handles,'SSnEdit')
-            wtProject = WTProject();
+            wtProject = WTProject().newContext('');
             nSubjs = length(wtProject.Config.SubjectsGrand.SubjectsList);
             nSubjsStr = WTUtils.ifThenElse(wtProject.IsOpen, num2str(nSubjs), '?');
             set(handles.SSnEdit, 'String', nSubjsStr);

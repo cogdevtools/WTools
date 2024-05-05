@@ -113,7 +113,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
         if ~isempty(channelsIdxs) 
             statsPrms.ChannelsList = channelsIdxs;
             if ~statsPrms.persist()
-                wtProject.notifyErr('Statistics: error', 'Failed to save channel list!');
+                wtProject.notifyErr([], 'Failed to save channel list!');
                 return
             end
         end
@@ -227,14 +227,14 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
         wtLog.contextOff().HeaderOn = true;
        
         if ~ioProc.statsWrite(statsFile, lines.Value) 
-            wtProject.notifyErr('Statistics: error', 'Failed to save file:\n%s', fullStatsFile);
+            wtProject.notifyErr([], 'Failed to save file:\n%s', fullStatsFile);
             return
         end
        
     catch me
         wtLog.popStatus();
         wtLog.except(me);
-        wtProject.notifyErr('Statistics: error', 'Operation failed due to an unexpected error (check the log)');
+        wtProject.notifyErr([], 'Operation failed due to an unexpected error (check the log)');
         return
     end
 

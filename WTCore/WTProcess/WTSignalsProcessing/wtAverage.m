@@ -83,7 +83,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     % ...
 
     ioProc = wtProject.Config.IOProc;
-    extraEdges = cwtParams.EdgePadding;
+    extraEdges = single(cwtParams.EdgePadding);
     logTransform = cwtParams.LogarithmicTransform;
     evokedOscillations = cwtParams.EvokedOscillations;
 
@@ -159,14 +159,14 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             epochsToTransform = epochsList;
             nChans = size(epochsList,2);
         end
-
         % Introduced by Eugenio Parise to process individual epochs -- OFF --
+        
         for i = 1:epochsN
             actualEpoch = epochsToTransform(i);
             if i == 1
-                wtLog.dbg('Operating on epoch nr: %d/%d', i, nChans);
+                wtLog.dbg('Operating on epoch %d/%d', i, nChans);
             else
-                wtLog.dbg('Operating on epoch nr: %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
+                wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
             end
 
             t = cputime;
@@ -271,21 +271,17 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                 % Modified by Eugenio Parise to cut the extra edges before saving -- ON --
                 WT = avWT/(size(X,3)-nFlatEpochs);
                 
-                if (extraEdges/min(Fa)) >= 1
-                    extratime = extraEdges/1;
-                    timeRes = (tim(2)-tim(1));
-                    extrapoints = extratime/timeRes;
+                if extraEdges/single(min(Fa)) >= 1
+                    extratime = extraEdges;
+                    timeRes = tim(2) - tim(1);
+                    extrapoints = floor(extratime/timeRes);
+                    extratime = extrapoints*timeRes;
                     
-                    if mod(extrapoints,timeRes) ~= 0
-                        extrapoints = extrapoints - mod(extrapoints,timeRes);
-                        extratime = extrapoints*timeRes;
-                    end
-                    
-                    e1 = find(tim == min(tim))+extrapoints;
-                    e2 = find(tim == max(tim))-extrapoints;
-                    t1 = min(tim)+extratime;
-                    t2 = max(tim)-extratime;
-                    tim = (t1:timeRes:t2);
+                    e1 = 1 + extrapoints;
+                    e2 = length(tim) - extrapoints;
+                    t1 = tim(1) + extratime;
+                    t2 = tim(end) - extratime;
+                    tim = t1 : timeRes : t2;
                     WT = WT(:,:,e1:e2);
                 end
                 
