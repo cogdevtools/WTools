@@ -164,8 +164,6 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
             hFigure.NumberTitle = 'off'; 
             hFigure.Name = figureName;
             hFigure.ToolBar = 'none';
-            % Set the callback to manage grid style change
-            hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
             
             imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
                 interp2(squeeze(WTChansAvg(1, freqIdxs, timeIdxs)), 4, 'spline'));
@@ -214,6 +212,9 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
                 'Rotation', xLabel.Rotation, ...
                 'Position', [xLabel.Position 2 * pace], ...
                 'FontSize', 12, 'FontWeight', 'bold'); 
+
+            % Set the callback to manage grid style change
+            hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
             wtLog.contextOff(); 
         end
     catch me

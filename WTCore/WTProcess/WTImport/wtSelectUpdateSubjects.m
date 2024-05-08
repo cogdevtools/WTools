@@ -20,6 +20,7 @@ function [success, sbjFileNames] = wtSelectUpdateSubjects(system)
 
     subjectsParams = copy(subjectsParams);
     subjectsParams.SubjectsList = subjects;
+    subjectsParams.ImportedSubjectsList = subjects;
     subjectsParams.FilesList = sbjFileNames;
 
     if ~subjectsParams.persist()

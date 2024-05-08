@@ -143,8 +143,6 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         hFigure.NumberTitle = 'off'; 
         hFigure.Name = figureName;
         hFigure.ToolBar = 'none';
-        % Set the callback to manage grid style change
-        hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
 
         % Set time pace
         timeChunk = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 100;
@@ -196,6 +194,8 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
             wtLog.contextOff(); 
         end
 
+        % Set the callback to manage grid style change
+        hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
     catch me
         wtLog.except(me);
         wtLog.popStatus();

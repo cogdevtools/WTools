@@ -213,23 +213,6 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         hFigure.UserData.SubPlotAxesCenter = [xCenter' yCenter'];
         hFigure.UserData.onButtonDownCbPrms = hPrms;
 
-        % Callbacks settings
-        % Set the callback to keep the window size ratio constant
-        hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
-        % Set the callback to close open subplots when the master figure closes
-        hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
-        % Set the callback to display subplots
-        hFigure.WindowButtonDownFcn = @mainPlotOnButtonDownCb;
-        % Set the callback to resize/rearrange subplots 
-        hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
-            {@WTPlotUtils.onKeyPressResizeObjectsCb, 'SubPlotsAxes', 'OriginalPosition'}, ...
-            {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'});
-        hFigure.WindowScrollWheelFcn = {@WTPlotUtils.onMouseScrollResizeObjectsCb, ...
-            'SubPlotsAxes', 'OriginalPosition'};
-        % Set the callback to display sub plot lable when mouse hover on it
-        hFigure.WindowButtonMotionFcn = {@WTPlotUtils.onMouseOverSubObjectsDoCb, ...
-            'SubPlotAxesCenter', 'SubPlotsAxes', @setSubPlotAnnotationSetCb};
-
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
@@ -276,6 +259,22 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
             end
 
             hold('off');
+            % Callbacks settings
+            % Set the callback to keep the window size ratio constant
+            hFigure.SizeChangedFcn = {@WTPlotUtils.keepWindowSizeRatioCb, figureWHRatio};
+            % Set the callback to close open subplots when the master figure closes
+            hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
+            % Set the callback to display subplots
+            hFigure.WindowButtonDownFcn = @mainPlotOnButtonDownCb;
+            % Set the callback to resize/rearrange subplots 
+            hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
+                {@WTPlotUtils.onKeyPressResizeObjectsCb, 'SubPlotsAxes', 'OriginalPosition'}, ...
+                {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'});
+            hFigure.WindowScrollWheelFcn = {@WTPlotUtils.onMouseScrollResizeObjectsCb, ...
+                'SubPlotsAxes', 'OriginalPosition'};
+            % Set the callback to display sub plot lable when mouse hover on it
+            hFigure.WindowButtonMotionFcn = {@WTPlotUtils.onMouseOverSubObjectsDoCb, ...
+                'SubPlotAxesCenter', 'SubPlotsAxes', @setSubPlotAnnotationSetCb};
             wtLog.contextOff();    
         end
 
@@ -350,8 +349,6 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         subPlotPrms.MainPlot = hMainPlot;
         subPlotPrms.OriginalPosition = position;
         hFigure.UserData = subPlotPrms;
-        % Set the callback to manage grid style change
-        hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
 
         % Set time pace
         timeChunk = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 100;
@@ -395,8 +392,10 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
                 hold('off');
             end 
         end
+        
         hold('on');  
-
+        % Set the callback to manage grid style change
+        hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
     catch me
         WTLog().except(me);
     end  

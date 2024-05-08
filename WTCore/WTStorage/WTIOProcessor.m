@@ -31,10 +31,18 @@ classdef WTIOProcessor < handle
         MeshFileExt = '.mat'
         GrandAvgFileExt = '.mat'
         PerSbjGrandAvgFileExt = '.ss'
+        SubjIdRe = '^\d+$'
         SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTUtils.ifThenElse(ispc, '\\','/'));
         EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
         BaselineCorrectedFileNameRe = ['^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+)(?:\' ...
             WTIOProcessor.GrandAvgFileExt '|\' WTIOProcessor.PerSbjGrandAvgFileExt ')$'] 
+    end
+
+    properties(Constant,Access=private,Hidden)
+        SystemEEPImportFileRe = '^.+_(?<subject>\d+)\.cnt$'
+        SystemEEGLabImportFileRe = '^([^0-9]|\d+[^0-9]+)*(?<subject>\d+)\.set$'
+        SystemEGIImportFileRe = '^(?<subject>\d+) .*\.mat$'
+        SystemBRVImportFileRe = '^(?<subject>\d+) .*\.mat$'
     end
 
     properties(SetAccess=private,GetAccess=public)
@@ -89,13 +97,13 @@ classdef WTIOProcessor < handle
         function re = getSystemImportFileNameFmtRe(system) 
             switch system
                 case WTIOProcessor.SystemEEP
-                    re = '^.+_(?<subject>\d+)\.cnt$';
+                    re = WTIOProcessor.SystemEEPImportFileRe;
                 case WTIOProcessor.SystemEEGLab
-                    re = '^([^0-9]|\d+[^0-9]+)*(?<subject>\d+)\.set$';
+                    re = WTIOProcessor.SystemEEGLabImportFileRe;
                 case WTIOProcessor.SystemEGI
-                    re = '^(?<subject>\d+) .*\.mat$';
+                    re = WTIOProcessor.SystemEGIImportFileRe;
                 case WTIOProcessor.SystemBRV
-                    re = '^(?<subject>\d+) .*\.mat$';
+                    re = WTIOProcessor.SystemBRVImportFileRe;
                 otherwise
                     WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
@@ -134,6 +142,10 @@ classdef WTIOProcessor < handle
                 otherwise
                     WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
+        end
+
+        function in = isSubjectInImportFileName(subject, importFileName)
+            in = contains(importFileName, subject);
         end
 
         function [success, meshFile] = getMeshFileFromSplineFile(splineFile) 
@@ -752,7 +764,7 @@ classdef WTIOProcessor < handle
                 end
             end
 
-            subjects = subjects{1:nValid};
+            subjects = subjects(1:nValid);
         end 
     end
 end

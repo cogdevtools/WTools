@@ -51,7 +51,7 @@ function wtEEGLabToEEGLab()
 
     ioProc = wtProject.Config.IOProc;
     subjectsPrms = wtProject.Config.Subjects;
-    subjects = subjectsPrms.SubjectsList;
+    subjects = subjectsPrms.ImportedSubjectsList;
     subjectFileNames = subjectsPrms.FilesList;
     nSubjects = length(subjects);
     conditionsPrms = wtProject.Config.Conditions;

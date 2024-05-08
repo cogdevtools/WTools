@@ -714,7 +714,7 @@ classdef WTUtils
             try
                 cd(dir);
                 evalin('base', module);
-                ws.pushBase()
+                ws.pushBase();
                 if nargin == 2 
                     varargout{1} = ws.popToStruct();
                 else 

@@ -48,11 +48,6 @@
 %
 % smavr(); to run via GUI
 
-% read condgrand
-% select files & measures (.mat): allow average
-% define plot params
-% checkDiffAndGrandAvg
-% laoad first file to fix params
 function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();

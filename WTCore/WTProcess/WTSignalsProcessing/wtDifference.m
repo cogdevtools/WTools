@@ -46,7 +46,7 @@ function wtDifference(subjects)
     end
 
     if length(wtProject.Config.ConditionsGrand.ConditionsList) < 2
-        wtProject.notifyWrn([], 'There is only one condition, so no conditions diff can be performed!');
+        wtProject.notifyWrn([], 'There is only one or no conditions, so difference can''t be performed!');
         return
     end
 
@@ -63,10 +63,14 @@ function wtDifference(subjects)
 
     % Note: setDifferencePrms() updates both condsGrandPrms, differencePrms
     condsGrandPrms = wtProject.Config.ConditionsGrand;
-    differencePrms = wtProject.Config.Difference;
-    ioProc = wtProject.Config.IOProc;
-    conditions = condsGrandPrms.ConditionsList;
     condiff = condsGrandPrms.ConditionsDiff;
+    if length(condiff) == 0
+        wtProject.notifyWrn([], 'User selected no conditions differences');
+        return
+    end
+    differencePrms = wtProject.Config.Difference;
+    conditions = condsGrandPrms.ConditionsList;
+    ioProc = wtProject.Config.IOProc;
     nSubjects = length(subjects);
     nConditions = length(conditions);
     nCondiff = length(condiff);
@@ -223,6 +227,7 @@ function success = setDifferencePrms()
     if ~WTDifferenceGUI.defineDifferenceParams(differencePrms, condsGrandPrms, logFlag, wtEvok)
         return
     end
+
     if ~condsGrandPrms.persist() 
         wtProject.notifyErr([], 'Failed to save conditions grand params');
         return

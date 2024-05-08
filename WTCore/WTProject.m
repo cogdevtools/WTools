@@ -75,18 +75,30 @@ classdef WTProject < WTClass
             subjectsPrms = o.Config.Subjects;
             conditionsPrms = o.Config.Conditions;
             channelsPrms = o.Config.Channels;
+            done = false;
 
-            done = subjectsPrms.exist() && ...
+            if ~(subjectsPrms.exist() && ...
                 conditionsPrms.exist() && ...
-                channelsPrms.exist() && ...
-                ~isempty(subjectsPrms.FilesList) && ... 
-                ~isempty(conditionsPrms.ConditionsList);
-            if ~done
-                o.notifyWrn([], 'Data import must be performed before to proceed');
+                channelsPrms.exist())
+                o.notifyWrn('Data import check', 'Data import must be performed before to proceed');
+                return
             end
+            if isempty(subjectsPrms.FilesList)
+                o.notifyWrn('Data import check', 'The list of imported data files is empty. Check:\n%s', ...
+                    subjectsPrms.getFileName(true));
+                return
+            end
+            if isempty(conditionsPrms.ConditionsList);
+                o.notifyWrn('Data import check', 'The list conditions is empty. Check:\n%s', ...
+                    conditionsPrms.getFileName(true));
+                return
+            end
+
+            done = true;
         end
 
-        function done = checkWaveletAnalysisDone(o)
+        function done = checkWaveletAnalysisDone(o, checkLists)
+            checkLists = nargin < 2 || checkLists;
             done = o.checkImportDone();
             if ~done 
                 return
@@ -95,15 +107,29 @@ classdef WTProject < WTClass
             waveletPrms = o.Config.WaveletTransform;
             condsGrandPrms = o.Config.ConditionsGrand;
             subjsGrandPrms = o.Config.SubjectsGrand;
+            done = false;
 
-            done = waveletPrms.exist() && ...
-                subjsGrandPrms.exist() && ...
-                condsGrandPrms.exist() && ...
-                ~isempty(subjsGrandPrms.SubjectsList) && ...
-                ~isempty(condsGrandPrms.ConditionsList);
-            if ~done
-                o.notifyWrn([], 'Wavelet analysis must be performed before to proceed');
+            if ~(waveletPrms.exist() && ...
+                 subjsGrandPrms.exist() && ...
+                 condsGrandPrms.exist())
+                 o.notifyWrn('Wavelet analysis check', 'Wavelet analysis must be performed before to proceed');
+                 return
             end
+            
+            if checkLists
+                if isempty(subjsGrandPrms.SubjectsList)
+                    o.notifyWrn('Wavelet analysis check', 'The list of subjects for the grand average is empty. Check:\n%s', ...
+                        subjsGrandPrms.getFileName(true));
+                    return
+                end
+                if isempty(condsGrandPrms.ConditionsList)
+                    o.notifyWrn('Wavelet analysis check', 'The list of conditions for the grand average is empty. Check:\n%s', ...
+                        condsGrandPrms.getFileName(true));
+                    return
+                end
+            end
+            
+            done = true;
         end
 
         function done = checkChopAndBaselineCorrectionDone(o)

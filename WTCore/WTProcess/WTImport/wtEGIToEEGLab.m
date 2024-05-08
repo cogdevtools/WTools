@@ -47,7 +47,7 @@ function wtEGIToEEGLab()
 
     ioProc = wtProject.Config.IOProc;
     subjectsPrms = wtProject.Config.Subjects;
-    subjects = subjectsPrms.SubjectsList;
+    subjects = subjectsPrms.ImportedSubjectsList;
     subjectFileNames = subjectsPrms.FilesList;
     nSubjects = length(subjects);
     conditionsPrms = wtProject.Config.Conditions;
@@ -88,7 +88,7 @@ function wtEGIToEEGLab()
         end
 
         try
-            eeg_getversion; % Introduced in EEGLAB v9.0.0.0b
+            eeg_getversion(); % Introduced in EEGLAB v9.0.0.0b
             fileToImport = ioProc.getImportFile(subjFileName);
             deleteFileToImport = false;
         catch
