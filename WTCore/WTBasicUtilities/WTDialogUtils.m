@@ -62,7 +62,7 @@ classdef WTDialogUtils
         end
 
         % uiGetFiles() select min/maxFiles (<= 0 ignored) files applying files type 'filter'.
-        % msg is the title of the dialog. varargin are any list of paramters accepted by 
+        % msg is the title of the dialog. varargin are any list of parameters accepted by 
         % matlab uigetfile + an extra optional parameter restrictToDirs which must be either 
         % a char array or a cell array of char arrays whose elements are regular expressions 
         % one of which at least the directory of the selected file matches.

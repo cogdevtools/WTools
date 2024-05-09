@@ -83,13 +83,13 @@ classdef WTAppConfigGUI
                 end
 
                 try
-                    wtAppConfig.ShowSplashScreen = answer{1,1};
                     try
                         wtAppConfig.PlotsColorMap = answer{1,2};
                     catch me
-                        wtAppConfig.PlotsColorMap = wtAppConfigCrnt.PlotsColorMap;
+                        answer{1,2} = wtAppConfigCrnt.PlotsColorMap;
                         me.rethrow();
                     end
+                    wtAppConfig.ShowSplashScreen = answer{1,1};
                     wtAppConfig.ProjectLog = answer{1,3};
                     wtAppConfig.ProjectLogLevel = answer{1,4};
                     wtAppConfig.MuteStdLog = answer{1,5};
@@ -102,7 +102,7 @@ classdef WTAppConfigGUI
                 end
 
                 if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 elseif wtAppConfig.MuteStdLog && ~WTEEGLabUtils.eeglabYesNoDlg('Confirm parameter', ...
                     'Muting standard log might hide important information! Continue?')
                     success = false;

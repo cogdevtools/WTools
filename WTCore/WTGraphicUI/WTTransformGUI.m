@@ -173,7 +173,7 @@ classdef WTTransformGUI
                     end
                 catch me
                     wtLog.except(me);
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
                 break
             end 

@@ -45,7 +45,7 @@ classdef WTCodingUtils
         end
 
         % execFunctions() executes multiple functions and collects their results. The n-th (n >= 0) function handle is expected 
-        % to be the argument of index 2*n+1 of varargin, whereas its paramters are expected to be the cell array argument of
+        % to be the argument of index 2*n+1 of varargin, whereas its parameters are expected to be the cell array argument of
         % index 2*(n+1). The result of each function is returned as a cell array in position 2*n+1 of varargout.
         function varargout = execFunctions(varargin) 
             varargout = cell(nargin/2, 1);

@@ -75,7 +75,7 @@ classdef WTBaselineChopGUI
                     baselineChopParams.validate(true);
                 catch me
                     wtLog.except(me);
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                     continue
                 end
                 break
