@@ -640,6 +640,7 @@ function varargout = wtools(varargin)
         catch me
             wtLog.except(me);
         end
+        wtLog.reset();
         unlock(hObject, handles);
         closeAppAfter = true;
 
