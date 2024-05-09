@@ -71,20 +71,20 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
             success = true;
 
             if isempty(o.ChannelsLocationFile) 
-                WTUtils.throwOrLog(WTException.badValue('Empty channel location file'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Empty channel location file'), ~throwExcpt);
                 success = false;
             end
             if isempty(o.ChannelsLocationFileType) 
-                WTUtils.throwOrLog(WTException.badValue('Empty channel location file type'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Empty channel location file type'), ~throwExcpt);
                 success = false;
             end
             if isempty(o.SplineFile) 
-                WTUtils.throwOrLog(WTException.badValue('Empty spline file'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Empty spline file'), ~throwExcpt);
                 success = false;
             end
             chansIntersect = intersect(o.CutChannels, o.NewChannelsReference);
             if ~isempty(chansIntersect)
-                WTUtils.throwOrLog(WTException.badValue('Reference channels list contains cut channel(s): %s', ...
+                WTCodingUtils.throwOrLog(WTException.badValue('Reference channels list contains cut channel(s): %s', ...
                     char(join(chansIntersect))), ~throwExcpt);
                 success = false;
             end

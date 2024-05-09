@@ -80,7 +80,7 @@ function wtEEPToEEGLab()
         subjFileName = subjectFileNames{sbj}; 
         wtLog.info('Processing import file ''%s''', subjFileName);
 
-        [success, ALLEEG, ~, ~] =  WTUtils.eeglabRun(WTLog.LevelDbg, true);
+        [success, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
         if ~success 
             wtProject.notifyErr([], 'Failed to run eeglab');  
             wtLog.popStatus();      
@@ -94,7 +94,7 @@ function wtEEPToEEGLab()
             return   
         end
 
-        [success, ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
+        [success, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
             ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
         if ~success 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
@@ -104,7 +104,7 @@ function wtEEPToEEGLab()
 
         if ~isempty(channelsPrms.CutChannels)
             wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
             if ~success 
                 wtProject.notifyErr([], 'Failed cut channels');
                 wtLog.popStatus();
@@ -116,7 +116,7 @@ function wtEEPToEEGLab()
         % Apply HighPass and LowPass filters separately. This is a workaround because sometimes MATLAB 
         % does not find a good solution for BandPass filter.
         if ~isnan(EEPToEEGLabPrms.HighPassFilter)
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
                 EEG, EEPToEEGLabPrms.HighPassFilter, [], [], 0);
             if ~success 
                 wtProject.notifyErr([], 'Failed to apply high pass filter');
@@ -126,7 +126,7 @@ function wtEEPToEEGLab()
         end
 
         if ~isnan(EEPToEEGLabPrms.LowPassFilter)
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
                 EEG, [], EEPToEEGLabPrms.LowPassFilter, [], 0);
             if ~success 
                 wtProject.notifyErr([], 'Failed to apply low pass filter');
@@ -145,12 +145,12 @@ function wtEEPToEEGLab()
         % Apply original rejection performed in EEProbe
         try 
             rejectionFile = WTIOProcessor.getEEPRejectionFile(ioProc.getImportFile(subjFileName));
-            rejection = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'read_eep_rej', rejectionFile);
+            rejection = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'read_eep_rej', rejectionFile);
             rejection = rejection./(1000/EEG.srate);
             if rejection(1,1) == 0
                 rejection(1,1) = 1;
             end
-            EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_eegrej', EEP, rejection);
+            EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_eegrej', EEP, rejection);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to apply original rejection performed in EEProbe for subject ''%s''', subject);
@@ -158,7 +158,7 @@ function wtEEPToEEGLab()
             return
         end
 
-        [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_epoch', EEG, {}, epochLimits, 'epochinfo', 'yes');
+        [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_epoch', EEG, {}, epochLimits, 'epochinfo', 'yes');
         if ~success
             wtProject.notifyErr([], 'Failed to apply epoch limits for subject ''%s''', subject);
             wtLog.popStatus();
@@ -167,7 +167,7 @@ function wtEEPToEEGLab()
 
         try 
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
 
             [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
             if ~success
@@ -176,7 +176,7 @@ function wtEEPToEEGLab()
                 return
             end
 
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to store EEGLAB data set for ''%s''', subject);

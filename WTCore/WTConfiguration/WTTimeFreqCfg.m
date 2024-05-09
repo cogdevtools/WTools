@@ -24,11 +24,11 @@ classdef WTTimeFreqCfg < matlab.mixin.Copyable
             success = true;
 
             if o.TimeMin > o.TimeMax 
-                WTUtils.throwOrLog(WTException.badValue('Field TimeMax < TimeMin'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field TimeMax < TimeMin'), ~throwExcpt);
                 success = false;
             end
             if o.FreqMin > o.FreqMax 
-                WTUtils.throwOrLog(WTException.badValue('Field FreqMax < FreqMin'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field FreqMax < FreqMin'), ~throwExcpt);
                 success = false;
             end
         end

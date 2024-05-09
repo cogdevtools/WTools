@@ -27,10 +27,10 @@ classdef WTAvgStdErrPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeF
             end 
             try
                 if length(cells) >= 5
-                    o.TimeMin = WTUtils.str2double(cells{1});
-                    o.TimeMax = WTUtils.str2double(cells{2});
-                    o.FreqMin = WTUtils.str2double(cells{3});
-                    o.FreqMax = WTUtils.str2double(cells{4});
+                    o.TimeMin = WTNumUtils.str2double(cells{1});
+                    o.TimeMax = WTNumUtils.str2double(cells{2});
+                    o.FreqMin = WTNumUtils.str2double(cells{3});
+                    o.FreqMax = WTNumUtils.str2double(cells{4});
                     o.AllChannels = cells{5};
                     o.validate();
                 else

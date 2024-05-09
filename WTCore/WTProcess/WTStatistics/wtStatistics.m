@@ -41,7 +41,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
     end
 
     if interactive
-        if WTUtils.eeglabYesNoDlg('Rebuild subjectsList?', 'Have new subjects been added?') && ~wtRebuildSubjects()
+        if WTEEGLabUtils.eeglabYesNoDlg('Rebuild subjectsList?', 'Have new subjects been added?') && ~wtRebuildSubjects()
            return
         end
         [success, subjectsList, conditionsList] = setStatisticsParams();
@@ -96,10 +96,10 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
         return
     end
 
-    measure = WTUtils.ifThenElse(evokedOscillations, ...
+    measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
         WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
 
-    [success, data] = WTMiscUtils.loadData(false, subjectsList{1}, conditionsList{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(false, subjectsList{1}, conditionsList{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.Statistics, data) 
         return
     end
@@ -108,7 +108,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
 
     if interactive
         initialValue = statsPrms.ChannelsList;
-        [channelsList, channelsIdxs] = WTUtils.stringsSelectDlg('Select channels\nfor statistics:', ...
+        [channelsList, channelsIdxs] = WTDialogUtils.stringsSelectDlg('Select channels\nfor statistics:', ...
             allChannelsLabels, false, true, 'InitialValue', initialValue);
         if ~isempty(channelsIdxs) 
             statsPrms.ChannelsList = channelsIdxs;
@@ -183,7 +183,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
 
     timeIdxs = find(data.tim == statsPrms.TimeMin):find(data.tim == statsPrms.TimeMax);
     freqIdxs = find(data.Fa == statsPrms.FreqMin):find(data.Fa == statsPrms.FreqMax);
-    freqPace = WTUtils.ifThenElse(statsPrms.IndividualFreqs, data.Fa(2) - data.Fa(1), 0);
+    freqPace = WTCodingUtils.ifThenElse(statsPrms.IndividualFreqs, data.Fa(2) - data.Fa(1), 0);
     freqStrs = arrayfun(@(x)num2str(x), data.Fa(freqIdxs), 'UniformOutput', false);
 
     [fullStatsFile, ~, statsFile] = ioProc.getStatisticsFile( ...
@@ -200,7 +200,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
         joinedCondsChans = cellfun(@(c)strcat([c '_'], channelsList), conditionsList, 'UniformOutput', false);
         joinedCondsChans = cat(1, joinedCondsChans{:});
         header = char(join({ 'subj' char(join(joinedCondsChans, '\t')) }, '\t'));
-        lines = WTHandle(cell(1, nSubjects * WTUtils.ifThenElse(statsPrms.IndividualFreqs, length(freqIdxs)*4, 3)));
+        lines = WTHandle(cell(1, nSubjects * WTCodingUtils.ifThenElse(statsPrms.IndividualFreqs, length(freqIdxs)*4, 3)));
         cursor = 0;
 
         for sbj = 1:nSubjects
@@ -213,7 +213,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
                 wtLog.dbg('condition %s', conditionsList{cnd});
                 condition = conditionsList{cnd};
 
-                [success, data] = WTMiscUtils.loadData(false, subject, condition, measure);
+                [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, condition, measure);
                 if ~success
                     return
                 end

@@ -50,7 +50,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
                 excp = WTException.badValue('Not a valid %s log level type: ''%s''', levelType, class(level));
             end
             if ~valid
-                WTUtils.throwOrLog(excp, ~throwExcpt);
+                WTCodingUtils.throwOrLog(excp, ~throwExcpt);
             end
         end
 
@@ -68,7 +68,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
             delete(hFigure);
             if ~valid
                 excp = WTException.badValue('Not a valid colormap: ''%s''', colorMap);
-                WTUtils.throwOrLog(excp, ~throwExcpt);
+                WTCodingUtils.throwOrLog(excp, ~throwExcpt);
             end
         end
     end
@@ -167,7 +167,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
                 end
             catch me
                 success = false;
-                WTUtils.throwOrLog(me, ~throwExcpt);
+                WTCodingUtils.throwOrLog(me, ~throwExcpt);
             end
             if success
                 o.copyFrom(c);

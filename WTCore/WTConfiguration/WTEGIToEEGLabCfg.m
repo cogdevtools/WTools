@@ -24,7 +24,7 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
                 return
             end 
             try
-                o.TriggerLatency = WTUtils.str2double(cells{1});
+                o.TriggerLatency = WTNumUtils.str2double(cells{1});
             catch me
                 WTLog().except(me);
                 success = false;

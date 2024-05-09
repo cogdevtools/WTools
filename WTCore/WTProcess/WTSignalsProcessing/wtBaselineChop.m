@@ -35,7 +35,7 @@ function success = wtBaselineChop()
     conditions = conditionsGrandParams.ConditionsList;
 
     if interactive 
-        subjects = WTUtils.stringsSelectDlg('Select subjects:', subjects);
+        subjects = WTDialogUtils.stringsSelectDlg('Select subjects:', subjects);
     end
 
     if isempty(subjects)
@@ -44,7 +44,7 @@ function success = wtBaselineChop()
     end
 
     if interactive 
-        conditions = WTUtils.stringsSelectDlg('Select conditions:', conditions);
+        conditions = WTDialogUtils.stringsSelectDlg('Select conditions:', conditions);
     end
 
     if isempty(conditions)
@@ -64,7 +64,7 @@ function success = wtBaselineChop()
             return
         end
 
-        measure = WTUtils.ifThenElse(baselineChopParams.EvokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(baselineChopParams.EvokedOscillations, ...
                     WTIOProcessor.WaveletsAnalisys_evWT, ...
                     WTIOProcessor.WaveletsAnalisys_avWT);
 

@@ -36,10 +36,10 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
             end 
             try
                 if length(cells) >= 7 
-                    o.ChopMin = WTUtils.str2double(cells{1});
-                    o.ChopMax = WTUtils.str2double(cells{2});
-                    o.BaselineMin = WTUtils.str2double(cells{3});
-                    o.BaselineMax = WTUtils.str2double(cells{4});
+                    o.ChopMin = WTNumUtils.str2double(cells{1});
+                    o.ChopMax = WTNumUtils.str2double(cells{2});
+                    o.BaselineMin = WTNumUtils.str2double(cells{3});
+                    o.BaselineMax = WTNumUtils.str2double(cells{4});
                     o.Log10Enable = cells{5};
                     o.NoBaselineCorrection = cells{6};
                     o.EvokedOscillations = cells{7};
@@ -62,11 +62,11 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
             success = true;
 
             if o.ChopMin > o.ChopMax 
-                WTUtils.throwOrLog(WTException.badValue('Field ChopMax < ChopMin'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field ChopMax < ChopMin'), ~throwExcpt);
                 success = false;
             end
             if ~o.NoBaselineCorrection && o.BaselineMin > o.BaselineMax
-                WTUtils.throwOrLog(WTException.badValue('Field BaselineMax < BaselineMin'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field BaselineMax < BaselineMin'), ~throwExcpt);
                 success = false;
             end
         end

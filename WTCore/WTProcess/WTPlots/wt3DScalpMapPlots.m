@@ -55,7 +55,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     channelsPrms = wtProject.Config.Channels;
 
     splineFile = fullfile(WTLayout.getDevicesDir(), channelsPrms.SplineFile);
-    if ~WTUtils.fileExist(splineFile)
+    if ~WTIOUtils.fileExist(splineFile)
         wtProject.notifyErr([], 'Spline file not found: %s', splineFile);
         return
     end
@@ -66,7 +66,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         return
     end
 
-    if ~WTUtils.fileExist(splineFile)
+    if ~WTIOUtils.fileExist(splineFile)
         wtLog.warn('Mesh file not found: %s', meshFile);
         meshFile = [];
     end
@@ -83,7 +83,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             return
         end
     else
-        measure = WTUtils.ifThenElse(evokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
  
@@ -116,12 +116,12 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         return
     end
 
-    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustPacedTimeFreqDomains(wtProject.Config.ThreeDimensionalScalpMapPlots, data) 
         return
     end
@@ -140,7 +140,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin);
     end
 
-    wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
+    wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
 
@@ -152,13 +152,13 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff();
                 continue
             end 
 
-            figureNamePrefix = WTUtils.ifThenElse(grandAverage, ...
+            figureNamePrefix = WTCodingUtils.ifThenElse(grandAverage, ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
 
@@ -170,18 +170,18 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             mainPlots(cnd) = hFigure;
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            data.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            data.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             % Average on time
             data.WT = mean(data.WT(:,:,timeIdxs), 3);
             % Average on frequence
             data.WT = mean(data.WT(:,freqIdxs,:), 2);
 
             if isempty(meshFile)
-                [~, hColorbar] = WTUtils.eeglabRun(WTLog.LevelDbg, false, ...
+                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, ...
                     'headplot', data.WT, splineFile, 'electrodes', 'off', ...
                     'maplimits', plotsPrms.Scale, 'cbar', 0);
             else
-                [~, hColorbar] = WTUtils.eeglabRun(WTLog.LevelDbg, false,  ...
+                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false,  ...
                     'headplot', data.WT, splineFile, 'meshfile', meshFile, ...
                     'electrodes', 'off', 'maplimits', plotsPrms.Scale, 'cbar', 0);
             end

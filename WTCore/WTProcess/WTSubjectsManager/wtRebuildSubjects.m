@@ -22,7 +22,7 @@ function success = wtRebuildSubjects()
     grandAnalysisSubjects = 'Subjects Grand Analysis';
     optionsList = { analysisSubjects, grandAnalysisSubjects };
 
-    selection = WTUtils.stringsSelectDlg('Select lists to rebuild:', optionsList, false, true, 'ListSize', [190, 120]);
+    selection = WTDialogUtils.stringsSelectDlg('Select lists to rebuild:', optionsList, false, true, 'ListSize', [190, 120]);
     if isempty(selection)
         return
     end
@@ -39,7 +39,7 @@ function success = wtRebuildSubjects()
             return
         end
 
-        subjects = WTUtils.stringsSelectDlg('Select analysed subjects:', allAnalysedSubjects, false, true);
+        subjects = WTDialogUtils.stringsSelectDlg('Select analysed subjects:', allAnalysedSubjects, false, true);
         if isempty(subjects)
             return
         end
@@ -86,9 +86,9 @@ function success = wtRebuildSubjects()
         end
 
         if select
-            newSubjects = WTUtils.stringsSelectDlg('Select subjects to\ninclude in the\ngrand analysis:', subjectsPrms.SubjectsList, false, true);
+            newSubjects = WTDialogUtils.stringsSelectDlg('Select subjects to\ninclude in the\ngrand analysis:', subjectsPrms.SubjectsList, false, true);
             update = update || ~isempty(newSubjects);
-            subjects = WTUtils.ifThenElse(isempty(newSubjects), {subjects}, {newSubjects});
+            subjects = WTCodingUtils.ifThenElse(isempty(newSubjects), {subjects}, {newSubjects});
         end
         
         if update

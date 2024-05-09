@@ -58,8 +58,8 @@ classdef WTConfigUtils
 
                 if isempty(params.Domain) 
                     wtProject.notifyErr([],'Empty domain for range %s, %s', ...
-                        WTUtils.ifThenElse(hasNameMin, ['[' params.NameMin], '(-inf'), ...
-                        WTUtils.ifThenElse(hasNameMax, [params.NameMax ']'], '+inf)'));
+                        WTCodingUtils.ifThenElse(hasNameMin, ['[' params.NameMin], '(-inf'), ...
+                        WTCodingUtils.ifThenElse(hasNameMax, [params.NameMax ']'], '+inf)'));
                     return
                 end
 

@@ -7,7 +7,7 @@ function success = wtSelectUpdateChannels(system)
 
     fileExt = ['*.' WTIOProcessor.getSystemChansLocationFileExtension(system)];
     selectionFlt = fullfile(ioProc.ImportDir, fileExt);
-    [chanLocFile, ~, ~] = WTUtils.uiGetFiles(selectionFlt, -1, -1, 'Select channels location file', ...
+    [chanLocFile, ~, ~] = WTDialogUtils.uiGetFiles(selectionFlt, -1, -1, 'Select channels location file', ...
         'MultiSelect', 'off', 'restrictToDirs', ['^' WTLayout.getDevicesDir() ], WTLayout.getDevicesDir());
     if isempty(chanLocFile) 
         wtLog.warn('No channel location file selected');
@@ -15,7 +15,7 @@ function success = wtSelectUpdateChannels(system)
     end
 
     selectionFlt = fullfile(ioProc.ImportDir, ioProc.SplineFileTypeFlt);
-    [splineFile, ~, ~] = WTUtils.uiGetFiles(selectionFlt, -1, -1, 'Select spline file', ...
+    [splineFile, ~, ~] = WTDialogUtils.uiGetFiles(selectionFlt, -1, -1, 'Select spline file', ...
         'MultiSelect', 'off', 'restrictToDirs', ['^' WTLayout.getDevicesDir() ], WTLayout.getDevicesDir());
     if isempty(splineFile) 
         wtLog.warn('No spline file selected');
@@ -27,7 +27,7 @@ function success = wtSelectUpdateChannels(system)
     channelsPrms.SplineFile = splineFile{1};
     channelsLabels = {};
     
-    if ~WTUtils.eeglabYesNoDlg('Cutting channels', 'Would you like to cut some channels?')
+    if ~WTEEGLabUtils.eeglabYesNoDlg('Cutting channels', 'Would you like to cut some channels?')
         channelsPrms.CutChannels = {};
     else
         channelsLabels = getChannelsLabels(system, channelsPrms.ChannelsLocationFile);
@@ -37,9 +37,9 @@ function success = wtSelectUpdateChannels(system)
         end
         cutChannels = {};
         while isempty(cutChannels)
-            [cutChannels, selected] = WTUtils.stringsSelectDlg('Select channels\nto cut:', channelsLabels, false, true);
+            [cutChannels, selected] = WTDialogUtils.stringsSelectDlg('Select channels\nto cut:', channelsLabels, false, true);
             if isempty(cutChannels)
-                if WTUtils.eeglabYesNoDlg('Confirm', 'No channels to cut selected: proceed?')
+                if WTEEGLabUtils.eeglabYesNoDlg('Confirm', 'No channels to cut selected: proceed?')
                     break;
                 end
             elseif length(channelsLabels) == length(cutChannels)
@@ -52,16 +52,16 @@ function success = wtSelectUpdateChannels(system)
         end
     end
 
-    if ~WTUtils.eeglabYesNoDlg('Re-referencing channels', 'Would you like to re-reference?')
+    if ~WTEEGLabUtils.eeglabYesNoDlg('Re-referencing channels', 'Would you like to re-reference?')
         channelsPrms.ReReference = channelsPrms.ReReferenceNone;
     else
         choices = { 'Average reference', 'New reference electrodes' };
         doneWithSelection = false;
 
         while ~doneWithSelection
-            [~, selected] = WTUtils.stringsSelectDlg('Select re-reference', choices, true, true, 'ListSize', [220, 100]);
+            [~, selected] = WTDialogUtils.stringsSelectDlg('Select re-reference', choices, true, true, 'ListSize', [220, 100]);
             if isempty(selected)
-                if WTUtils.eeglabYesNoDlg('Confirm', 'No re-referencing selected: proceed?')
+                if WTEEGLabUtils.eeglabYesNoDlg('Confirm', 'No re-referencing selected: proceed?')
                     channelsPrms.ReReference = channelsPrms.ReReferenceNone;
                     doneWithSelection = true;
                 end
@@ -78,9 +78,9 @@ function success = wtSelectUpdateChannels(system)
                     end
                 end 
                 while ~doneWithSelection
-                    [refChannels, ~] = WTUtils.stringsSelectDlg('Select reference channels\n(cut channels are excluded):', channelsLabels, false, true);
+                    [refChannels, ~] = WTDialogUtils.stringsSelectDlg('Select reference channels\n(cut channels are excluded):', channelsLabels, false, true);
                     if isempty(refChannels)
-                        if WTUtils.eeglabYesNoDlg('Confirm', 'No channels for re-referencing selected: proceed?')
+                        if WTEEGLabUtils.eeglabYesNoDlg('Confirm', 'No channels for re-referencing selected: proceed?')
                             channelsPrms.ReReference = channelsPrms.ReReferenceNone;
                             doneWithSelection = true;
                         end

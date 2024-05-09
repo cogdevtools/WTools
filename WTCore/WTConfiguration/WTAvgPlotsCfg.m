@@ -31,11 +31,11 @@ classdef WTAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqCfg
             end 
             try
                 if length(cells) >= 7
-                    o.TimeMin = WTUtils.str2double(cells{1});
-                    o.TimeMax = WTUtils.str2double(cells{2});
-                    o.FreqMin = WTUtils.str2double(cells{3});
-                    o.FreqMax = WTUtils.str2double(cells{4});
-                    o.Scale = WTUtils.str2nums(cells{5});
+                    o.TimeMin = WTNumUtils.str2double(cells{1});
+                    o.TimeMax = WTNumUtils.str2double(cells{2});
+                    o.FreqMin = WTNumUtils.str2double(cells{3});
+                    o.FreqMax = WTNumUtils.str2double(cells{4});
+                    o.Scale = WTNumUtils.str2nums(cells{5});
                     o.Contours = cells{6};
                     o.AllChannels = cells{7};
                     o.validate();
@@ -59,7 +59,7 @@ classdef WTAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqCfg
             end
             
             if o.Scale(1) >= o.Scale(2) 
-                WTUtils.throwOrLog(WTException.badValue('Field Scale(2) <= Scale(1)'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Scale(2) <= Scale(1)'), ~throwExcpt);
                 success = false;
             end
         end

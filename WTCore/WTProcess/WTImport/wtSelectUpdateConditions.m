@@ -10,7 +10,7 @@ function success = wtSelectUpdateConditions(system, anImportedFile)
     end
 
     success = false;
-    conditions = WTUtils.stringsSelectDlg('Select conditions', conditions, false, true);
+    conditions = WTDialogUtils.stringsSelectDlg('Select conditions', conditions, false, true);
     if isempty(conditions) 
         wtLog.warn('No conditions selected');
         return

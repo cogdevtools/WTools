@@ -51,7 +51,7 @@ function wtDifference(subjects)
     end
 
     if wtProject.Interactive
-        subjects = WTUtils.stringsSelectDlg('Select subjects\nfor difference:', subjects);
+        subjects = WTDialogUtils.stringsSelectDlg('Select subjects\nfor difference:', subjects);
         if isempty(subjects)
             wtLog.warn('User selected no subjects to process');
             return
@@ -165,7 +165,7 @@ function wtDifference(subjects)
     end
 
     nCondsToSubtract = length(condsToSubtract);
-    measure = WTUtils.ifThenElse(differencePrms.EvokedOscillations, ...
+    measure = WTCodingUtils.ifThenElse(differencePrms.EvokedOscillations, ...
                 WTIOProcessor.WaveletsAnalisys_evWT, ...
                 WTIOProcessor.WaveletsAnalisys_avWT);
 

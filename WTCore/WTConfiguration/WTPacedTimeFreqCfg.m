@@ -38,9 +38,9 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
 
         function set.Time(o, value)
             if ischar(value)
-                value = WTUtils.str2numsRep(value, '[]');
+                value = WTNumUtils.str2numsRep(value, '[]');
             end
-            nMaxValues = WTUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
+            nMaxValues = WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
             WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
             o.Time = value;
         end
@@ -98,9 +98,9 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
 
         function set.Frequency(o, value)
             if ischar(value)
-                value = WTUtils.str2numsRep(value, '[]');
+                value = WTNumUtils.str2numsRep(value, '[]');
             end
-            nMaxValues = WTUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
+            nMaxValues = WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
             WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
             o.Frequency = value;
         end
@@ -164,37 +164,37 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
             nFreq = numel(o.Frequency);
 
             if nTime == 0 
-                WTUtils.throwOrLog(WTException.badValue('Field Time should contain between 1 and %d values', ...
-                    WTUtils.ifThenElse(o.AllowTimeResolution, 3, 2)), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Time should contain between 1 and %d values', ...
+                    WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2)), ~throwExcpt);
                 return
             end
             if nFreq == 0
-                WTUtils.throwOrLog(WTException.badValue('Field Frequency should contain between 1 and %d values', ... 
-                    WTUtils.ifThenElse(o.AllowFreqResolution, 3, 2)), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency should contain between 1 and %d values', ... 
+                    WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2)), ~throwExcpt);
                 return
             end
             if nTime == 3 && nFreq == 3 
-                WTUtils.throwOrLog(WTException.badValue('Field Frequency & Time cannot both have 3 values (i.e. both define series)'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency & Time cannot both have 3 values (i.e. both define series)'), ~throwExcpt);
                 return
             end
             if nTime == 2 && o.Time(1) >= o.Time(2)
-                WTUtils.throwOrLog(WTException.badValue('Field Time(2) <= Time(1)'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Time(2) <= Time(1)'), ~throwExcpt);
                 return
             end
             if nTime == 3 && isempty(o.Time(1):o.Time(2):o.Time(3))
-                WTUtils.throwOrLog(WTException.badValue('Field Time defines an empty time serie'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Time defines an empty time serie'), ~throwExcpt);
                 return
             end
             if o.Frequency(1) == 0 
-                WTUtils.throwOrLog(WTException.badValue('Field Frequency(1) cannot be 0'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency(1) cannot be 0'), ~throwExcpt);
                 return
             end
             if nFreq == 2 && o.Frequency(1) >= o.Frequency(2)
-                WTUtils.throwOrLog(WTException.badValue('Field Frequency(2) <= Frequency(1)'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency(2) <= Frequency(1)'), ~throwExcpt);
                 return
             end
             if nFreq == 3 && isempty(o.Frequency(1):o.Frequency(2):o.Frequency(3))
-                WTUtils.throwOrLog(WTException.badValue('Field Frequency defines an empty time serie'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency defines an empty time serie'), ~throwExcpt);
                 return
             end
 

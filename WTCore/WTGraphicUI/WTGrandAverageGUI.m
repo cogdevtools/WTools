@@ -17,7 +17,7 @@ classdef WTGrandAverageGUI
                 { 'style' 'checkbox' 'string' 'Log10-Transformed data'                          'value'   logFlag 'enable' 'off' } ...
                 { 'style' 'checkbox' 'string' 'Evoked Oscillations'                             'value'   evokFlag } };
             
-            [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', { 1 1 1 1 }, 'uilist', parameters, 'title', 'Grand average');
+            [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', { 1 1 1 1 }, 'uilist', parameters, 'title', 'Grand average');
 
             if ~strcmp(strhalt,'retuninginputui')
                 wtLog.dbg('User quitted grand average configuration dialog');

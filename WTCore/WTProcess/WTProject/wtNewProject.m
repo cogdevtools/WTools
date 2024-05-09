@@ -15,7 +15,7 @@ function success = wtNewProject
     while true 
         prms = { { 'style' 'text' 'string' 'New project name:' } ...
                  { 'style' 'edit' 'string' prjName } };
-        answer = WTUtils.eeglabInputMask( 'geometry', { [1 2] }, 'uilist', prms, 'title', '[WTools] Set project name');
+        answer = WTEEGLabUtils.eeglabInputMask( 'geometry', { [1 2] }, 'uilist', prms, 'title', '[WTools] Set project name');
 
         if isempty(answer)
             return 
@@ -27,14 +27,14 @@ function success = wtNewProject
         end
     end
 
-    prjParentDir = WTUtils.uiGetDir('.', 'Select the project parent directory...');
+    prjParentDir = WTDialogUtils.uiGetDir('.', 'Select the project parent directory...');
     if ~ischar(prjParentDir)
         return
     end
 
     prjPath = fullfile(prjParentDir, prjName);
-    if  WTUtils.dirExist(prjPath)
-        if ~WTUtils.eeglabYesNoDlg('Warning', ['Project directory already exists!\n' ...
+    if  WTIOUtils.dirExist(prjPath)
+        if ~WTEEGLabUtils.eeglabYesNoDlg('Warning', ['Project directory already exists!\n' ...
             'Directory: %s\n' ...
             'Do you want to overwrite it?'], prjPath)
             return;
@@ -51,7 +51,7 @@ function success = wtNewProject
         ioProc = wtProject.Config.IOProc;
         wtLog = WTLog();
         [~, opened] = wtLog.openStream(ioProc.getLogFile(prjName));
-        wtLog.MuteStdStreams = WTUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
+        wtLog.MuteStdStreams = WTCodingUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
     end
 
     wtProject.notifyInf('Project created', 'As next step you should choose the files to import...');

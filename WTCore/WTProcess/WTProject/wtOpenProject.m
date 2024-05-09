@@ -16,7 +16,7 @@
 function success = wtOpenProject
     success = false;
 
-    prjPath = WTUtils.uiGetDir('.', 'Select the project directory...');
+    prjPath = WTDialogUtils.uiGetDir('.', 'Select the project directory...');
     if ~ischar(prjPath)
         return
     end
@@ -33,10 +33,10 @@ function success = wtOpenProject
         ioProc = wtProject.Config.IOProc;
         wtLog = WTLog();
         [~, opened] = wtLog.openStream(ioProc.getLogFile(wtProject.Config.getName()));
-        wtLog.MuteStdStreams = WTUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
+        wtLog.MuteStdStreams = WTCodingUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
     end
     
-    if WTUtils.eeglabYesNoDlg('Update import', 'Do you want to import new data files?')
+    if WTEEGLabUtils.eeglabYesNoDlg('Update import', 'Do you want to import new data files?')
         wtImportData();
     end
 

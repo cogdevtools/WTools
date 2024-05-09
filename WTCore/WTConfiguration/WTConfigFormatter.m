@@ -14,7 +14,7 @@ classdef WTConfigFormatter
 
         function txt = stringCellsField(fieldName, cells)
             try
-                quoted = WTUtils.quoteMany(cells{:});
+                quoted = WTStringUtils.quoteMany(cells{:});
                 content = char(join(quoted, ' '));
                 txt = sprintf('%s = { %s };', fieldName, content);
             catch me

@@ -71,7 +71,7 @@ function wtGrandAverage(subjects, conditions)
         subjects = subjectsGrandPrms.SubjectsList;
 
         if ~grandAveragePrms.UseAllSubjects 
-            subjects = WTUtils.stringsSelectDlg('Select subjects\nto average:', subjects, false, false);
+            subjects = WTDialogUtils.stringsSelectDlg('Select subjects\nto average:', subjects, false, false);
             if length(subjects) <= 1
                 wtProject.notifyWrn([], 'No enough subjects selected');
                 return
@@ -81,7 +81,7 @@ function wtGrandAverage(subjects, conditions)
         conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
 
         if length(conditions) > 1
-            conditions = WTUtils.stringsSelectDlg('Select conditions:', conditions, false, false);
+            conditions = WTDialogUtils.stringsSelectDlg('Select conditions:', conditions, false, false);
             if isempty(conditions)
                 wtProject.notifyWrn([],'No enough conditions selected');
                 return
@@ -93,7 +93,7 @@ function wtGrandAverage(subjects, conditions)
     nSubjects = length(subjects);
     nConditions = length(conditions);
 
-    measure = WTUtils.ifThenElse(grandAveragePrms.EvokedOscillations, ...
+    measure = WTCodingUtils.ifThenElse(grandAveragePrms.EvokedOscillations, ...
                 WTIOProcessor.WaveletsAnalisys_evWT, ...
                 WTIOProcessor.WaveletsAnalisys_avWT);
 

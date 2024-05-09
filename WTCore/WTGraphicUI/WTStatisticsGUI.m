@@ -13,13 +13,13 @@ classdef WTStatisticsGUI
 
             subjects = subjectsGrandPrms.SubjectsList;
             if isempty(subjects)
-                WTUtils.errDlg('Bad parameter', 'There project subjects list is empty!');
+                WTDialogUtils.errDlg('Bad parameter', 'There project subjects list is empty!');
                 return
             end
 
             conditions = conditionsGrandPrms.ConditionsList;
             if isempty(conditions)
-                WTUtils.errDlg('Bad parameter', 'The project conditions list is empty!');
+                WTDialogUtils.errDlg('Bad parameter', 'The project conditions list is empty!');
                 return
             end
 
@@ -60,17 +60,17 @@ classdef WTStatisticsGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Set statistics parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Set statistics parameters');
                 
                 if isempty(answer)
                     return 
                 end
 
                 try
-                    statsPrms.TimeMin = WTUtils.str2double(answer{1,1});
-                    statsPrms.TimeMax = WTUtils.str2double(answer{1,2});
-                    statsPrms.FreqMin = WTUtils.str2double(answer{1,3});
-                    statsPrms.FreqMax = WTUtils.str2double(answer{1,4});
+                    statsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
+                    statsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
+                    statsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
+                    statsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
                     statsPrms.IndividualFreqs = answer{1,5};
                     statsPrms.EvokedOscillations = answer{1,6};
                     success = statsPrms.validate(); 
@@ -81,7 +81,7 @@ classdef WTStatisticsGUI
                 end
                  
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end

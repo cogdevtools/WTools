@@ -12,8 +12,8 @@ classdef WTBaselineChopGUI
 
             evokedOscillations = (waveletTransformParamsExist && waveletTransformParams.EvokedOscillations) || ...
                 (baselineChopParamsExist && baselineChopParams.EvokedOscillations);
-            enableUV = WTUtils.ifThenElse(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
-            enableBs = WTUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
+            enableUV = WTCodingUtils.ifThenElse(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
+            enableBs = WTCodingUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
                 num2str(baselineChopParams.ChopMin), ...
@@ -25,7 +25,7 @@ classdef WTBaselineChopGUI
                 evokedOscillations };
             
             cbEnableBs = ['set(findobj(gcbf, ''userdata'', ''NoBC''),' ...
-                        '''enable'',' 'WTUtils.ifThenElse(get(gcbo, ''value''), ''off'', ''on''));'];
+                        '''enable'',' 'WTCodingUtils.ifThenElse(get(gcbo, ''value''), ''off'', ''on''));'];
             
             function params = setParameters(answer) 
                 params = { ...
@@ -50,15 +50,15 @@ classdef WTBaselineChopGUI
 
             while true
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set baseline and edges chopping parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set baseline and edges chopping parameters');
                 
                 if isempty(answer)
                     return % quit on cancel button
                 end
 
                 try
-                    baselineChopParams.ChopMin = WTUtils.str2double(answer{1,1});
-                    baselineChopParams.ChopMax = WTUtils.str2double(answer{1,2});
+                    baselineChopParams.ChopMin = WTNumUtils.str2double(answer{1,1});
+                    baselineChopParams.ChopMax = WTNumUtils.str2double(answer{1,2});
                     baselineChopParams.Log10Enable = answer{1,5};
                     baselineChopParams.NoBaselineCorrection = answer{1,6};
                     baselineChopParams.EvokedOscillations = answer{1,7};
@@ -69,13 +69,13 @@ classdef WTBaselineChopGUI
                         answer{1,3} = [];
                         answer{1,4} = [];
                     else
-                        baselineChopParams.BaselineMin = WTUtils.str2double(answer{1,3});
-                        baselineChopParams.BaselineMax = WTUtils.str2double(answer{1,4});
+                        baselineChopParams.BaselineMin = WTNumUtils.str2double(answer{1,3});
+                        baselineChopParams.BaselineMax = WTNumUtils.str2double(answer{1,4});
                     end
                     baselineChopParams.validate(true);
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
                     continue
                 end
                 break

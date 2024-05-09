@@ -75,7 +75,7 @@ function wtEEGLabToEEGLab()
         subjFileName = subjectFileNames{sbj}; 
         wtLog.info('Processing import file ''%s''', subjFileName);
 
-        [success, ALLEEG, ~, ~] =  WTUtils.eeglabRun(WTLog.LevelDbg, true);
+        [success, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
         if ~success 
             wtProject.notifyErr([], 'Failed to run eeglab');  
             wtLog.popStatus();      
@@ -89,14 +89,14 @@ function wtEEGLabToEEGLab()
             return   
         end
 
-        [success, ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'eeg_store', ALLEEG, EEG, 0);
+        [success, ALLEEG, EEG, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'eeg_store', ALLEEG, EEG, 0);
         if ~success 
             wtProject.notifyErr([], 'Failed to create store data in eeglab');
             wtLog.popStatus();
             return   
         end
 
-        [success, ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
+        [success, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
             ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
         if ~success 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
@@ -106,7 +106,7 @@ function wtEEGLabToEEGLab()
 
         if ~isempty(channelsPrms.CutChannels)
             wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
             if ~success 
                 wtProject.notifyErr([], 'Failed cut channels');
                 wtLog.popStatus();
@@ -124,7 +124,7 @@ function wtEEGLabToEEGLab()
 
         try 
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
             
             [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
             if ~success
@@ -133,7 +133,7 @@ function wtEEGLabToEEGLab()
                 return
             end
 
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to store EEGLAB data set for ''%s''', subject);

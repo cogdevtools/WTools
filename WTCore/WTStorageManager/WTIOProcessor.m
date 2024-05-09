@@ -32,7 +32,7 @@ classdef WTIOProcessor < handle
         GrandAvgFileExt = '.mat'
         PerSbjGrandAvgFileExt = '.ss'
         SubjIdRe = '^\d+$'
-        SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTUtils.ifThenElse(ispc, '\\','/'));
+        SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTCodingUtils.ifThenElse(ispc, '\\','/'));
         EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
         BaselineCorrectedFileNameRe = ['^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+)(?:\' ...
             WTIOProcessor.GrandAvgFileExt '|\' WTIOProcessor.PerSbjGrandAvgFileExt ')$'] 
@@ -60,7 +60,7 @@ classdef WTIOProcessor < handle
         function [success, varargout] = readModule(dir, file, varargin) 
             fName = fullfile(dir, file);
             varargout = cell(nargout-1, 1);
-            [success, varargout{:}] = WTUtils.readModuleFile(fName, varargin{:});
+            [success, varargout{:}] = WTIOUtils.readModuleFile(fName, varargin{:});
 
             if success 
                 return
@@ -73,7 +73,7 @@ classdef WTIOProcessor < handle
 
         function success = writeTxtFile(dir, file, varargin) 
             fName = fullfile(dir, file);
-            success = WTUtils.writeTxtFile(dir, file, 'wt', varargin{:});
+            success = WTIOUtils.writeTxtFile(dir, file, 'wt', varargin{:});
             if ~success 
                 WTLog().err('Failed to write file ''%s''', fName);
             end
@@ -105,7 +105,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     re = WTIOProcessor.SystemBRVImportFileRe;
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
     end
@@ -140,7 +140,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     extension = 'mat';
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -161,9 +161,9 @@ classdef WTIOProcessor < handle
         end
 
         function [wType, extension] = getGrandAverageFileTypeAndExtension(perSubject, evokedOscillation)
-            wType = WTUtils.ifThenElse(evokedOscillation, ...
+            wType = WTCodingUtils.ifThenElse(evokedOscillation, ...
                 WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
-            extension = WTUtils.ifThenElse(perSubject, ...
+            extension = WTCodingUtils.ifThenElse(perSubject, ...
                 WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
         end
 
@@ -178,7 +178,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     fileNames = {};
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -193,7 +193,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     extension = 'sfp';
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -241,7 +241,7 @@ classdef WTIOProcessor < handle
                         '%s %s %s %s %n %n %n %s %s %s %s %s', 'delimiter', '\t', 'headerlines', 1);
                     l = cat(1,l, {'VEOG';'HEOG';'DIGI'});
                 else
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
                 end
 
                 chansLocations = cell(1, length(l));
@@ -276,7 +276,7 @@ classdef WTIOProcessor < handle
 
         function success = setRootDir(o, rootDir, mustExist) 
             success = false;
-            o.RootDir = WTUtils.getAbsPath(rootDir);
+            o.RootDir = WTIOUtils.getAbsPath(rootDir);
             o.LogDir = fullfile(o.RootDir, o.LogSubDir);
             o.ConfigDir = fullfile(o.RootDir, o.ConfigSubDir);
             o.ImportDir = fullfile(o.RootDir, o.ImportSubDir);
@@ -298,13 +298,13 @@ classdef WTIOProcessor < handle
                 else 
                     success = true;
                 end
-            elseif ~WTUtils.mkdir(o.RootDir) 
+            elseif ~WTIOUtils.mkdir(o.RootDir) 
                 wtLog.err('Failed to create root directory: %s', o.RootDir);
-            elseif ~WTUtils.mkdir(o.ConfigDir)
+            elseif ~WTIOUtils.mkdir(o.ConfigDir)
                 wtLog.err('Failed to create config directory: %s', o.ConfigDir);
-            elseif ~WTUtils.mkdir(o.ImportDir)
+            elseif ~WTIOUtils.mkdir(o.ImportDir)
                 wtLog.err('Failed to create import directory: %s', o.ImportDir);
-            elseif ~WTUtils.mkdir(o.AnalysisDir)
+            elseif ~WTIOUtils.mkdir(o.AnalysisDir)
                 wtLog.err('Failed to create analysis directory: %s', o.AnalysisDir);
             else
                 success = true;
@@ -392,7 +392,7 @@ classdef WTIOProcessor < handle
 
         function [success, sbjDir] = makeAnalysisSubjectDir(o, subject)
             sbjDir = fullfile(o.AnalysisDir, subject);
-            success = WTUtils.mkdir(sbjDir);
+            success = WTIOUtils.mkdir(sbjDir);
         end
 
         function [fullPath, filePath] = getImportFile(o, fileName)
@@ -406,15 +406,15 @@ classdef WTIOProcessor < handle
            
             switch system
                 case WTIOProcessor.SystemEGI
-                    [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+                    [success, varargout{:}] = WTIOUtils.loadFrom(fullPath, '-mat', varargin{:});
                 case WTIOProcessor.SystemEEGLab
-                    [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    [success, varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
                 case WTIOProcessor.SystemEEP
-                    [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadeep', fullPath, 'triggerfile', 'on');
+                    [success, varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadeep', fullPath, 'triggerfile', 'on');
                 case WTIOProcessor.SystemBRV
-                    [success, varargout{:}] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadbva', fullPath);
+                    [success, varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadbva', fullPath);
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -439,7 +439,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.SystemBRV
                     conditions = sort(unique({ data.event.type }));
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
 
@@ -459,12 +459,12 @@ classdef WTIOProcessor < handle
                 [~, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
 
                 if ~updateALLEEG
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
                 else
-                    [ALLEEG, ~, ~, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false);
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
-                    [ALLEEG, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+                    [ALLEEG, ~, ~, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    [ALLEEG, EEG, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
                 end
                 success = true;
             catch 
@@ -480,12 +480,12 @@ classdef WTIOProcessor < handle
             success = false;        
             try
                 [fullPath, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
-                success = WTUtils.mkdir(filePath);
+                success = WTIOUtils.mkdir(filePath);
                 if ~success
                     WTLog().err('Failed to make dir ''%s''', filePath);
                 else
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_saveset', EEG,  'filename', fileName, 'filepath', filePath);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_saveset', EEG,  'filename', fileName, 'filepath', filePath);
                     success = true;
                 end
             catch me
@@ -512,12 +512,12 @@ classdef WTIOProcessor < handle
                 [~, filePath, fileName] = o.getConditionFile(filePrefix, subject, condition);
 
                 if ~updateALLEEG
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
                 else
-                    [ALLEEG, ~, ~, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false);
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
-                    [~, EEG, ~] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+                    [ALLEEG, ~, ~, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    [~, EEG, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, 0);
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
                 end
                 success = true;
             catch me
@@ -550,8 +550,8 @@ classdef WTIOProcessor < handle
                 [fullPath, filePath, fileName] = o.getBaselineCorrectionFile(subject, condition, wType);
                 if ~isempty(fullPath)
                     argsName = [{filePath fileName} varargin];
-                    argsName = WTUtils.quoteMany(argsName{:});
-                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    argsName = WTStringUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTIOUtils.saveTo(%s);', char(join(argsName, ',')));
                     evalin('caller', cmd);
                     success = true;
                 end
@@ -565,7 +565,7 @@ classdef WTIOProcessor < handle
             varargout = cell(1, nargout-1);
             fullPath = o.getBaselineCorrectionFile(subject, condition, wType);
             if ~isempty(fullPath)
-                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+                [success, varargout{:}] = WTIOUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
         end
 
@@ -580,7 +580,7 @@ classdef WTIOProcessor < handle
                     WTLog().err('Unknown file type %s', wType);
                     return
             end
-            extension = WTUtils.ifThenElse(perSubject, ...
+            extension = WTCodingUtils.ifThenElse(perSubject, ...
                 WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
             fileName = strcat(condition, '_bc-', wType, extension);
             filePath = o.GrandAvgDir;
@@ -596,8 +596,8 @@ classdef WTIOProcessor < handle
                 [fullPath, filePath, fileName] = o.getGrandAverageFile(condition, wType, perSubject);
                 if ~isempty(fullPath)
                     argsName = [{filePath fileName} varargin];
-                    argsName = WTUtils.quoteMany(argsName{:});
-                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    argsName = WTStringUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTIOUtils.saveTo(%s);', char(join(argsName, ',')));
                     evalin('caller', cmd);
                     success = true;
                 end
@@ -611,7 +611,7 @@ classdef WTIOProcessor < handle
             varargout = cell(1, nargout-1);
             fullPath = o.getGrandAverageFile(condition, wType, perSubject);
             if ~isempty(fullPath)
-                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+                [success, varargout{:}] = WTIOUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
         end
 
@@ -639,8 +639,8 @@ classdef WTIOProcessor < handle
                 [fullPath, filePath, fileName] = o.getDifferenceFile(subject, condA, condB, wType);
                 if ~isempty(fullPath)
                     argsName = [{filePath fileName} varargin];
-                    argsName = WTUtils.quoteMany(argsName{:});
-                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    argsName = WTStringUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTIOUtils.saveTo(%s);', char(join(argsName, ',')));
                     evalin('caller', cmd);
                     success = true;
                 end
@@ -654,7 +654,7 @@ classdef WTIOProcessor < handle
             varargout = cell(1, nargout-1);
             fullPath = o.getDifferenceFile(subject, condA, condB, wType);
             if ~isempty(fullPath)
-                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+                [success, varargout{:}] = WTIOUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
         end
 
@@ -692,8 +692,8 @@ classdef WTIOProcessor < handle
                 [fullPath, filePath, fileName] = o.getWaveletAnalysisFile(subject, condition, wType);
                 if ~isempty(fullPath)
                     argsName = [{filePath fileName} varargin];
-                    argsName = WTUtils.quoteMany(argsName{:});
-                    cmd = sprintf('WTUtils.saveTo(%s);', char(join(argsName, ',')));
+                    argsName = WTStringUtils.quoteMany(argsName{:});
+                    cmd = sprintf('WTIOUtils.saveTo(%s);', char(join(argsName, ',')));
                     evalin('caller', cmd);
                     success = true;
                 end
@@ -707,19 +707,19 @@ classdef WTIOProcessor < handle
             varargout = cell(1, nargout-1);
             fullPath = o.getWaveletAnalysisFile(subject, condition, wType);
             if ~isempty(fullPath)
-                [success, varargout{:}] = WTUtils.loadFrom(fullPath, '-mat', varargin{:});
+                [success, varargout{:}] = WTIOUtils.loadFrom(fullPath, '-mat', varargin{:});
             end
         end
 
         function [fullPath, filePath, fileName] = getStatisticsFile(o, filePrefix, logFlag, timeMin, timeMax, freqMin, freqMax, freqPace, wType)
             dt = datetime();
             dtStr = sprintf('%d%02d%02d.%02d%02d%02d', year(dt), month(dt), day(dt), hour(dt), minute(dt), ceil(second(dt)));
-            logStr = WTUtils.ifThenElse(logFlag, '_[log10]_', '_');
-            timeStr = WTUtils.ifThenElse(timeMin ~= timeMax, ...
+            logStr = WTCodingUtils.ifThenElse(logFlag, '_[log10]_', '_');
+            timeStr = WTCodingUtils.ifThenElse(timeMin ~= timeMax, ...
                 @()sprintf('[%s,%s]ms', num2str(timeMin), num2str(timeMax)), ...
                 @()sprintf('[%s]ms',  num2str(timeMin)));
-            freqStr = WTUtils.ifThenElse(freqMin ~= freqMax, ...
-                @()WTUtils.ifThenElse(freqPace > 0, ...
+            freqStr = WTCodingUtils.ifThenElse(freqMin ~= freqMax, ...
+                @()WTCodingUtils.ifThenElse(freqPace > 0, ...
                     @()sprintf('[%s,+%s,%s]Hz', num2str(freqMin), num2str(freqPace), num2str(freqMax)), ...
                     @()sprintf('[%s,%s]Hz', num2str(freqMin), num2str(freqMax))), ...
                 @()sprintf('[%s]Hz',  num2str(freqMin)));
@@ -729,15 +729,15 @@ classdef WTIOProcessor < handle
         end
 
         function is = isGrandAvgDir(o, path)
-            [analysisDir, grandAvgSubDir] = WTUtils.splitPath(path, 1);
-            analysisAbsPath = WTUtils.getAbsPath(analysisDir);
+            [analysisDir, grandAvgSubDir] = WTIOUtils.splitPath(path, 1);
+            analysisAbsPath = WTIOUtils.getAbsPath(analysisDir);
             is = strcmp(analysisAbsPath, o.AnalysisDir) && ...
                  strcmp(grandAvgSubDir, o.GrandAvgSubDir);
         end
 
         function subject = getSubjectFromPath(o, path) 
-            [analysisDir, subjectSubDir] = WTUtils.splitPath(path, 1);
-            analysisAbsPath = WTUtils.getAbsPath(analysisDir);
+            [analysisDir, subjectSubDir] = WTIOUtils.splitPath(path, 1);
+            analysisAbsPath = WTIOUtils.getAbsPath(analysisDir);
             subject = [];
             if ~strcmp(analysisAbsPath, o.AnalysisDir) 
                 return

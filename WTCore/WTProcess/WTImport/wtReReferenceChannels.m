@@ -12,7 +12,7 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
         switch channelsPrms.ReReference
             case channelsPrms.ReReferenceWithAverage
                 wtLog.info('Re-referencing with average');
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, []);
+                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, []);
             case channelsPrms.ReReferenceWithChannels
                 wtLog.info('Re-referencing with selected channels');
                 channelsPrms.validate(true);
@@ -24,11 +24,11 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
                     newRef = cat(1, newRef, chanIdx);         
                 end
                 
-                EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, newRef ,'keepref','on');
+                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, newRef ,'keepref','on');
             otherwise
                 wtLog.info('No channels re-referencing');
                 if system == WTIOProcessor.SystemEGI
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
                         { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
                         'delete', 1, 'delete', 1, 'delete', 1, 'delete', 129);
                 else
@@ -37,7 +37,7 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
                     %   the code below was placed before the "switch" originally
                     % - For BRV systems:
                     %   the code below was commented out originally
-                    EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
                         { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType });
                 end
         end

@@ -6,7 +6,7 @@ function [success, sbjFileNames] = wtSelectUpdateSubjects(system)
     sbjFileNames = {};
 
     if subjectsParams.exist()
-        if ~WTUtils.eeglabYesNoDlg('Re-import subjects?', ['The subject configuration file already exists!\n' ...
+        if ~WTEEGLabUtils.eeglabYesNoDlg('Re-import subjects?', ['The subject configuration file already exists!\n' ...
                 'Do you want to import the subjects again?'])
             return;
         end            

@@ -58,7 +58,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
             return
         end
     else
-        measure = WTUtils.ifThenElse(evokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
@@ -91,25 +91,25 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         return
     end
 
-    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.ChannelsAveragePlots, data) 
         return
     end
 
     plotsPrms = wtProject.Config.ChannelsAveragePlots;
     timeRes = data.tim(2) - data.tim(1); 
-    downsampleFactor = WTUtils.ifThenElse(timeRes <= 1, 4, @()WTUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
+    downsampleFactor = WTCodingUtils.ifThenElse(timeRes <= 1, 4, @()WTCodingUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     allChannelsLabels = {data.chanlocs.labels}';
 
     if interactive 
-        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
+        [channelsToPlot, channelsToPlotIdxs] = WTDialogUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
     else
@@ -127,7 +127,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         return
     end
 
-    wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
+    wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
 
@@ -140,21 +140,21 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff(); 
                 continue
             end
 
-            figureName = WTUtils.ifThenElse(grandAverage, ...
+            figureName = WTCodingUtils.ifThenElse(grandAverage, ...
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
             channelsLocations = data.chanlocs(channelsToPlotIdxs);
-            figureTitle = WTUtils.chunkStrings('Channel: ', 'Avg of: ', {channelsLocations.labels}, 10);
+            figureTitle = WTStringUtils.chunkStrings('Channel: ', 'Avg of: ', {channelsLocations.labels}, 10);
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             WTChansAvg = mean(WT(channelsToPlotIdxs,:,:), 1);
 
             % Create the figure

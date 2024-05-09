@@ -113,7 +113,7 @@ function varargout = wtools(varargin)
                 if showSplash && wtAppConfig.ShowSplashScreen       
                     wtSplash();
                 end
-                if ~WTUtils.eeglabDep()
+                if ~WTEEGLabUtils.eeglabDep()
                     close = true;
                 end
                 wtLog.reset();
@@ -581,7 +581,7 @@ function varargout = wtools(varargin)
         if ~lock(hObject, handles)
             return
         end
-        option = WTUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
+        option = WTDialogUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
         unlock(hObject, handles);
         if strcmp(option, 'Continue')
             return
@@ -603,7 +603,7 @@ function varargout = wtools(varargin)
     function updateProjectName(hObject, handles) 
         if isfield(handles,'ProjectEdit')
             wtProject = WTProject().newContext('');
-            prjName = WTUtils.ifThenElse(wtProject.IsOpen, wtProject.Config.getName(), '?');
+            prjName = WTCodingUtils.ifThenElse(wtProject.IsOpen, wtProject.Config.getName(), '?');
             set(handles.ProjectEdit, 'String', prjName);
             guidata(hObject, handles);
         end
@@ -612,14 +612,14 @@ function varargout = wtools(varargin)
         if isfield(handles,'SSnEdit')
             wtProject = WTProject().newContext('');
             nSubjs = length(wtProject.Config.SubjectsGrand.SubjectsList);
-            nSubjsStr = WTUtils.ifThenElse(wtProject.IsOpen, num2str(nSubjs), '?');
+            nSubjsStr = WTCodingUtils.ifThenElse(wtProject.IsOpen, num2str(nSubjs), '?');
             set(handles.SSnEdit, 'String', nSubjsStr);
             guidata(hObject, handles);
         end
     
     function success = lock(hObject, handles)
         if any(strcmp(fieldnames(handles),'wtoolsLocked')) && handles.wtoolsLocked
-            WTUtils.wrnDlg('Blocked', 'There''s an ongoing operation or a\ndialog is waiting for your response...');
+            WTDialogUtils.wrnDlg('Blocked', 'There''s an ongoing operation or a\ndialog is waiting for your response...');
             success = false;
         else
             handles.wtoolsLocked = true;

@@ -33,7 +33,7 @@ classdef WTTransformGUI
                 waveletTransformPrms.WaveletsCycles, ...
             };
             
-            logFlag = WTUtils.ifThenElse(enableLog, 'on', 'off');
+            logFlag = WTCodingUtils.ifThenElse(enableLog, 'on', 'off');
         
             function params = setParameters(answer) 
                 params = { ...
@@ -101,58 +101,58 @@ classdef WTTransformGUI
             isInt        = @WTValidations.isInt;
             isIntGTE     = @WTValidations.isScalarIntGTE;
             isIntBetween = @WTValidations.isScalarIntBetween;
-            warnDlg      = @(msg)WTUtils.wrnDlg('Review parameter', msg);
+            warnDlg      = @(msg)WTDialogUtils.wrnDlg('Review parameter', msg);
 
             while true
                 params = setParameters(answer);
-                answer = WTUtils.eeglabInputMask( 'geometry', geometry, 'uilist', params, 'title', 'Set wavelet transformation params');
+                answer = WTEEGLabUtils.eeglabInputMask( 'geometry', geometry, 'uilist', params, 'title', 'Set wavelet transformation params');
                 
                 if isempty(answer)
                     return % quit on cancel button
                 end
                 
                 try
-                    timeMin = WTUtils.str2double(answer{1,1});
+                    timeMin = WTNumUtils.str2double(answer{1,1});
                     if ~isIntBetween(timeMin, timeRange(1), timeRange(2)-1)
                         warnDlg(sprintf('Bad min time value, got: %s', answer{1,1}));
                         continue;
                     end
-                    timeMax = WTUtils.str2double(answer{1,2});
+                    timeMax = WTNumUtils.str2double(answer{1,2});
                     if ~isIntBetween(timeMax, timeMin+1, timeRange(2))
                         warnDlg(sprintf('Bad max time value, got: %s', answer{1,2}));
                         continue;
                     end
-                    timeRes = WTUtils.str2double(answer{1,3});
+                    timeRes = WTNumUtils.str2double(answer{1,3});
                     if ~isIntBetween(timeRes, 1, max(1,(timeMax-timeMin+1)/2))
                         warnDlg(sprintf('Bad time resolution value, got: %s', answer{1,3}));
                         continue;
                     end
-                    freqMin = WTUtils.str2double(answer{1,4});
+                    freqMin = WTNumUtils.str2double(answer{1,4});
                     if ~isIntBetween(freqMin, 1, max(1, maxFreq-1)) 
                         warnDlg(sprintf('Bad min frequency value, got: %s', answer{1,4}));
                         continue;
                     end
-                    freqMax = WTUtils.str2double(answer{1,5});
+                    freqMax = WTNumUtils.str2double(answer{1,5});
                     if ~isIntBetween(freqMax, freqMin, maxFreq) 
                         warnDlg(sprintf('Bad max frequency value, got: %s', answer{1,5}));
                         continue;
                     end
-                    freqRes = WTUtils.str2double(answer{1,6});
+                    freqRes = WTNumUtils.str2double(answer{1,6});
                     if ~isIntBetween(freqRes, 1, max(1,(freqMax-freqMin+1)/2)) 
                         warnDlg(sprintf('Bad frequency resolution value, got: %s', answer{1,6}));
                         continue;
                     end
-                    extraEdges = WTUtils.str2double(answer{1,7});
+                    extraEdges = WTNumUtils.str2double(answer{1,7});
                     if ~isIntGTE(extraEdges, 0) 
                         warnDlg(sprintf('Bad extra edges value, got: %s', answer{1,7}));
                         continue;
                     end
-                    channelsList = unique(WTUtils.str2nums(answer{1,8}));
+                    channelsList = unique(WTNumUtils.str2nums(answer{1,8}));
                     if ~isempty(channelsList) && (~all(arrayfun(isInt, channelsList)) || any(channelsList < 1) || any(channelsList > maxChans)) 
                         warnDlg(sprintf('Bad channels list, got: %s', answer{1,8}));
                         continue;
                     end
-                    epochsList = unique(WTUtils.str2nums(answer{1,9}));
+                    epochsList = unique(WTNumUtils.str2nums(answer{1,9}));
                     if ~isempty(epochsList) && (~all(arrayfun(isInt, epochsList)) || any(epochsList < 1)) 
                         warnDlg(sprintf('Bad epochs list, got: %s', answer{1,9}));
                         continue;
@@ -161,7 +161,7 @@ classdef WTTransformGUI
                     logTransform = answer{1,10};
                     evok = answer{1,11};
                     normalizeWavelet = answer{1,12};
-                    cycles = WTUtils.str2double(answer{1,13});
+                    cycles = WTNumUtils.str2double(answer{1,13});
 
                     if ~isIntBetween(cycles, 2, 15)
                         warnDlg(sprintf('Bad wavelet cycles value, got: %s', answer{1,13}))
@@ -173,7 +173,7 @@ classdef WTTransformGUI
                     end
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
                 end
                 break
             end 

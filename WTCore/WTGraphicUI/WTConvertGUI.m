@@ -46,7 +46,7 @@ classdef WTConvertGUI
 
             while true
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Import segmented EEG');
+                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Import segmented EEG');
 
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted import configuration dialog');
@@ -57,7 +57,7 @@ classdef WTConvertGUI
                 if sum(cellfun(@(e) e, answer)) ~= 0
                     break
                 end
-                WTUtils.wrnDlg('Review parameter', 'You must select one EEG system among %s', char(join(systems, ' ')));
+                WTDialogUtils.wrnDlg('Review parameter', 'You must select one EEG system among %s', char(join(systems, ' ')));
             end
 
             convertToEEGLabData.EEPFlag = answer{1,1};
@@ -85,7 +85,7 @@ classdef WTConvertGUI
             
             while true
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set sampling rate');
+                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set sampling rate');
                 
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set sampling rate configuration dialog');
@@ -93,10 +93,10 @@ classdef WTConvertGUI
                 end
 
                 try
-                    samplingData.SamplingRate = WTUtils.str2double(answer{1,1});
+                    samplingData.SamplingRate = WTNumUtils.str2double(answer{1,1});
                     break
                 catch
-                    WTUtils.wrnDlg('Review parameter','Invalid sampling rate:  must be a float > 0');
+                    WTDialogUtils.wrnDlg('Review parameter','Invalid sampling rate:  must be a float > 0');
                 end
             end
             success = true;
@@ -122,7 +122,7 @@ classdef WTConvertGUI
             
             while true
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set trigger');
+                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set trigger');
 
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set trigger latency configuration dialog');
@@ -130,10 +130,10 @@ classdef WTConvertGUI
                 end
 
                 try
-                    egi2eeglData.TriggerLatency = WTUtils.str2double(answer{1,1});
+                    egi2eeglData.TriggerLatency = WTNumUtils.str2double(answer{1,1});
                     break
                 catch
-                    WTUtils.wrnDlg('Review parameter', 'Invalid trigger latency: must be a float >= 0');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid trigger latency: must be a float >= 0');
                 end
             end
             success = true;
@@ -178,20 +178,20 @@ classdef WTConvertGUI
             
             while true
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set min/Max trial ID');
+                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set min/Max trial ID');
                 if ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set min/max trial ID configuration dialog');
                     return
                 end
 
                 try
-                    minId = WTUtils.str2double(answer{1,1}, true);
-                    maxId = WTUtils.str2double(answer{1,2}, true);
+                    minId = WTNumUtils.str2double(answer{1,1}, true);
+                    maxId = WTNumUtils.str2double(answer{1,2}, true);
                     minMaxTrialIdData.MinTrialId = minId;
                     minMaxTrialIdData.MaxTrialId = maxId;
                     minMaxTrialIdData.validate(true);
                 catch
-                    WTUtils.wrnDlg('Review parameter',['Invalid min/max trials id. Allowed values for [min,max] are: [<empty>,<empty>], ' ...
+                    WTDialogUtils.wrnDlg('Review parameter',['Invalid min/max trials id. Allowed values for [min,max] are: [<empty>,<empty>], ' ...
                         '[int >= 0, <empty>], [<empty>, int >= 0 ], [min >= 0, max >= min]']);
                     continue
                 end
@@ -207,8 +207,8 @@ classdef WTConvertGUI
 
             answer = { ...
                 { sprintf(WTConfigFormatter.FmtArrayStr, num2str(EpochLimitsAndFreqFilterData.EpochLimits)) }, ...
-                { WTUtils.ifThenElse(isnan(EpochLimitsAndFreqFilterData.HighPassFilter), [], double2str(EpochLimitsAndFreqFilterData.HighPassFilter)) } ...
-                { WTUtils.ifThenElse(isnan(EpochLimitsAndFreqFilterData.LowPassFilter), [], double2str(EpochLimitsAndFreqFilterData.LowPassFilter)) }};
+                { WTCodingUtils.ifThenElse(isnan(EpochLimitsAndFreqFilterData.HighPassFilter), [], double2str(EpochLimitsAndFreqFilterData.HighPassFilter)) } ...
+                { WTCodingUtils.ifThenElse(isnan(EpochLimitsAndFreqFilterData.LowPassFilter), [], double2str(EpochLimitsAndFreqFilterData.LowPassFilter)) }};
 
             function params = setParameters(answer) 
                 params = { ...
@@ -224,7 +224,7 @@ classdef WTConvertGUI
 
             while true
                 params = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', params,'title', 'Set epochs & band filter params');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params,'title', 'Set epochs & band filter params');
 
                 if isempty(answer)
                     wtLog.dbg('User quitted set epochs range and frequency filter configuration dialog');
@@ -232,13 +232,13 @@ classdef WTConvertGUI
                 end
 
                 try
-                    EpochLimitsAndFreqFilterData.EpochLimits = WTUtils.str2nums(answer{1,1});
-                    EpochLimitsAndFreqFilterData.HighPassFilter = WTUtils.str2double(answer{1,2}, true);
-                    EpochLimitsAndFreqFilterData.LowPassFiler = WTUtils.str2double(answer{1,2}, true);
+                    EpochLimitsAndFreqFilterData.EpochLimits = WTNumUtils.str2nums(answer{1,1});
+                    EpochLimitsAndFreqFilterData.HighPassFilter = WTNumUtils.str2double(answer{1,2}, true);
+                    EpochLimitsAndFreqFilterData.LowPassFiler = WTNumUtils.str2double(answer{1,2}, true);
                     EpochLimitsAndFreqFilterData.validate(true)
                 catch me
                     wtLog.except(me);
-                    WTUtils.wrnDlg('Review parameter','Invalid epochs range and/or filter frequencies: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter','Invalid epochs range and/or filter frequencies: check the log for details');
                     continue
                 end
                 break

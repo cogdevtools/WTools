@@ -1,4 +1,4 @@
-classdef WTMiscUtils
+classdef WTProcessUtils
 
     methods(Static)
         % checkDiffAndGrandAvg() checks whether the data are up to date and ready for the grand average  
@@ -32,7 +32,7 @@ classdef WTMiscUtils
         end
 
         % subject empty => load grand average
-        function [success, data] = loadData(perSubject, subject, condition, measure) 
+        function [success, data] = loadAnalyzedData(perSubject, subject, condition, measure) 
             wtProject = WTProject();
             ioProc = wtProject.Config.IOProc;
             grandAverage = isempty(subject);

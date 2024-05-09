@@ -165,7 +165,7 @@ function success = wtPerformCWT()
                 return
             end
 
-            WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+            WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
             wtLog.popStatus(); 
         end
     end
@@ -186,7 +186,7 @@ function success = selectUpdateSubjectsGrand()
         return
     end 
 
-    subjectsList = WTUtils.stringsSelectDlg('Select subjects\nto transform:', subjectsList);
+    subjectsList = WTDialogUtils.stringsSelectDlg('Select subjects\nto transform:', subjectsList);
     if isempty(subjectsList)
         wtProject.notifyWrn([],'No subjects selected');
         return
@@ -215,7 +215,7 @@ function success = selectUpdateConditionsGrand()
         return
     end
 
-    conditionsList = WTUtils.stringsSelectDlg('Select conditions to\ntransform:', conditionsList);
+    conditionsList = WTDialogUtils.stringsSelectDlg('Select conditions to\ntransform:', conditionsList);
     if isempty(conditionsList)
         wtProject.notifyWrn([],'No conditions selected');
         return

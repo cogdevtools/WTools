@@ -38,8 +38,8 @@ classdef WTPlotUtils
             xC = (1-((nFigures-1)*rWOffs + rWidth)) / 2;
             yC = 1-((1-((nFigures-1)*rHOffs + rHeight)) / 2)-rHeight;
             positions = cell(1, nFigures);
-            sizeFactors = WTUtils.ifThenElse(relative, [1 1], screenSize(3:4));
-            minPos = WTUtils.ifThenElse(relative, 0, 1);
+            sizeFactors = WTCodingUtils.ifThenElse(relative, [1 1], screenSize(3:4));
+            minPos = WTCodingUtils.ifThenElse(relative, 0, 1);
             for i = 1:nFigures
                 xRel = xC + (i-1)*rWOffs;
                 yRel = yC - (i-1)*rHOffs;
@@ -53,7 +53,7 @@ classdef WTPlotUtils
 
         function params = getYLabelParams(logFlag) 
             params = struct();
-            params.String = WTUtils.ifThenElse(logFlag, '% change', '\muV');
+            params.String = WTCodingUtils.ifThenElse(logFlag, '% change', '\muV');
         end
 
         function params = getXLabelParams(logFlag) 
@@ -65,7 +65,7 @@ classdef WTPlotUtils
                 params.String = '\muV';
                 params.Rotation = 0;
             end
-            params.Position = WTUtils.ifThenElse(verLessThan('matlab', '8.4'), 5, 2);
+            params.Position = WTCodingUtils.ifThenElse(verLessThan('matlab', '8.4'), 5, 2);
         end
 
         function plotsColorMap = getPlotsColorMap()
@@ -158,9 +158,9 @@ classdef WTPlotUtils
                 end
             end
             try
-                hChildrenObjects = WTUtils.xGetField(hObject.UserData, childrenObjField);
+                hChildrenObjects = WTStructUtils.xGetField(hObject.UserData, childrenObjField);
                 arrayfun(@closeChild, hChildrenObjects); 
-                WTUtils.xSetField('hObject.UserData', '[]', childrenObjField); 
+                WTStructUtils.xSetField('hObject.UserData', '[]', childrenObjField); 
             catch me
                 WTLog().except(me);
             end
@@ -178,14 +178,14 @@ classdef WTPlotUtils
         % To be used in pair with parentObjectCloseRequestCb.
         function childObjectCloseRequestCb(hObject, ~, parentObjectField, childrenObjField)
             try
-                hParentObject = WTUtils.xGetField(hObject.UserData, parentObjectField);
+                hParentObject = WTStructUtils.xGetField(hObject.UserData, parentObjectField);
                 if isvalid(hParentObject)
-                    hChildrenObjects = WTUtils.xGetField(hParentObject.UserData, childrenObjField);
+                    hChildrenObjects = WTStructUtils.xGetField(hParentObject.UserData, childrenObjField);
                     hChildObjIdx = arrayfun(@(hObj)hObj == hObject, hChildrenObjects);
                     hChildrenObjects(hChildObjIdx) = [];
 
                     hParentObject.UserData.(childrenObjField) = hChildrenObjects;
-                    WTUtils.xSetField('hParentObject.UserData', 'hChildrenObjects', childrenObjField);
+                    WTStructUtils.xSetField('hParentObject.UserData', 'hChildrenObjects', childrenObjField);
                 end
             catch me
                 WTLog().except(me);
@@ -202,7 +202,7 @@ classdef WTPlotUtils
             for i = 1 : length(hObjects)
                 hObject = hObjects(i);
                 position = hObject.Position;
-                origPosition = WTUtils.xGetField(hObject.UserData, originalPositionField);
+                origPosition = WTStructUtils.xGetField(hObject.UserData, originalPositionField);
                 origWidth = origPosition(3);
                 origHeight = origPosition(4);
                 tickWidth = origWidth / 20;
@@ -237,7 +237,7 @@ classdef WTPlotUtils
         %       for each object in hControlledObjects
         function onKeyPressResizeObjectsCb(hObject, event, controlledObjectsField, originalPositionField)
             try
-                hControlledObjects = WTUtils.xGetField(hObject.UserData, controlledObjectsField);
+                hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
                 switch event.Character
                     case '+'  
                         WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, event.Character)
@@ -261,9 +261,9 @@ classdef WTPlotUtils
             try
                 switch event.Character
                     case 'r' % rearrange controlled objects into the original opening position
-                        hControlledObjects = WTUtils.xGetField(hObject.UserData, controlledObjectsField);
+                        hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
                         for i = 1:length(hControlledObjects)
-                            hControlledObjects(i).Position = WTUtils.xGetField(hControlledObjects(i).UserData, originalPositionField);
+                            hControlledObjects(i).Position = WTStructUtils.xGetField(hControlledObjects(i).UserData, originalPositionField);
                         end
                 end
             catch me
@@ -279,7 +279,7 @@ classdef WTPlotUtils
         %       for each object in hControlledObjects
         function onMouseScrollResizeObjectsCb(hObject, event, controlledObjectsField, originalPositionField) 
             try
-                hControlledObjects = WTUtils.xGetField(hObject.UserData, controlledObjectsField);
+                hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
                 if event.VerticalScrollCount >= 1
                     WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, '+')
                 elseif event.VerticalScrollCount <= -1
@@ -315,10 +315,10 @@ classdef WTPlotUtils
         % User callback: doCb(hObject, []|hSubObject, subObjIdx, varargin{:})
         function onMouseOverSubObjectsDoCb(hObject, event, pointsField, subObjectsField, doCb, varargin) 
             try
-                points = WTUtils.xGetField(hObject.UserData, pointsField); 
+                points = WTStructUtils.xGetField(hObject.UserData, pointsField); 
                 [subObjectIdx, clickPosRelToSubObject] = WTPlotUtils.getClickedSubObjectIndex(hObject, points);
                 
-                hSubObjects = WTUtils.xGetField(hObject.UserData, subObjectsField);
+                hSubObjects = WTStructUtils.xGetField(hObject.UserData, subObjectsField);
                 hSubObject = hSubObjects(subObjectIdx);
                 subObjectPosition = hSubObject.Position;
                 clickPosRelToSubObject = abs(clickPosRelToSubObject);
@@ -348,7 +348,7 @@ classdef WTPlotUtils
                         if iscell(varargin{i})
                             cbDef = varargin{i};
                             cbFun = cbDef{1};
-                            cbArg = WTUtils.ifThenElse(length(cbDef) > 1, @()cbDef(2:end), {});
+                            cbArg = WTCodingUtils.ifThenElse(length(cbDef) > 1, @()cbDef(2:end), {});
                         else
                             cbFun = varargin{i};
                             cbArg = {};

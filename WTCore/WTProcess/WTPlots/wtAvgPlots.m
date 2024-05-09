@@ -64,7 +64,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             return
         end
     else
-        measure = WTUtils.ifThenElse(evokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
@@ -97,19 +97,19 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         return
     end
 
-    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.AveragePlots, data) 
         return
     end
 
     plotsPrms = wtProject.Config.AveragePlots;
     timeRes = data.tim(2) - data.tim(1); 
-    downsampleFactor = WTUtils.ifThenElse(timeRes <= 1, 4, @()WTUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
+    downsampleFactor = WTCodingUtils.ifThenElse(timeRes <= 1, 4, @()WTCodingUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     allChannelsLabels = {data.chanlocs.labels}';
@@ -121,7 +121,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         channelsToPlot = allChannelsLabels;
         channelsToPlotIdxs = 1:numel(allChannelsLabels);
     elseif interactive 
-        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
+        [channelsToPlot, channelsToPlotIdxs] = WTDialogUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
     else
@@ -140,7 +140,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     end
 
     nChannelsToPlot = numel(channelsToPlot);
-    wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
+    wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
    
@@ -166,18 +166,18 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff();
                 continue
             end 
 
-            figureName = WTUtils.ifThenElse(grandAverage, ...
+            figureName = WTCodingUtils.ifThenElse(grandAverage, ...
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
            % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            prms.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            prms.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
 
             [prms.x, prms.y] = WTPlotUtils.getChannelsXY(prms.channelsLocations);
@@ -190,8 +190,8 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
             prms.yAirToEdge = figureWHRatio / 50; % air to edge of plot
             xSpanRel = 1 - 2 * prms.xAirToEdge - prms.subPlotRelWidth;
             ySpanRel = 1 - 2 * prms.yAirToEdge - prms.subPlotRelHeight - channelAnnotationHeight;
-            xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
-            ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+            xSpan = WTCodingUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+            ySpan = WTCodingUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
             xBottomLeftCorner = prms.xAirToEdge + ((prms.x - prms.xMin) / xSpan) * xSpanRel;
             yBottomLeftCorner = prms.yAirToEdge + ((prms.y - prms.yMin) / ySpan) * ySpanRel;
             xCenter = xBottomLeftCorner + (prms.subPlotRelWidth / 2);
@@ -277,7 +277,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
 end
 
 function setSubPlotAnnotationSetCb(hObject, hSubObject, subObjIdx) 
-    newAnnotatonString = WTUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel); 
+    newAnnotatonString = WTCodingUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel); 
     hAnnotation = hObject.UserData.SubPlotAnnotation;
     if ~strcmp(hAnnotation.String, newAnnotatonString)
         hAnnotation.String = newAnnotatonString;
@@ -314,8 +314,8 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         whScreenRatio =  screenSize(3)/screenSize(4);
         widthOnScreen = max(0.5 / sqrt(length(prms.x)), 0.15);
         heightOnScreen = widthOnScreen * whScreenRatio * subPlotAxesPos(4) / subPlotAxesPos(3);
-        xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
-        ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+        xSpan = WTCodingUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        ySpan = WTCodingUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
         xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
         yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
         

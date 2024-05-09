@@ -9,11 +9,11 @@ classdef WTImportGUI
 
             subjFileNames = ioProc.enumImportFiles(system);
             if isempty(subjFileNames) 
-                WTUtils.eeglabMsgDlg('Warning', 'No import files found');
+                WTEEGLabUtils.eeglabMsgDlg('Warning', 'No import files found');
                 return
             end
 
-            subjFileNames = WTUtils.stringsSelectDlg('Select files/subjects', subjFileNames, false, true);
+            subjFileNames = WTDialogUtils.stringsSelectDlg('Select files/subjects', subjFileNames, false, true);
             if isempty(subjFileNames) 
                 wtLog.warn('No subject selected as no import files have been selected');
                 return

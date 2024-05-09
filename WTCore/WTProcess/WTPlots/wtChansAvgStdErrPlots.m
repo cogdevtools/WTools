@@ -55,7 +55,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
             return
         end
     else
-        measure = WTUtils.ifThenElse(evokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
@@ -89,24 +89,24 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         return
     end
 
-    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTMiscUtils.loadData(true, subject, conditionsToPlot{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(true, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.ChannelsAverageStdErrPlots, data) 
         return
     end
 
     plotsPrms = wtProject.Config.ChannelsAverageStdErrPlots;
-    timeRes = WTUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
+    timeRes = WTCodingUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     allChannelsLabels = {data.chanlocs.labels}';
 
     if interactive 
-        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
+        [channelsToPlot, channelsToPlotIdxs] = WTDialogUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
     else
@@ -134,7 +134,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         figuresPosition = WTPlotUtils.getFiguresPositions(1, figureWHRatio, 0.3, 0.1);
         figureName = sprintf('%s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
         channelsLocations = data.chanlocs(channelsToPlotIdxs);
-        figureTitle = WTUtils.chunkStrings('Channel: ', 'Avg of: ', {channelsLocations.labels}, 10);
+        figureTitle = WTStringUtils.chunkStrings('Channel: ', 'Avg of: ', {channelsLocations.labels}, 10);
         yLabel = WTPlotUtils.getYLabelParams(logFlag);
 
         % Create the figure
@@ -159,7 +159,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTMiscUtils.loadData(true, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTProcessUtils.loadAnalyzedData(true, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff(); 
                 break

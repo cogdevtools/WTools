@@ -83,7 +83,7 @@ function wtBRVToEEGLab()
         subjFileName = subjectFileNames{sbj}; 
         wtLog.info('Processing import file ''%s''', subjFileName);
 
-        [success, ALLEEG, ~, ~] =  WTUtils.eeglabRun(WTLog.LevelDbg, true);
+        [success, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
         if ~success 
             wtProject.notifyErr([], 'Failed to run eeglab');  
             wtLog.popStatus();      
@@ -97,7 +97,7 @@ function wtBRVToEEGLab()
             return   
         end
 
-        [success, ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
+        [success, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
             ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
         if ~success 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
@@ -107,7 +107,7 @@ function wtBRVToEEGLab()
 
         if ~isempty(channelsPrms.CutChannels)
             wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
             if ~success 
                 wtProject.notifyErr([], 'Failed cut channels');
                 wtLog.popStatus();
@@ -119,7 +119,7 @@ function wtBRVToEEGLab()
         % Apply HighPass and LowPass filters separately. This is a workaround because sometimes MATLAB 
         % does not find a good solution for BandPass filter.
         if ~isnan(BRVToEEGLabPrms.HighPassFilter)
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
                 EEG, BRVToEEGLabPrms.HighPassFilter, [], [], 0);
             if ~success 
                 wtProject.notifyErr([], 'Failed to apply high pass filter');
@@ -129,7 +129,7 @@ function wtBRVToEEGLab()
         end
 
         if ~isnan(BRVToEEGLabPrms.LowPassFilter)
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
                 EEG, [], BRVToEEGLabPrms.LowPassFilter, [], 0);
             if ~success 
                 wtProject.notifyErr([], 'Failed to apply low pass filter');
@@ -145,7 +145,7 @@ function wtBRVToEEGLab()
             return
         end
 
-        [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_epoch', EEG, {}, epochLimits, 'epochinfo', 'yes');
+        [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_epoch', EEG, {}, epochLimits, 'epochinfo', 'yes');
         if ~success
             wtProject.notifyErr([], 'Failed to to apply epoch limits for subject ''%s''', subject);
             wtLog.popStatus();
@@ -154,7 +154,7 @@ function wtBRVToEEGLab()
 
         try 
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
 
             [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
             if ~success
@@ -163,7 +163,7 @@ function wtBRVToEEGLab()
                 return
             end
 
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to store EEGLAB data set for ''%s''', subject);

@@ -13,7 +13,7 @@ classdef WTAppConfigGUI
             else
                 [wtAppConfigCrnt, success] = WTAppConfig(false).load(false);
                 if ~success
-                    WTUtils.errDlg('Application configuration', 'Failed load the application configuration!');
+                    WTDialogUtils.errDlg('Application configuration', 'Failed load the application configuration!');
                     return
                 end
             end
@@ -48,8 +48,8 @@ classdef WTAppConfigGUI
             };
 
             function parameters = setParameters(answer)
-                enablePrjLogOpt = WTUtils.ifThenElse(wtAppConfig.ProjectLog, 'on', 'off');
-                enableStdLogOpt = WTUtils.ifThenElse(wtAppConfig.MuteStdLog, 'off', 'on');
+                enablePrjLogOpt = WTCodingUtils.ifThenElse(wtAppConfig.ProjectLog, 'on', 'off');
+                enableStdLogOpt = WTCodingUtils.ifThenElse(wtAppConfig.MuteStdLog, 'off', 'on');
 
                 parameters = { ...
                     { 'style' 'text'      'string' 'Show splash screen' } ...
@@ -75,7 +75,7 @@ classdef WTAppConfigGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'WTools configuration');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'WTools configuration');
                 
                 if isempty(answer)
                     wtAppConfig = [];
@@ -97,8 +97,8 @@ classdef WTAppConfigGUI
                 end
 
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
-                elseif wtAppConfig.MuteStdLog && ~WTUtils.eeglabYesNoDlg('Confirm parameter', ...
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid paramters: check the log for details');
+                elseif wtAppConfig.MuteStdLog && ~WTEEGLabUtils.eeglabYesNoDlg('Confirm parameter', ...
                     'Muting standard log might hide important information! Continue?')
                     success = false;
                     anyChange = false;
@@ -114,10 +114,10 @@ classdef WTAppConfigGUI
             end
 
             if persist && ~wtAppConfig.persist()
-                WTUtils.errDlg('Application configuration', 'Failed to save the application configuration!');
+                WTDialogUtils.errDlg('Application configuration', 'Failed to save the application configuration!');
                 wtAppConfig = [];
             elseif warnReload && WTSession().IsOpen
-                WTUtils.wrnDlg('Application configuration', 'Quit and open again wtools to load the updated configuration');
+                WTDialogUtils.wrnDlg('Application configuration', 'Quit and open again wtools to load the updated configuration');
             end
         end
     end

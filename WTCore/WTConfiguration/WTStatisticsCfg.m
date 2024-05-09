@@ -31,11 +31,11 @@ classdef WTStatisticsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqC
             end 
             try
                 if length(cells) == 7
-                    o.ChannelsList = WTUtils.str2nums(cells{1});
-                    o.TimeMin = WTUtils.str2double(cells{2});
-                    o.TimeMax = WTUtils.str2double(cells{3});
-                    o.FreqMin = WTUtils.str2double(cells{4});
-                    o.FreqMax = WTUtils.str2double(cells{5});
+                    o.ChannelsList = WTNumUtils.str2nums(cells{1});
+                    o.TimeMin = WTNumUtils.str2double(cells{2});
+                    o.TimeMax = WTNumUtils.str2double(cells{3});
+                    o.FreqMin = WTNumUtils.str2double(cells{4});
+                    o.FreqMax = WTNumUtils.str2double(cells{5});
                     o.IndividualFreqs = cells{6};
                     o.EvokedOscillations = cells{7};
                     o.validate();

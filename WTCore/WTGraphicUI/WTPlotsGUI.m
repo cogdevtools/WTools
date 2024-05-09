@@ -7,7 +7,7 @@ classdef WTPlotsGUI
             ioProc = wtProject.Config.IOProc;
             subject = [];
             
-            evokedOscillations = WTUtils.eeglabYesNoDlg('Define plot type', 'Do you want to plot Evoked Oscillations?');
+            evokedOscillations = WTEEGLabUtils.eeglabYesNoDlg('Define plot type', 'Do you want to plot Evoked Oscillations?');
             [fileType, fileExt] = ioProc.getGrandAverageFileTypeAndExtension(perSubject, evokedOscillations);
             fileFilter = {  sprintf('*-%s%s', fileType, fileExt), 'All Files' };
 
@@ -17,9 +17,9 @@ classdef WTPlotsGUI
                     title = sprintf('%s\n[ Max %d files ]', title, maxFilesNum);
                 end
 
-                rootSelectionDir = WTUtils.ifThenElse(averageOnly, ioProc.GrandAvgDir, ioProc.AnalysisDir);
+                rootSelectionDir = WTCodingUtils.ifThenElse(averageOnly, ioProc.GrandAvgDir, ioProc.AnalysisDir);
                 
-                [fileNames, filesPath, ~] = WTUtils.uiGetFiles(fileFilter, -1, maxFilesNum, title, ...
+                [fileNames, filesPath, ~] = WTDialogUtils.uiGetFiles(fileFilter, -1, maxFilesNum, title, ...
                     'MultiSelect', 'on', 'restrictToDirs', ['^' rootSelectionDir], rootSelectionDir);
                 if isempty(fileNames) 
                     wtProject.notifyWrn([], 'No files to plot selected');
@@ -35,7 +35,7 @@ classdef WTPlotsGUI
                     break
                 end
                 
-                WTUtils.eeglabMsgDlg('Warning', ...
+                WTEEGLabUtils.eeglabMsgDlg('Warning', ...
                     'Directory:\n   ''%s''\ndoesn''t look like a subject directory.\nPlease select again...', filesPath)
             end
         end
@@ -47,7 +47,7 @@ classdef WTPlotsGUI
             
             if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
                 (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3))
-                plotsPrms.Scale = WTUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
+                plotsPrms.Scale = WTCodingUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
             answer = { ...
@@ -60,7 +60,7 @@ classdef WTPlotsGUI
                 plotsPrms.AllChannels ... 
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
+            scaleLabel = WTCodingUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -87,18 +87,18 @@ classdef WTPlotsGUI
             
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
                 end
 
                 try
-                    plotsPrms.TimeMin = WTUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
-                    plotsPrms.Scale = WTUtils.str2nums(answer{1,5});
+                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
+                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
+                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
+                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
+                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,5});
                     plotsPrms.Contours = answer{1,6};
                     plotsPrms.AllChannels = answer{1,7};
                     success = plotsPrms.validate(); 
@@ -107,7 +107,7 @@ classdef WTPlotsGUI
                 end
                  
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end
@@ -146,17 +146,17 @@ classdef WTPlotsGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
                 end
 
                 try
-                    plotsPrms.TimeMin = WTUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
+                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
+                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
+                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
+                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
                     plotsPrms.AllChannels = answer{1,5};
                     success = plotsPrms.validate(); 
                 catch me
@@ -164,7 +164,7 @@ classdef WTPlotsGUI
                 end
                 
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end
@@ -176,7 +176,7 @@ classdef WTPlotsGUI
             
             if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
                 (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3))
-                plotsPrms.Scale = WTUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
+                plotsPrms.Scale = WTCodingUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
             answer = { ...
@@ -188,7 +188,7 @@ classdef WTPlotsGUI
                 plotsPrms.Contours ...
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
+            scaleLabel = WTCodingUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -211,18 +211,18 @@ classdef WTPlotsGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
                 end
 
                 try
-                    plotsPrms.TimeMin = WTUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
-                    plotsPrms.Scale = WTUtils.str2nums(answer{1,5});
+                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
+                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
+                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
+                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
+                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,5});
                     plotsPrms.Contours = answer{1,6};
                     success = plotsPrms.validate(); 
                 catch me
@@ -230,7 +230,7 @@ classdef WTPlotsGUI
                 end
                 
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end
@@ -264,24 +264,24 @@ classdef WTPlotsGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
                 end
 
                 try
-                    plotsPrms.TimeMin = WTUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTUtils.str2double(answer{1,4});
+                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
+                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
+                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
+                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
                     success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
                 end
                 
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end
@@ -289,13 +289,13 @@ classdef WTPlotsGUI
         function success = define2DScalpMapPlotsSettings(plotsPrms, logFlag, maxSerieLength)
             success = false; 
             WTValidations.mustBeA(plotsPrms, ?WT2DScalpMapPlotsCfg);
-            maxSerieLength = WTUtils.ifThenElse(nargin > 2, @()maxSerieLength, 0);
+            maxSerieLength = WTCodingUtils.ifThenElse(nargin > 2, @()maxSerieLength, 0);
             wtLog = WTLog();
             
             if isempty(plotsPrms.Scale) || ...
                 ((abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
                 (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3)))
-                plotsPrms.Scale = WTUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
+                plotsPrms.Scale = WTCodingUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
             answer = { ...
@@ -307,7 +307,7 @@ classdef WTPlotsGUI
                 plotsPrms.ElectrodesLabel ... 
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
+            scaleLabel = WTCodingUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -330,7 +330,7 @@ classdef WTPlotsGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -339,7 +339,7 @@ classdef WTPlotsGUI
                 try
                     plotsPrms.Time = answer{1,1};
                     plotsPrms.Frequency =answer{1,2};
-                    plotsPrms.Scale = WTUtils.str2nums(answer{1,3});
+                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,3});
                     plotsPrms.PeripheralElectrodes = answer{1,4};
                     plotsPrms.Contours = answer{1,5};
                     plotsPrms.ElectrodesLabel = answer{1,6};
@@ -349,13 +349,13 @@ classdef WTPlotsGUI
                 end
 
                 if ~success
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
 
                 if maxSerieLength > 0 && ~isempty(plotsPrms.TimeResolution) 
                     n = length(plotsPrms.TimeMin : plotsPrms.TimeResolution : plotsPrms.TimeMax);
                     if maxSerieLength < n 
-                        WTUtils.wrnDlg('Review parameter', ...
+                        WTDialogUtils.wrnDlg('Review parameter', ...
                             [ 'You defined a time serie with %d samples which reflects into as many plots.' ... 
                               'The application manages max %d plots. Adjust please.' ], ...
                               n, maxSerieLength)
@@ -367,7 +367,7 @@ classdef WTPlotsGUI
                 if maxSerieLength > 0 && ~isempty(plotsPrms.FreqResolution) 
                     n = length(plotsPrms.FreqMin : plotsPrms.FreqResolution : plotsPrms.FreqMax);
                     if maxSerieLength < n
-                        WTUtils.wrnDlg('Review parameter', ...
+                        WTDialogUtils.wrnDlg('Review parameter', ...
                             [ 'You defined a frequency serie with %d samples which reflects into as many plots.' ... 
                               'The application manages max %d plots. Adjust please.' ], ...
                                n, maxSerieLength)
@@ -388,7 +388,7 @@ classdef WTPlotsGUI
             if isempty(plotsPrms.Scale) || ...
                 ((abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
                 (logFlag && (plotsPrms.Scale(2) < 3)) || (~logFlag && (plotsPrms.Scale(2) >= 3)))
-                plotsPrms.Scale = WTUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
+                plotsPrms.Scale = WTCodingUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
             answer = { ...
@@ -397,7 +397,7 @@ classdef WTPlotsGUI
                 sprintf(WTConfigFormatter.FmtArray, num2str(plotsPrms.Scale)) ...
             };
 
-            scaleLabel = WTUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
+            scaleLabel = WTCodingUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
             function params = setParameters(answer) 
                 params = { ...
@@ -414,7 +414,7 @@ classdef WTPlotsGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
                     return 
@@ -423,14 +423,14 @@ classdef WTPlotsGUI
                 try
                     plotsPrms.Time = answer{1,1};
                     plotsPrms.Frequency = answer{1,2};
-                    plotsPrms.Scale = WTUtils.str2nums(answer{1,3});
+                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,3});
                     success = plotsPrms.validate(); 
                 catch me
                     wtLog.except(me);
                 end
 
                 if ~success 
-                    WTUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
+                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end

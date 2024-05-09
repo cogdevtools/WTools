@@ -9,7 +9,7 @@ function wtImportData()
 
     if ~isempty(basicPrms.SourceSystem) && ~any(cellfun(@(x)strcmp(x, basicPrms.SourceSystem), systemTypes))
         wtLog.err('Unknown source system type: ''%s''', basicPrms.SourceSystem);
-        if ~WTUtils.eeglabYesNoDlg('Error', 'Unknown source system type ''%s''. Reset?', basicPrms.SourceSystem)
+        if ~WTEEGLabUtils.eeglabYesNoDlg('Error', 'Unknown source system type ''%s''. Reset?', basicPrms.SourceSystem)
             return
         end
         wtLog.wrn('User reset source system type because unknown: ''%s''',  basicPrms.SourceSystem);
@@ -20,9 +20,9 @@ function wtImportData()
 
     if isempty(system)
         % This message is perhaps too annoying...
-        % WTUtils.eeglabMsgDlg('Info', 'NOTE: only files with name format ''%s'' can be imported...', ioProc.ImportFileRe);
+        % WTEEGLabUtils.eeglabMsgDlg('Info', 'NOTE: only files with name format ''%s'' can be imported...', ioProc.ImportFileRe);
         systemTypes = WTIOProcessor.getSystemTypes();
-        system = WTUtils.stringsSelectDlg('Source system', systemTypes, true, false, 'ListSize', [200,100]);
+        system = WTDialogUtils.stringsSelectDlg('Source system', systemTypes, true, false, 'ListSize', [200,100]);
         if isempty(system) 
             return
         end
@@ -37,11 +37,11 @@ function wtImportData()
         fileExt = ['*.' WTIOProcessor.getSystemImportFileExtension(system)];
         fileFilter = {fileExt, sprintf('%s (%s)', system, fileExt)};
 
-        [srcFiles, srcDir, ~] = WTUtils.uiGetFiles(fileFilter, -1, -1, ...
+        [srcFiles, srcDir, ~] = WTDialogUtils.uiGetFiles(fileFilter, -1, -1, ...
             sprintf('Select all the files to import from %s system',  system), 'MultiSelect', 'on');
 
         if isempty(srcFiles) 
-            if WTUtils.eeglabYesNoDlg('Confirm', 'Quit import?')
+            if WTEEGLabUtils.eeglabYesNoDlg('Confirm', 'Quit import?')
                 return
             end
             continue
@@ -65,7 +65,7 @@ function wtImportData()
                 extraDataFile = char(extraDataFile);
                 extraDataPath = fullfile(srcDir, extraDataFile);
 
-                if ~WTUtils.fileExist(extraDataPath) 
+                if ~WTIOUtils.fileExist(extraDataPath) 
                     wtLog.err('File ''%s'' needs extra file ''%s'', which is missing', srcPath, extraDataFile);
                     notImportedFiles = [notImportedFiles srcPath];
                     break
@@ -99,13 +99,13 @@ function wtImportData()
             end
         end
 
-        if ~WTUtils.eeglabYesNoDlg('Other imports', 'Continue to import?')
+        if ~WTEEGLabUtils.eeglabYesNoDlg('Other imports', 'Continue to import?')
             break;
         end            
     end
 
     if ~isempty(notImportedFiles) 
-        WTUtils.eeglabMsgDlg('Errors', 'The following files could not be imported. Check the log...\n%s', ... 
+        WTEEGLabUtils.eeglabMsgDlg('Errors', 'The following files could not be imported. Check the log...\n%s', ... 
             char(join(notImportedFiles, '\n')));
     end
 

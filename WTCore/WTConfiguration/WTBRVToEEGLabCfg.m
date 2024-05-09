@@ -22,9 +22,9 @@ classdef WTBRVToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochsAn
             end 
             try
                 if length(cells) >= 3 
-                    o.EpochLimits = WTUtils.str2nums(cells{1});
-                    o.HighPassFilter = WTUtils.str2double(cells{2}, true);
-                    o.LowPassFilter = WTUtils.str2double(cells{3}, true);
+                    o.EpochLimits = WTNumUtils.str2nums(cells{1});
+                    o.HighPassFilter = WTNumUtils.str2double(cells{2}, true);
+                    o.LowPassFilter = WTNumUtils.str2double(cells{3}, true);
                     o.validate(true)
                 else
                     WTLog().err('BRV to EEGLab conversion (%s): wrong number of parameters (should be 3)', o.DataFileName); 

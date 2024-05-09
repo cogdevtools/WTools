@@ -83,7 +83,7 @@ classdef WTDifferenceGUI
                     { 'style' 'text' 'string'  '' } ...
                     { 'Style' 'pushbutton' 'string' 'Delete difference' 'callback' cbDel } };
                 
-                answer = WTUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Define differences to compute');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Define differences to compute');
 
                 if ~isempty(answer)
                     conditionsGrandPrms.ConditionsDiff = hUserData.Value.conditionsDiff;

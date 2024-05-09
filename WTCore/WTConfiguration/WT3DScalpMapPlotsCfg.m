@@ -31,7 +31,7 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPace
                 if length(cells) >= 3
                     o.Time = cells{1};
                     o.Frequency = cells{2};
-                    o.Scale = WTUtils.str2nums(cells{3});
+                    o.Scale = WTNumUtils.str2nums(cells{3});
                     o.validate();
                 else
                     o.default()
@@ -51,7 +51,7 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPace
                 return
             end
             if o.Scale(1) >= o.Scale(2) 
-                WTUtils.throwOrLog(WTException.badValue('Field Scale(2) <= Scale(1)'), ~throwExcpt);
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Scale(2) <= Scale(1)'), ~throwExcpt);
                 return
             end
             success = true;

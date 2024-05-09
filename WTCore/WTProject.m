@@ -16,20 +16,20 @@ classdef WTProject < WTClass
 
     methods (Access=private)
         function msg = getContextMsg(o, fmt, varargin)
-            msg = WTUtils.ifThenElse(~isempty(o.Context), @()char(join(o.Context,':')), '');
+            msg = WTCodingUtils.ifThenElse(~isempty(o.Context), @()char(join(o.Context,':')), '');
             if isempty(fmt)
                 return
             end
             tail = sprintf(fmt, varargin{:});
-            msg = WTUtils.ifThenElse(isempty(msg), tail, @()[msg ': ' tail]);
+            msg = WTCodingUtils.ifThenElse(isempty(msg), tail, @()[msg ': ' tail]);
         end
 
         function msg = getAlternativeMsg(o, msg, fmt, varargin) 
-            msg = WTUtils.ifThenElse(~isempty(msg), msg, sprintf(fmt, varargin{:}));
+            msg = WTCodingUtils.ifThenElse(~isempty(msg), msg, sprintf(fmt, varargin{:}));
             if isempty(msg)
                 return
             end
-            msg(1) = WTUtils.ifThenElse(isempty(o.Context), upper(msg(1)), lower(msg(1)));
+            msg(1) = WTCodingUtils.ifThenElse(isempty(o.Context), upper(msg(1)), lower(msg(1)));
         end
     end
 
@@ -128,7 +128,7 @@ classdef WTProject < WTClass
                     return
                 end
             end
-            
+
             done = true;
         end
 
@@ -148,7 +148,7 @@ classdef WTProject < WTClass
 
         function notify(o, title, fmt, varargin)
             if o.Interactive 
-                WTUtils.eeglabMsgDlg(title, fmt, varargin{:});
+                WTEEGLabUtils.eeglabMsgDlg(title, fmt, varargin{:});
             end
         end
 
@@ -189,8 +189,8 @@ classdef WTProject < WTClass
         function success = open(o, rootDir)
             success = o.Config.open(rootDir); 
             o.IsOpen = success;
-            name = WTUtils.getPathTail(rootDir);  
-            parentDir = WTUtils.getPathPrefix(rootDir);
+            name = WTIOUtils.getPathTail(rootDir);  
+            parentDir = WTIOUtils.getPathPrefix(rootDir);
             if success 
                 o.notifyInf([], 'Project ''%s''in dir ''%s'' opened successfully', name, parentDir);
             else
@@ -201,8 +201,8 @@ classdef WTProject < WTClass
         function success = new(o, rootDir)
             success = o.Config.new(rootDir); 
             o.IsOpen = success;  
-            name = WTUtils.getPathTail(rootDir);  
-            parentDir = WTUtils.getPathPrefix(rootDir);
+            name = WTIOUtils.getPathTail(rootDir);  
+            parentDir = WTIOUtils.getPathPrefix(rootDir);
             if success 
                 o.notifyInf([], 'New project ''%s'' created successfully in dir ''%s''', name, parentDir); 
             else

@@ -80,7 +80,7 @@ function wtEGIToEEGLab()
         subjFileName = subjectFileNames{sbj}; 
         wtLog.info('Processing import file ''%s''', subjFileName);
 
-        [success, ALLEEG, EEG, ~] =  WTUtils.eeglabRun(WTLog.LevelDbg, true);
+        [success, ALLEEG, EEG, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
         if ~success 
             wtProject.notifyErr([], 'Failed to run eeglab');  
             wtLog.popStatus();      
@@ -101,14 +101,14 @@ function wtEGIToEEGLab()
             fileToImport = ioProc.getTemporaryFile();
             deleteFileToImport = true;
 
-            if ~WTUtils.saveTo([], fileToImport, '-struct', 'data')
+            if ~WTIOUtils.saveTo([], fileToImport, '-struct', 'data')
                 wtProject.notifyErr([], 'Failed to save temporary data file with trial ajustments (%s)', subjFileName)
                 wtLog.popStatus();
                 return
             end
         end
 
-        [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_importegimat', ...
+        [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_importegimat', ...
             fileToImport, samplingPrms.SamplingRate, EGI2EEGLabPrms.TriggerLatency);
 
         if deleteFileToImport
@@ -118,12 +118,12 @@ function wtEGIToEEGLab()
 
         if ~success 
             wtProject.notifyErr([], 'Failed to import %s data file in eeglab:\n%s', ...
-               WTUtils.ifThenElse(deleteFileToImport, 'ADJUSTED ', ''), subjFileName);
+               WTCodingUtils.ifThenElse(deleteFileToImport, 'ADJUSTED ', ''), subjFileName);
             wtLog.popStatus();
             return   
         end
 
-        [success, ALLEEG, EEG, CURRENTSET] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
+        [success, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
             ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
         if ~success 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
@@ -141,7 +141,7 @@ function wtEGIToEEGLab()
 
         if ~isempty(channelsPrms.CutChannels)
             wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-            [success, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
             if ~success 
                 wtProject.notifyErr([], 'Failed cut channels');
                 wtLog.popStatus();
@@ -159,7 +159,7 @@ function wtEGIToEEGLab()
 
         try 
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
             
             [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
             if ~success
@@ -168,7 +168,7 @@ function wtEGIToEEGLab()
                 return
             end
 
-            [ALLEEG, EEG] = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
+            [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to store EEGLAB data set for ''%s''', subject);
@@ -285,7 +285,7 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
             if ~any(strcmp(cndName, selectedConditions)) % ignore unselected conditions
                 continue
             end
-            segNum = WTUtils.str2double(reResult{fldIdx}{2});
+            segNum = WTNumUtils.str2double(reResult{fldIdx}{2});
             if ~allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of rangre
                 % not sure why when allTrials we should rename fields...
                 continue
@@ -316,8 +316,8 @@ function [success, EEG] = restoreCzChannel(EEG, channelsPrms)
         ref = zeros(1, size(EEG.data, 2), size(EEG.data, 3)); 
         EEG.data = cat(1, EEG.data, ref);
         EEG.nbchan = size(EEG.data, 1);
-        EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
-        EEG = WTUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG,  'load', ...
+        EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+        EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG,  'load', ...
             { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
             'delete', 1, 'delete', 1, 'delete', 1);
     catch me

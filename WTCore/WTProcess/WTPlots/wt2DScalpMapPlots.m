@@ -79,7 +79,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             return
         end
     else
-        measure = WTUtils.ifThenElse(evokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
@@ -112,12 +112,12 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         return
     end
 
-    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustPacedTimeFreqDomains(wtProject.Config.TwoDimensionalScalpMapPlots, data) 
         return
     end
@@ -152,13 +152,13 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin);
     end
 
-    peripheralElectrodes = WTUtils.ifThenElse(plotsPrms.PeripheralElectrodes, 1, 0.5);
-    contours = WTUtils.ifThenElse(plotsPrms.Contours, 6, 0);
-    labels = WTUtils.ifThenElse(plotsPrms.ElectrodesLabel, 'labels', 'on');
-    nSubPlots = WTUtils.ifThenElse(isempty(plotsPrms.TimeResolution), 1, length(timeIdxs));
-    nSubPlots = WTUtils.ifThenElse(isempty(plotsPrms.FreqResolution), nSubPlots, length(freqIdxs));
+    peripheralElectrodes = WTCodingUtils.ifThenElse(plotsPrms.PeripheralElectrodes, 1, 0.5);
+    contours = WTCodingUtils.ifThenElse(plotsPrms.Contours, 6, 0);
+    labels = WTCodingUtils.ifThenElse(plotsPrms.ElectrodesLabel, 'labels', 'on');
+    nSubPlots = WTCodingUtils.ifThenElse(isempty(plotsPrms.TimeResolution), 1, length(timeIdxs));
+    nSubPlots = WTCodingUtils.ifThenElse(isempty(plotsPrms.FreqResolution), nSubPlots, length(freqIdxs));
 
-    wtLog.info('Plotting %s...', WTUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
+    wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     mainPlots = [];
 
@@ -188,13 +188,13 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTMiscUtils.loadData(false, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff();
                 continue
             end 
 
-            figureNamePrefix = WTUtils.ifThenElse(grandAverage, ...
+            figureNamePrefix = WTCodingUtils.ifThenElse(grandAverage, ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
 
@@ -206,7 +206,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             mainPlots(cnd) = hFigure;
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            data.WT = WTUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            data.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
             
             if isempty(plotsPrms.TimeResolution)
                 % Average along times
@@ -218,7 +218,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             end
            
             if nSubPlots == 1
-                WTUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
+                WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                         data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
                         plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
                 pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
@@ -266,7 +266,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                     hSubPlotFigure = subplot(prms.nSubPlotsGridRows, prms.nSubPlotsGridCols, i, 'Parent', hFigure);
 
                     hSubPlotFigure.UserData = struct('FigureSubPlotIdx', i);
-                    WTUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
+                    WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                             subPlotData.data, data.chanlocs, 'electrodes', labels, 'maplimits',...
                             plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
                     title(subPlotData.title, 'FontSize', 8, 'FontWeight', 'bold');
@@ -321,10 +321,10 @@ end
 
 function [relWidth, whRatio] = getMainFigureRelativeSize(nSubPlots)
     screenSize = get(groot, 'screensize');
-    maxSubPlotWidth = WTUtils.ifThenElse(nSubPlots == 1, screenSize(3)/3, screenSize(3)/6);
+    maxSubPlotWidth = WTCodingUtils.ifThenElse(nSubPlots == 1, screenSize(3)/3, screenSize(3)/6);
     nSubPlotsGridCols = ceil(sqrt(nSubPlots));
     width = screenSize(3) / nSubPlotsGridCols;
-    relWidth = WTUtils.ifThenElse(width < maxSubPlotWidth, 1, ...
+    relWidth = WTCodingUtils.ifThenElse(width < maxSubPlotWidth, 1, ...
         (maxSubPlotWidth * nSubPlotsGridCols) / screenSize(3));
     whRatio = screenSize(3)/screenSize(4);
 end
@@ -407,7 +407,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         scale = prms.plotsPrms.Scale;
         xLabel = prms.xLabel;
 
-        WTUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
+        WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                 subPlotData.data, data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
                 scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
 

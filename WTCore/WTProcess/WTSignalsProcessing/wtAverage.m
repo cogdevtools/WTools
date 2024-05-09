@@ -160,7 +160,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             nChans = size(epochsList,2);
         end
         % Introduced by Eugenio Parise to process individual epochs -- OFF --
-        
+
         for i = 1:epochsN
             actualEpoch = epochsToTransform(i);
             if i == 1
@@ -286,7 +286,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                 end
                 
                 nEpochs = nEpochs-nFlatEpochs;
-                wType = WTUtils.ifThenElse(evokedOscillations, ...
+                wType = WTCodingUtils.ifThenElse(evokedOscillations, ...
                     WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
 
                 [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, wType, ...
@@ -328,7 +328,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
 end
 
 function [success, fullPath] = saveAnalysis(ioProc, subject, condition, wType, WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs) 
-    argsName = WTUtils.argsName(WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+    argsName = WTCodingUtils.argsName(WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
     [success, fullPath] = ioProc.writeWaveletsAnalysis(subject, condition, wType, argsName{:});
     if ~success
         WTLog().err('Failed to save wavelet analisys (type ''%s'') for subject ''%s'' / condition ''%s''', wType, subject, condition);

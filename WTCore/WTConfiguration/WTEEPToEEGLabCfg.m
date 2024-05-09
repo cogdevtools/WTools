@@ -22,9 +22,9 @@ classdef WTEEPToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & WTEpochsAn
             end 
             try
                 if length(cells) >= 3 
-                    o.EpochLimits =  WTUtils.str2nums(cells{1});
-                    o.HighPassFilter = WTUtils.str2double(cells{2});
-                    o.LowPassFilter = WTUtils.str2double(cells{3});
+                    o.EpochLimits =  WTNumUtils.str2nums(cells{1});
+                    o.HighPassFilter = WTNumUtils.str2double(cells{2});
+                    o.LowPassFilter = WTNumUtils.str2double(cells{3});
                     o.validate(true)
                 else
                     WTLog().err('EEP to EEGLab conversion (%s): wrong number of parameters (should be 3)', o.DataFileName); 

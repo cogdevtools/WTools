@@ -60,7 +60,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
             return
         end
     else
-        measure = WTUtils.ifThenElse(evokedOscillations, ...
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
@@ -94,18 +94,18 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         return
     end
 
-    [diffConsistency, grandConsistency] = WTMiscUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
+    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
     if ~diffConsistency || ~grandConsistency
         return
     end
 
-    [success, data] = WTMiscUtils.loadData(true, subject, conditionsToPlot{1}, measure);
+    [success, data] = WTProcessUtils.loadAnalyzedData(true, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.AverageStdErrPlots, data) 
         return
     end
 
     plotsPrms = wtProject.Config.AverageStdErrPlots;
-    timeRes = WTUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
+    timeRes = WTCodingUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : find(data.tim == plotsPrms.TimeMax);
     timeIdxsReduced = timeIdxs(1) : 10 : timeIdxs(end);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
@@ -118,7 +118,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         channelsToPlot = allChannelsLabels;
         channelsToPlotIdxs = 1:numel(allChannelsLabels);
     elseif interactive 
-        [channelsToPlot, channelsToPlotIdxs] = WTUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
+        [channelsToPlot, channelsToPlotIdxs] = WTDialogUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
     else
@@ -171,8 +171,8 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         prms.yAirToEdge = figureWHRatio / 50; % air to edge of plot
         xSpanRel = 1 - 2 * prms.xAirToEdge - prms.subPlotRelWidth;
         ySpanRel = 1 - 2 * prms.yAirToEdge - prms.subPlotRelHeight - channelAnnotationHeight;
-        xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
-        ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+        xSpan = WTCodingUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        ySpan = WTCodingUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
         xBottomLeftCorner = prms.xAirToEdge + ((prms.x - prms.xMin) / xSpan) * xSpanRel;
         yBottomLeftCorner = prms.yAirToEdge + ((prms.y - prms.yMin) / ySpan) * ySpanRel;
         xCenter = xBottomLeftCorner + (prms.subPlotRelWidth / 2);
@@ -216,7 +216,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
-            [success, data] = WTMiscUtils.loadData(true, subject, conditionsToPlot{cnd}, measure);
+            [success, data] = WTProcessUtils.loadAnalyzedData(true, subject, conditionsToPlot{cnd}, measure);
             if ~success
                 wtLog.contextOff(); 
                 break
@@ -289,7 +289,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
 end
 
 function setSubPlotAnnotationSetCb(hObject, hSubObject, subObjIdx) 
-    newAnnotatonString = WTUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel); 
+    newAnnotatonString = WTCodingUtils.ifThenElse(isempty(hSubObject), '', @()hSubObject.UserData.ChannelLabel); 
     hAnnotation = hObject.UserData.SubPlotAnnotation;
     if ~strcmp(hAnnotation.String, newAnnotatonString)
         hAnnotation.String = newAnnotatonString;
@@ -326,8 +326,8 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         whScreenRatio =  screenSize(3)/screenSize(4);
         widthOnScreen = max(0.5 / sqrt(length(prms.x)), 0.15);
         heightOnScreen = widthOnScreen * whScreenRatio * subPlotAxesPos(4) / subPlotAxesPos(3);
-        xSpan = WTUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
-        ySpan = WTUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
+        xSpan = WTCodingUtils.ifThenElse(prms.xMax == prms.xMin, 1, prms.xMax - prms.xMin);
+        ySpan = WTCodingUtils.ifThenElse(prms.yMax == prms.yMin, 1, prms.yMax - prms.yMin);
         xOnScreen = (prms.x(subPlotIdx) - prms.xMin) / xSpan;
         yOnScreen = (prms.y(subPlotIdx) - prms.yMin) / ySpan;
         
@@ -392,7 +392,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
                 hold('off');
             end 
         end
-        
+
         hold('on');  
         % Set the callback to manage grid style change
         hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;

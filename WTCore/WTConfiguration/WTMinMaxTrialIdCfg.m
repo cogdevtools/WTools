@@ -28,8 +28,8 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
             try
                 if length(cells) >= 2
                     % For backward compatibility
-                    o.MinTrialId = WTUtils.str2double(cells{1}, true);
-                    o.MaxTrialId = WTUtils.str2double(cells{2}, true);
+                    o.MinTrialId = WTNumUtils.str2double(cells{1}, true);
+                    o.MaxTrialId = WTNumUtils.str2double(cells{2}, true);
                     o.validate(true);
                 else 
                     o.default();
@@ -49,7 +49,7 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
 
             if ~isnan(o.MinTrialId) && ~isnan(o.MaxTrialId)
                 if o.MaxTrialId < o.MinTrialId;
-                    WTUtils.throwOrLog(WTException.badValue('Field MaxTrialId < MinTrialId'), ~throwExcpt);
+                    WTCodingUtils.throwOrLog(WTException.badValue('Field MaxTrialId < MinTrialId'), ~throwExcpt);
                     success = false;
                 end
             end
