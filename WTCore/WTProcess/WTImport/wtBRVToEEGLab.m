@@ -17,7 +17,8 @@
 % Enter no argument To run from GUI:
 % wtBRVToEEGLab()
 
-function wtBRVToEEGLab()
+function success = wtBRVToEEGLab()
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
     
@@ -179,6 +180,7 @@ function wtBRVToEEGLab()
 
     wtLog.popStatus();
     wtProject.notifyInf([], 'BRV -> EEGLab import completed!');
+    success = true;
 end
 
 

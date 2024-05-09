@@ -14,7 +14,8 @@
 % wtEEPToEEGLab('02',[-200 1000],0.3,65)
 % wtEEPToEEGLab([],[-200 1000],0.3,65)
 
-function wtEEPToEEGLab()
+function success = wtEEPToEEGLab()
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
    
@@ -192,6 +193,7 @@ function wtEEPToEEGLab()
 
     wtLog.popStatus();
     wtProject.notifyInf([], 'EEP -> EEGLab import completed!');
+    success = true;
 end
 
 function success = setEpochsLimitsAndFreqFilter()

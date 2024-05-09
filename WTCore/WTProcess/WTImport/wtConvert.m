@@ -34,13 +34,12 @@ function success = wtConvert()
     wtProject.Config.ImportType = importTypePrms;
 
     if importTypePrms.EEPFlag 
-        wtEEPToEEGLab();
+        success = wtEEPToEEGLab();
     elseif importTypePrms.EGIFlag 
-        wtEGIToEEGLab();
+        success = wtEGIToEEGLab();
     elseif importTypePrms.BRVFlag 
-        wtBRVToEEGLab();
+        success = wtBRVToEEGLab();
     elseif importTypePrms.EEGLabFlag 
-        wtEEGLabToEEGLab();
+        success = wtEEGLabToEEGLab();
     end
-    success = true;
 end

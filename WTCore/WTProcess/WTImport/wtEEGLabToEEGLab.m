@@ -19,7 +19,8 @@
 % wtEEGLabToEEGLab('01');
 % wtEEGLabToEEGLab();
 
-function wtEEGLabToEEGLab()
+function success = wtEEGLabToEEGLab()
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
    
@@ -149,5 +150,6 @@ function wtEEGLabToEEGLab()
 
     wtLog.popStatus();
     wtProject.notifyInf([], 'EEGLab -> EEGLab import completed!');
+    success = true;
 end
 

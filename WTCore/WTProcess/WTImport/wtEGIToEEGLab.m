@@ -15,7 +15,8 @@
 %   wtEGIToEEGLab('01');
 %   wtEGIToEEGLab();
 
-function wtEGIToEEGLab()
+function success = wtEGIToEEGLab()
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
    
@@ -184,6 +185,7 @@ function wtEGIToEEGLab()
 
     wtLog.popStatus();
     wtProject.notifyInf([], 'EGI -> EEGLab import completed!');
+    success = true;
 end
 
 function success = setTriggerLatency()
