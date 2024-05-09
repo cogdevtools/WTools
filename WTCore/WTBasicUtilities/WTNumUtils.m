@@ -10,7 +10,8 @@ classdef WTNumUtils
                 [valid, value] = WTValidations.strIsNumber(str);
             end
             if ~valid
-                WTException.badValue('Not a valid string representation of a number: %s', WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of a number: %s', ...
+                    WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
@@ -22,29 +23,32 @@ classdef WTNumUtils
                 [valid, value] = WTValidations.strIsInt(str);
             end
             if ~valid
-                WTException.badValue('Not a valid string representation of an integer: %s', WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of an integer: %s', ... 
+                    WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
         function array = str2nums(str)
             [valid, array] = WTValidations.strIsNumberArray(str);
             if ~valid 
-                WTException.badValue('Not a valid string representation of numbers: %s', WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of numbers: %s', ... 
+                    WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
         function array = str2ints(str)
             [valid, array] =  WTValidations.strIsIntArray(str);
             if ~valid 
-                WTException.badValue('Not a valid string representation of integers: %s', WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
+                WTException.badValue('Not a valid string representation of integers: %s', ... 
+                    WTCodingUtils.ifThenElse(ischar(str), str, '<?>')).throw();
             end
         end
 
-        % str2numsRep() makes a numeric array out of a string describing a set of numbers which are expressed 
+        % strRange2nums() makes a numeric array out of a string describing a set of numbers which are expressed 
         % as (possible paced) range one of the forms: '[x]' '[x:y]' '[x:y:z]' '[x y]' '[x y z]', with or without
         % or the square brackets depending on if the parameter 'format': format = '[]' (with), format = ']['
         % (without), format = <anything else> (indifferent). Empty strings are not valid.
-        function rng = str2numsRep(inStr, format)
+        function rng = strRange2nums(inStr, format)
             format = WTCodingUtils.ifThenElse(nargin < 2, '', format);
             rng = [];
 

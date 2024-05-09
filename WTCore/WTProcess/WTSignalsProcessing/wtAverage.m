@@ -229,12 +229,12 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
 
     wtLog.info('Saving time/frequency analisys: this might take a while...');
     tim = EEG.times(timeMin:dt:timeMax);
-    waveTyp = [waveletType '-' num2str(fb)];
+    waveType = [waveletType '-' num2str(fb)];
     chanlocs = chanlocs(chansToAnalyse);
 
     if emptySelection
         [success, files{1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys, ...
-            WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+            WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
         if ~success 
             return
         end
@@ -242,7 +242,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         if ITPCSelected
             WT = ITPC/size(X,3);
             [success, files{1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_ITPC, ...
-                WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
             if ~success 
                 return
             end
@@ -251,7 +251,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         if ITLCSelected
             WT = 1/sqrt(size(X,3))*ITLC./sqrt(ITLCN);
             [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_ITLC, ...
-                WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
             if ~success 
                 return
             end
@@ -260,14 +260,14 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         if ERSPSelected
             WT = ERSP/size(X,3);
             [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_ERSP, ...
-                WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
             if ~success 
                 return
             end
         end
         
         if avWTSelected
-            if strcmp(waveTyp,'cwt-3.5')
+            if strcmp(waveType,'cwt-3.5')
                 % Modified by Eugenio Parise to cut the extra edges before saving -- ON --
                 WT = avWT/(size(X,3)-nFlatEpochs);
                 
@@ -290,7 +290,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                     WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
 
                 [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, wType, ...
-                    WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                    WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
                 if ~success 
                     return
                 end
@@ -298,7 +298,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             else % Original ERPWAVELAB saving
                 WT = avWT/size(X,3);
                 [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_avWT, ...
-                    WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                    WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
                 if ~success 
                     return
                 end
@@ -308,7 +308,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         if WTavSelected
             WT = WTav/size(X,3);
             [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_WTav, ...
-                WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
             if ~success 
                 return
             end
@@ -317,7 +317,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
         if InducedSelected
             WT = (WTavi-abs(avWTi))/size(X,3);
             [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_Induced, ...
-                WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
             if ~success 
                 return
             end
@@ -327,8 +327,8 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     end
 end
 
-function [success, fullPath] = saveAnalysis(ioProc, subject, condition, wType, WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs) 
-    argsName = WTCodingUtils.argsName(WT, chanlocs, Fs, Fa, waveTyp, tim, nEpochs);
+function [success, fullPath] = saveAnalysis(ioProc, subject, condition, wType, WT, chanlocs, Fs, Fa, waveType, tim, nEpochs) 
+    argsName = WTCodingUtils.argsName(WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
     [success, fullPath] = ioProc.writeWaveletsAnalysis(subject, condition, wType, argsName{:});
     if ~success
         WTLog().err('Failed to save wavelet analisys (type ''%s'') for subject ''%s'' / condition ''%s''', wType, subject, condition);

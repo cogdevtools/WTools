@@ -38,7 +38,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
 
         function set.Time(o, value)
             if ischar(value)
-                value = WTNumUtils.str2numsRep(value, '[]');
+                value = WTNumUtils.strRange2nums(value, '[]');
             end
             nMaxValues = WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
             WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
@@ -98,7 +98,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
 
         function set.Frequency(o, value)
             if ischar(value)
-                value = WTNumUtils.str2numsRep(value, '[]');
+                value = WTNumUtils.strRange2nums(value, '[]');
             end
             nMaxValues = WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
             WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
