@@ -1,16 +1,14 @@
 classdef WTConvertGUI
     
     methods (Static)
-        function success = selectImportType(convertToEEGLabData) 
-            WTValidations.mustBeA(convertToEEGLabData, ?WTImportTypeCfg);
+        function success = selectImportType(importTypePrms, basicPrms, lockToSrcSystem) 
+            WTValidations.mustBeA(importTypePrms, ?WTImportTypeCfg);
+            WTValidations.mustBeA(basicPrms, ?WTBasicCfg);
+
+            lockToSrcSystem = nargin > 2 && lockToSrcSystem && ~isempty(basicPrms.SourceSystem);
+            wtProject = WTProject();
             wtLog = WTLog();
             success = false;
-
-            answer = { ...
-                convertToEEGLabData.EEPFlag, ...
-                convertToEEGLabData.EGIFlag, ...
-                convertToEEGLabData.BRVFlag, ...
-                convertToEEGLabData.EEGLabFlag }; 
 
             systems = { ...
                 WTIOProcessor.SystemEEP, ...
@@ -18,13 +16,28 @@ classdef WTConvertGUI
                 WTIOProcessor.SystemBRV, ...
                 WTIOProcessor.SystemEEGLab }; 
 
-            enabled = repmat({'on'}, 1, length(systems));
+            if lockToSrcSystem
+                answer = num2cell(strcmp(systems, basicPrms.SourceSystem));
+                enabled = cellfun(@(x)WTCodingUtils.ifThenElse(x, 'on', 'off'), answer, 'UniformOutput', false);
+            else
+                answer = { ...
+                    importTypePrms.EEPFlag, ...
+                    importTypePrms.EGIFlag, ...
+                    importTypePrms.BRVFlag, ...
+                    importTypePrms.EEGLabFlag }; 
+                enabled = repmat({'on'}, 1, length(systems));
+            end
 
             % EEP conversion is supported only on MS Windows platform
             if ~ispc 
                 systems{1} = [systems{1} ' (available only on MS Windows)'];
                 enabled{1} = 'off';
                 answer{1,1} = 0;
+            end
+
+            if sum([answer{:}]) == 0 && lockToSrcSystem
+                wtProject.notifyErr('', 'Import type is locked to ''%s'', which is not supported.', basicPrms.SourceSystem);
+                return
             end
 
             if sum([answer{:}]) ~= 1
@@ -60,10 +73,10 @@ classdef WTConvertGUI
                 WTDialogUtils.wrnDlg('Review parameter', 'You must select one EEG system among %s', char(join(systems, ' ')));
             end
 
-            convertToEEGLabData.EEPFlag = answer{1,1};
-            convertToEEGLabData.EGIFlag = answer{1,2};
-            convertToEEGLabData.BRVFlag = answer{1,3};
-            convertToEEGLabData.EEGLabFlag = answer{1,4};
+            importTypePrms.EEPFlag = answer{1,1};
+            importTypePrms.EGIFlag = answer{1,2};
+            importTypePrms.BRVFlag = answer{1,3};
+            importTypePrms.EEGLabFlag = answer{1,4};
             success = true;
         end
 

@@ -198,7 +198,8 @@ function varargout = wtools(varargin)
         % hObject    handle to WTools (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         option = WTDialogUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
@@ -213,7 +214,8 @@ function varargout = wtools(varargin)
         % hObject    handle to NewProjectPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -238,7 +240,8 @@ function varargout = wtools(varargin)
         % hObject    handle to OpenProjectPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -263,7 +266,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ImportDataPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -271,7 +275,7 @@ function varargout = wtools(varargin)
         wtLog.contextOn('Import');
         updateApplicationStatus(hObject, handles, true);
         try
-            wtConvert();
+            wtImport();
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to import data');
@@ -285,7 +289,8 @@ function varargout = wtools(varargin)
         % hObject    handle to SubjectsManagerPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -308,7 +313,8 @@ function varargout = wtools(varargin)
         % hObject    handle to WaveletTransformPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -331,7 +337,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ChopAndBaselinePushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -353,7 +360,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ConditionsDifferencePushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -375,7 +383,8 @@ function varargout = wtools(varargin)
         % hObject    handle to SubjectsGrandAveragePushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -398,7 +407,8 @@ function varargout = wtools(varargin)
         % hObject    handle to AveragePlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -420,7 +430,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ChannelsAveragePlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -442,7 +453,8 @@ function varargout = wtools(varargin)
         % hObject    handle to AverageWithStdErrorPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -464,7 +476,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ChannelsAverageWithStdErrorPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -486,7 +499,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ScalpMap2DPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -508,7 +522,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ScalpMap3DPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -530,7 +545,8 @@ function varargout = wtools(varargin)
         % hObject    handle to ExportStatisticsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -560,7 +576,8 @@ function varargout = wtools(varargin)
         % hObject    handle to HelpPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();
@@ -594,7 +611,8 @@ function varargout = wtools(varargin)
         % hObject    handle to LogLevelPopupMenu (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             set(hObject, 'Value', wtLog.StdLogLevel);
             guidata(hObject, handles);
             return
@@ -615,7 +633,7 @@ function varargout = wtools(varargin)
             path(userData.PathsContext);
         end
     
-    function updateProjectName(hObject, handles) 
+    function handles = updateProjectName(hObject, handles) 
         if isfield(handles,'CurrentProjectEdit')
             wtProject = WTProject();
             prjName = WTCodingUtils.ifThenElse(wtProject.IsOpen, wtProject.Config.getName(), '?');
@@ -623,7 +641,7 @@ function varargout = wtools(varargin)
             guidata(hObject, handles);
         end
     
-    function updateProjectDirectory(hObject, handles) 
+    function handles = updateProjectDirectory(hObject, handles) 
         if isfield(handles,'ProjectDirectoryEdit')
             wtProject = WTProject();
             prjDir = '?';
@@ -636,7 +654,7 @@ function varargout = wtools(varargin)
             guidata(hObject, handles);
         end
 
-    function updateTotalSubjects(hObject, handles) 
+    function handles = updateTotalSubjects(hObject, handles) 
         if isfield(handles,'SubjectsNumberEdit')
             wtProject = WTProject();
             nSubjs = length(wtProject.Config.SubjectsGrand.SubjectsList);
@@ -645,7 +663,7 @@ function varargout = wtools(varargin)
             guidata(hObject, handles);
         end
     
-    function updateApplicationStatus(hObject, handles, busy) 
+    function handles = updateApplicationStatus(hObject, handles, busy) 
         if isfield(handles,'ApplicationStatusValueLabel')
             if busy
                 set(handles.ApplicationStatusValueLabel, 'String', 'BUSY');
@@ -657,7 +675,9 @@ function varargout = wtools(varargin)
             guidata(hObject, handles);
         end
 
-    function success = lock(hObject, handles)
+    % lock() return the handles as it might modify them (by adding a new one). If reused in the caller
+    % the handles to refer to are the ones returned by lock().
+    function [success, handles] = lock(hObject, handles)
         if any(strcmp(fieldnames(handles),'wtoolsLocked')) && handles.wtoolsLocked
             WTDialogUtils.wrnDlg('Blocked', 'There''s an ongoing operation or a\ndialog is waiting for your response...');
             success = false;
@@ -667,13 +687,16 @@ function varargout = wtools(varargin)
         end
         guidata(hObject, handles);
     
+    % unlock() return the handles as it might modify them. If reused in the caller the handles to refer
+    % to are the ones returned by lock().
     function handles = unlock(hObject, handles)
         handles.wtoolsLocked = false;
         guidata(hObject, handles);
 
     function closeAppAfter = configureApp(hObject, handles)
         closeAppAfter = false;
-        if ~lock(hObject, handles)
+        [success, handles] = lock(hObject, handles);
+        if ~success
             return
         end
         wtLog = WTLog();

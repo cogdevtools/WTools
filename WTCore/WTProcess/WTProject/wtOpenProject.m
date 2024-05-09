@@ -35,10 +35,6 @@ function success = wtOpenProject
         [~, opened] = wtLog.openStream(ioProc.getLogFile(wtProject.Config.getName()));
         wtLog.MuteStdStreams = WTCodingUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
     end
-    
-    if WTEEGLabUtils.eeglabYesNoDlg('Update import', 'Do you want to import new data files?')
-        wtImportData();
-    end
 
     success = true;
 end

@@ -43,6 +43,11 @@ classdef WTIOProcessor < handle
         SystemEEGLabImportFileRe = '^([^0-9]|\d+[^0-9]+)*(?<subject>\d+)\.set$'
         SystemEGIImportFileRe = '^(?<subject>\d+) .*\.mat$'
         SystemBRVImportFileRe = '^(?<subject>\d+) .*\.mat$'
+        AnyImportFileRe = [
+            WTIOProcessor.SystemEEPImportFileRe '|' ...
+            WTIOProcessor.SystemEEGLabImportFileRe '|' ...
+            WTIOProcessor.SystemEGIImportFileRe '|' ...
+            WTIOProcessor.SystemBRVImportFileRe]
     end
 
     properties(SetAccess=private,GetAccess=public)
@@ -393,6 +398,19 @@ classdef WTIOProcessor < handle
         function [success, sbjDir] = makeAnalysisSubjectDir(o, subject)
             sbjDir = fullfile(o.AnalysisDir, subject);
             success = WTIOUtils.mkdir(sbjDir);
+        end
+
+        function count = countImportFiles(o)
+            dirContent = dir(fullfile(o.ImportDir, '*'));
+            count = 0;
+            for i = 1:length(dirContent)
+                if dirContent(i).isdir 
+                    continue
+                end
+                if ~isempty(regexp(dirContent(i).name, WTIOProcessor.AnyImportFileRe, 'once'))
+                    count = count + 1;
+                end
+            end
         end
 
         function [fullPath, filePath] = getImportFile(o, fileName)

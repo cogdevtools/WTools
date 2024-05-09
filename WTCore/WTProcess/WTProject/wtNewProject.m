@@ -54,7 +54,6 @@ function success = wtNewProject
         wtLog.MuteStdStreams = WTCodingUtils.ifThenElse(opened, wtAppConfig.MuteStdLog, false);
     end
 
-    wtProject.notifyInf('Project created', 'As next step you should choose the files to import...');
-    wtImportData()
+    wtImport(true);
     success = true;
 end

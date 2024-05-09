@@ -1,10 +1,11 @@
-function wtImportData() 
+function copiedCount = wtCopyData() 
+    copiedCount = 0;
     wtProject = WTProject();
     ioProc = wtProject.Config.IOProc;
     basicPrms = wtProject.Config.Basic;
     wtLog = WTLog();
     importDir = ioProc.ImportDir;
-    notImportedFiles = {};
+    notCopiedFiles = {};
     systemTypes = WTIOProcessor.getSystemTypes();
 
     if ~isempty(basicPrms.SourceSystem) && ~any(cellfun(@(x)strcmp(x, basicPrms.SourceSystem), systemTypes))
@@ -31,8 +32,6 @@ function wtImportData()
         wtLog.info('User selected system ''%s''', system);
     end
 
-    importedCount = 0;
-
     while true
         fileExt = ['*.' WTIOProcessor.getSystemImportFileExtension(system)];
         fileFilter = {fileExt, sprintf('%s (%s)', system, fileExt)};
@@ -53,7 +52,7 @@ function wtImportData()
 
             if isempty(ioProc.getSubjectsFromImportFiles(system, srcFile))
                 wtLog.err('Not a valid %s file name for import: %s', system, srcFile);
-                notImportedFiles = [notImportedFiles srcPath];
+                notCopiedFiles = [notCopiedFiles srcPath];
                 continue
             end 
 
@@ -67,7 +66,7 @@ function wtImportData()
 
                 if ~WTIOUtils.fileExist(extraDataPath) 
                     wtLog.err('File ''%s'' needs extra file ''%s'', which is missing', srcPath, extraDataFile);
-                    notImportedFiles = [notImportedFiles srcPath];
+                    notCopiedFiles = [notCopiedFiles srcPath];
                     break
                 end
                 filesToCopy = [filesToCopy extraDataPath];
@@ -88,12 +87,12 @@ function wtImportData()
                     break
                 end
 
-                importedCount = importedCount + 1;
+                copiedCount = copiedCount + 1;
             end
 
             if copyFailed
                 wtLog.err('File ''%s'' (and/or an auxiliary file, if any) could not be imported successfully', srcPath);
-                notImportedFiles = [notImportedFiles srcPath];
+                notCopiedFiles = [notCopiedFiles srcPath];
             else
                 wtLog.info('File ''%s'' imported successfully', srcPath);
             end
@@ -104,12 +103,12 @@ function wtImportData()
         end            
     end
 
-    if ~isempty(notImportedFiles) 
+    if ~isempty(notCopiedFiles) 
         WTEEGLabUtils.eeglabMsgDlg('Errors', 'The following files could not be imported. Check the log...\n%s', ... 
-            char(join(notImportedFiles, '\n')));
+            char(join(notCopiedFiles, '\n')));
     end
 
-    if importedCount > 0 && ~basicPrms.persist()
+    if copiedCount > 0 && ~basicPrms.persist()
         wtProject.notifyErr([], 'Failed to save basic configuration params');
     end
 end

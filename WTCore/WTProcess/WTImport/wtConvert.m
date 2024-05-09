@@ -8,31 +8,38 @@
 function success = wtConvert()
     success = false;
     wtProject = WTProject();
+    ioProc = wtProject.Config.IOProc;
 
     if ~wtProject.checkIsOpen()
         return
     end
-    
-    convertToEEGLabData = copy(wtProject.Config.ImportType);
 
-    if ~WTConvertGUI.selectImportType(convertToEEGLabData)
+    if ioProc.countImportFiles() == 0 
+        wtProject.notifyWrn([], 'There are no imported files yet in this project')
         return
     end
 
-    if ~convertToEEGLabData.persist()
+    basicPrms = copy(wtProject.Config.Basic); 
+    importTypePrms = copy(wtProject.Config.ImportType);
+
+    if ~WTConvertGUI.selectImportType(importTypePrms, basicPrms, true)
+        return
+    end
+
+    if ~importTypePrms.persist()
         wtProject.notifyErr([], 'Failed to save convert to EEGLAB params');
         return
     end
 
-    wtProject.Config.ImportType = convertToEEGLabData;
+    wtProject.Config.ImportType = importTypePrms;
 
-    if convertToEEGLabData.EEPFlag 
+    if importTypePrms.EEPFlag 
         wtEEPToEEGLab();
-    elseif convertToEEGLabData.EGIFlag 
+    elseif importTypePrms.EGIFlag 
         wtEGIToEEGLab();
-    elseif convertToEEGLabData.BRVFlag 
+    elseif importTypePrms.BRVFlag 
         wtBRVToEEGLab();
-    elseif convertToEEGLabData.EEGLabFlag 
+    elseif importTypePrms.EEGLabFlag 
         wtEEGLabToEEGLab();
     end
     success = true;
