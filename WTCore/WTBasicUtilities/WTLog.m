@@ -255,7 +255,7 @@ classdef WTLog < WTClass
             msg = strrep(getReport(excp, 'extended'), '%', '%%');
             o.msg(2, WTLog.LevelErr, '%s\n', msg);
             if nargin > 2 && rethrow
-                excp.rethrow()
+                excp.rethrow();
             end
         end
 

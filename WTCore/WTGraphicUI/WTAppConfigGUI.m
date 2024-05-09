@@ -84,7 +84,12 @@ classdef WTAppConfigGUI
 
                 try
                     wtAppConfig.ShowSplashScreen = answer{1,1};
-                    wtAppConfig.PlotsColorMap = answer{1,2};
+                    try
+                        wtAppConfig.PlotsColorMap = answer{1,2};
+                    catch me
+                        wtAppConfig.PlotsColorMap = wtAppConfigCrnt.PlotsColorMap;
+                        me.rethrow();
+                    end
                     wtAppConfig.ProjectLog = answer{1,3};
                     wtAppConfig.ProjectLogLevel = answer{1,4};
                     wtAppConfig.MuteStdLog = answer{1,5};

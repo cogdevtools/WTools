@@ -22,7 +22,7 @@ function varargout = wtools(varargin)
     %
     % See also: GUIDE, GUIDATA, GUIHANDLES
     % Edit the above text to modify the response to help wtools
-    % Last Modified by GUIDE v2.5 03-Jul-2013 13:43:07
+    % Last Modified by GUIDE v2.5 09-May-2024 11:59:45
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
     guiPresets();
@@ -157,35 +157,60 @@ function varargout = wtools(varargin)
             varargout{1} = {};
         end
     
-    
     % --- Executes during object creation, after setting all properties.
-    function ProjectEdit_CreateFcn(hObject, eventdata, handles)
-        % hObject    handle to ProjectEdit (see GCBO)
+    function WTools_CreateFcn(hObject, eventdata, handles)
+        % hObject    handle to WTools (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        
-        % Hint: edit controls usually have a white background on Windows.
-        %       See ISPC and COMPUTER.
-        if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-            set(hObject,'BackgroundColor','white');
+        hObject.UserData = struct();
+        hObject.UserData.BailOut = false;
+        [initOk, pathsContext] = wtInit();
+        hObject.UserData.PathsContext = pathsContext;
+        if ~initOk
+            % Note: all _CreateFcn must manage the fact that WTools class might not
+            % be in the paths, so if they reference one, they should protect the code
+            % within a try-catch. Idem for the _DeleteFcn;
+            hObject.UserData.BailOut = true;
+            return
         end
-    
-    
-    % --- Executes during object creation, after setting all properties.
-    function SSnEdit_CreateFcn(hObject, eventdata, handles)
-        % hObject    handle to SSnEdit (see GCBO)
+
+    % --- Executes during object deletion, before destroying properties.
+    function WTools_DeleteFcn(hObject, eventdata, handles)
+        % hObject    handle to WTools (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
-        % handles    empty - handles not created until after all CreateFcns called
-        
-        % Hint: edit controls usually have a white background on Windows.
-        %       See ISPC and COMPUTER.
-        if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-            set(hObject,'BackgroundColor','white');
+        % handles    structure with handles and user data (see GUIDATA)
+        try 
+            WTLog().contextOn('Close');
+        catch
         end
+        try 
+            WTSession().close();
+        catch
+        end
+        try
+            WTSingletons.clear();
+        catch
+        end
+        restorePaths(hObject); 
     
-    % --- Executes on button press in NewPushButton.
-    function NewPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to NewPushButton (see GCBO)
+    % --- Executes when user attempts to close WTools.
+    function WTools_CloseRequestFcn(hObject, eventdata, handles)
+        % hObject    handle to WTools (see GCBO)
+        % eventdata  reserved - to be defined in a future version of MATLAB
+        % handles    structure with handles and user data (see GUIDATA)
+        if ~lock(hObject, handles)
+            return
+        end
+        option = WTDialogUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
+        unlock(hObject, handles);
+        if strcmp(option, 'Continue')
+            return
+        end
+        quitApp(hObject);
+
+    % --- Executes on button press in NewProjectPushButton.
+    function NewProject_Callback(hObject, eventdata, handles)
+        % hObject    handle to NewProjectPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -197,6 +222,7 @@ function varargout = wtools(varargin)
         try
             wtNewProject();
             updateProjectName(hObject, handles);
+            updateProjectDirectory(hObject, handles);
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
@@ -205,9 +231,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in OpenPushButton.
-    function OpenPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to OpenPushButton (see GCBO)
+    % --- Executes on button press in OpenProjectPushButton.
+    function OpenProject_Callback(hObject, eventdata, handles)
+        % hObject    handle to OpenProjectPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -219,6 +245,7 @@ function varargout = wtools(varargin)
         try
             wtOpenProject();
             updateProjectName(hObject, handles);
+            updateProjectDirectory(hObject, handles);
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
@@ -227,9 +254,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in ImportEEGPushButton.
-    function ImportEEGPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to ImportEEGPushButton (see GCBO)
+    % --- Executes on button press in ImportDataPushButton.
+    function ImportData_Callback(hObject, eventdata, handles)
+        % hObject    handle to ImportDataPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -247,9 +274,9 @@ function varargout = wtools(varargin)
         wtLog.reset();  
         unlock(hObject, handles);
     
-    % --- Executes on button press in SSManagerPushButton.
-    function SSManagerPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to SSManagerPushButton (see GCBO)
+    % --- Executes on button press in SubjectsManagerPushButton.
+    function SubjectsManager_Callback(hObject, eventdata, handles)
+        % hObject    handle to SubjectsManagerPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -268,9 +295,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in WTPushButton.
-    function WTPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to WTPushButton (see GCBO)
+    % --- Executes on button press in WaveletTransformPushButton.
+    function WaveletTransform_Callback(hObject, eventdata, handles)
+        % hObject    handle to WaveletTransformPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -289,9 +316,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in Chop_BasePushButton.
-    function Chop_BasePushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to Chop_BasePushButton (see GCBO)
+    % --- Executes on button press in ChopAndBaselinePushButton.
+    function ChopAndBaseline_Callback(hObject, eventdata, handles)
+        % hObject    handle to ChopAndBaselinePushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -309,9 +336,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in DifferencePushButton.
-    function DifferencePushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to DifferencePushButton (see GCBO)
+    % --- Executes on button press in ConditionsDifferencePushButton.
+    function ConditionsDifference_Callback(hObject, eventdata, handles)
+        % hObject    handle to ConditionsDifferencePushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -329,9 +356,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in GrandPushButton.
-    function GrandPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to GrandPushButton (see GCBO)
+    % --- Executes on button press in SubjectsGrandAveragePushButton.
+    function SubjectsGrandAverage_Callback(hObject, eventdata, handles)
+        % hObject    handle to SubjectsGrandAveragePushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -350,9 +377,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in XavrPushButton.
-    function XavrPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to XavrPushButton (see GCBO)
+    % --- Executes on button press in AveragePlotsPushButton.
+    function AveragePlots_Callback(hObject, eventdata, handles)
+        % hObject    handle to AveragePlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -370,9 +397,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in ChavrPushButton.
-    function ChavrPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to ChavrPushButton (see GCBO)
+    % --- Executes on button press in ChannelsAveragePlotsPushButton.
+    function ChannelsAveragePlots_Callback(hObject, eventdata, handles)
+        % hObject    handle to ChannelsAveragePlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -390,9 +417,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in XavrSEPushButton.
-    function XavrSEPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to XavrSEPushButton (see GCBO)
+    % --- Executes on button press in AverageWithStdErrorPlotsPushButton.
+    function AvergeWithStdErrorPlots_Callback(hObject, eventdata, handles)
+        % hObject    handle to AverageWithStdErrorPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -410,9 +437,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in ChavrSEPushButton.
-    function ChavrSEPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to ChavrSEPushButton (see GCBO)
+    % --- Executes on button press in ChannelsAverageWithStdErrorPlotsPushButton.
+    function ChannelsAverageWithStdErrorPlots_Callback(hObject, eventdata, handles)
+        % hObject    handle to ChannelsAverageWithStdErrorPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -430,9 +457,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in SmavrPushButton.
-    function SmavrPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to SmavrPushButton (see GCBO)
+    % --- Executes on button press in ScalpMap2DPlotsPushButton.
+    function ScalpMap2DPlots_Callback(hObject, eventdata, handles)
+        % hObject    handle to ScalpMap2DPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -450,9 +477,9 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in Smavr3dPushButton.
-    function Smavr3dPushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to Smavr3dPushButton (see GCBO)
+    % --- Executes on button press in ScalpMap3DPlotsPushButton.
+    function ScalpMap3DPlots_Callback(hObject, eventdata, handles)
+        % hObject    handle to ScalpMap3DPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
@@ -470,29 +497,36 @@ function varargout = wtools(varargin)
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in AvrretrievePushButton.
-    function AvrretrievePushButton_Callback(hObject, eventdata, handles)
-        % hObject    handle to AvrretrievePushButton (see GCBO)
+    % --- Executes on button press in ExportStatisticsPushButton.
+    function ExportStatistics_Callback(hObject, eventdata, handles)
+        % hObject    handle to ExportStatisticsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         if ~lock(hObject, handles)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('STATISTICS');
-        wtLog.contextOn('Statistics');
+        wtProject = WTProject().newContext('EXPORT STATISTICS');
+        wtLog.contextOn('ExportStatistics');
         try
             wtStatistics();
             updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
-            wtProject.notifyErr([], 'Failed to calculate statistics');
+            wtProject.notifyErr([], 'Failed to calculate export statistics');
         end
         wtLog.reset();
         unlock(hObject, handles);
     
-    % --- Executes on button press in HelpPushButton.
-    function HelpPushButton_Callback(hObject, eventdata, handles)
+    % --- Executes on button press in ConfigurePushButton.
+    function ConfigurePushButton_Callback(hObject, eventdata, handles)
+        % hObject    handle to ConfigurePushButton (see GCBO)
+        % eventdata  reserved - to be defined in a future version of MATLAB
+        % handles    structure with handles and user data (see GUIDATA)
+        % --- Executes on button press in HelpPushButton.
+        configureApp(hObject, handles);
+
+    function Help_Callback(hObject, eventdata, handles)
         % hObject    handle to HelpPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
@@ -512,8 +546,8 @@ function varargout = wtools(varargin)
         unlock(hObject, handles);
     
     % --- Executes during object creation, after setting all properties.
-    function LogLevelPopupMenu_CreateFcn(hObject, eventdata, handles)
-        % hObject    handle to ProjectEdit (see GCBO)
+    function LogLevel_CreateFcn(hObject, eventdata, handles)
+        % hObject    handle to CurrentProjectEdit (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
         try
@@ -524,69 +558,18 @@ function varargout = wtools(varargin)
         guidata(hObject, handles);
     
     % --- Executes on selection in LogLevelPopupMenu.
-    function LogLevelPopupMenu_Callback(hObject, eventdata, handles)
+    function LogLevel_Callback(hObject, eventdata, handles)
         % hObject    handle to LogLevelPopupMenu (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    empty - handles not created until after all CreateFcns called
-        wtLog = WTLog();
         if ~lock(hObject, handles)
             set(hObject, 'Value', wtLog.StdLogLevel);
             guidata(hObject, handles);
             return
         end
+        wtLog = WTLog();
         wtLog.StdLogLevel = hObject.Value;
         unlock(hObject, handles);
-    
-    % --- Executes during object creation, after setting all properties.
-    function WToolsMain_CreateFcn(hObject, eventdata, handles)
-        % hObject    handle to WToolsMain (see GCBO)
-        % eventdata  reserved - to be defined in a future version of MATLAB
-        % handles    empty - handles not created until after all CreateFcns called
-        hObject.UserData = struct();
-        hObject.UserData.BailOut = false;
-        [initOk, pathsContext] = wtInit();
-        hObject.UserData.PathsContext = pathsContext;
-        if ~initOk
-            % Note: all _CreateFcn must manage the fact that WTools class might not
-            % be in the paths, so if they reference one, they should protect the code
-            % within a try-catch. Idem for the _DeleteFcn;
-            hObject.UserData.BailOut = true;
-            return
-        end
-    
-    % --- Executes during object deletion, before destroying properties.
-    function WToolsMain_DeleteFcn(hObject, eventdata, handles)
-        % hObject    handle to WToolsMain (see GCBO)
-        % eventdata  reserved - to be defined in a future version of MATLAB
-        % handles    structure with handles and user data (see GUIDATA)
-        try 
-            WTLog().contextOn('Close');
-        catch
-        end
-        try 
-            WTSession().close();
-        catch
-        end
-        try
-            WTSingletons.clear();
-        catch
-        end
-        restorePaths(hObject); 
-    
-    % --- Executes when user attempts to close WToolsMain.
-    function WToolsMain_CloseRequestFcn(hObject, eventdata, handles)
-        % hObject    handle to WToolsMain (see GCBO)
-        % eventdata  reserved - to be defined in a future version of MATLAB
-        % handles    structure with handles and user data (see GUIDATA)
-        if ~lock(hObject, handles)
-            return
-        end
-        option = WTDialogUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
-        unlock(hObject, handles);
-        if strcmp(option, 'Continue')
-            return
-        end
-        quitApp(hObject);
     
     % --- Utilities
     function quitApp(hObject)
@@ -601,19 +584,32 @@ function varargout = wtools(varargin)
         end
     
     function updateProjectName(hObject, handles) 
-        if isfield(handles,'ProjectEdit')
+        if isfield(handles,'CurrentProjectEdit')
             wtProject = WTProject().newContext('');
             prjName = WTCodingUtils.ifThenElse(wtProject.IsOpen, wtProject.Config.getName(), '?');
-            set(handles.ProjectEdit, 'String', prjName);
+            set(handles.CurrentProjectEdit, 'String', prjName);
             guidata(hObject, handles);
         end
     
+    function updateProjectDirectory(hObject, handles) 
+        if isfield(handles,'ProjectDirectoryEdit')
+            wtProject = WTProject().newContext('');
+            prjDir = '?';
+            if wtProject.IsOpen
+                prjDir = WTIOUtils.splitPath(wtProject.Config.getRootDir(), 1);
+                nChars = length(prjDir);
+                prjDir = WTCodingUtils.ifThenElse(nChars <= 45, prjDir, @()['...' prjDir(nChars-45:end)]);
+            end
+            set(handles.ProjectDirectoryEdit, 'String', prjDir);
+            guidata(hObject, handles);
+        end
+
     function updateTotalSubjects(hObject, handles) 
-        if isfield(handles,'SSnEdit')
+        if isfield(handles,'SubjectsNumberEdit')
             wtProject = WTProject().newContext('');
             nSubjs = length(wtProject.Config.SubjectsGrand.SubjectsList);
             nSubjsStr = WTCodingUtils.ifThenElse(wtProject.IsOpen, num2str(nSubjs), '?');
-            set(handles.SSnEdit, 'String', nSubjsStr);
+            set(handles.SubjectsNumberEdit, 'String', nSubjsStr);
             guidata(hObject, handles);
         end
     
@@ -636,7 +632,14 @@ function varargout = wtools(varargin)
         if ~lock(hObject, handles)
             return
         end
-        WTAppConfigGUI.configureApplication(false, true, true);
+        wtLog = WTLog();
+        WTProject().newContext('');
+        wtLog.contextOn('Configure WTools');
+        try
+            WTAppConfigGUI.configureApplication(false, true, true);
+        catch me
+            wtLog.except(me);
+        end
         unlock(hObject, handles);
         closeAppAfter = true;
 
@@ -648,7 +651,7 @@ function varargout = wtools(varargin)
             'Usage: wtools [ no-splash | configure | close | help ]', ...
             '', ...
             '       no-splash : do not display splash screen on start', ...  
-            '                   (when the relative configuration option is on)', ...   
+            '                   (when the relative configuration option is enabled)', ...   
             '       configure : configure the application', ...
             '       close     : force close the application', ...
             '       help      : display this help', ...
