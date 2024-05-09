@@ -12,11 +12,11 @@ A Matlab® based toolbox & an EEGLab plugin for time-frequency analysis
     + WTSignalsProcessing: specific signal processing
     + WTStatistics: statistc reports
     + WTSubjectsManager: subjects management
-  + WTStorage: global storage manager
-  + WTUtilities: general and less general utilities
+  + WTStorageManager: global storage manager
+  + WTBasicUtilities: general and less general utilities
 + WTExternal: external (3rd party) code
-  + Modified: code that have been improved
-  + Original: non modified code
+  + WTModified: code that have been improved
+  + WTOriginal: non modified code
 + WTResources: general project resources
   + WTDevices: data specific to the various measurement devices
   + WTPictures: picture files (used for example in the splash screen) 
