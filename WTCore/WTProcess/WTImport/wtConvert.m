@@ -15,7 +15,7 @@ function success = wtConvert()
     end
 
     if ioProc.countImportFiles() == 0 
-        wtProject.notifyWrn([], 'There are no imported files yet in this project')
+        wtProject.notifyWrn([], 'There are no imported files yet in this project');
         return
     end
 

@@ -22,7 +22,8 @@
 % wtStatistics({'E1' 'E57' 'Cz'},600,800,34,41,1,'evok');
 % wtStatistics();
 
-function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillations)
+function success = wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillations)
+    success = false;
     wtProject = WTProject();
     if ~wtProject.checkChopAndBaselineCorrectionDone()
         return
@@ -41,9 +42,6 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
     end
 
     if interactive
-        if WTEEGLabUtils.eeglabYesNoDlg('Rebuild subjectsList?', 'Have new subjects been added?') && ~wtRebuildSubjects()
-           return
-        end
         [success, subjectsList, conditionsList] = setStatisticsParams();
         if ~success 
             return
@@ -239,6 +237,7 @@ function wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillat
     end
 
     wtProject.notifyInf([], 'Statistics exported successfully into file:\n%s', fullStatsFile);
+    success = true;
 end
 
 function [success, subjectsList, conditionsList] = setStatisticsParams()

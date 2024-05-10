@@ -323,7 +323,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             end
         end
 
-        wtLog.info('Time/Frequency analysis saved!');
+        wtLog.info('Time/Frequency analysis saved');
     end
 end
 

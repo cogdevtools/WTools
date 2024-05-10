@@ -59,15 +59,17 @@ classdef WTProject < WTClass
             end
         end
 
-        function open = checkIsOpen(o)
+        function open = checkIsOpen(o, quiet)
+            quiet = nargin > 1 && quiet;
             open = o.IsOpen;
-            if ~open
+            if ~open && ~quiet
                 o.notifyWrn([], 'A project must be opened/created to proceed');
             end
         end
 
-        function done = checkImportDone(o)
-            done = o.checkIsOpen();
+        function done = checkImportDone(o, quiet)
+            quiet = nargin > 1 && quiet;
+            done = o.checkIsOpen(quiet);
             if ~done 
                 return
             end
@@ -80,51 +82,71 @@ classdef WTProject < WTClass
             if ~(subjectsPrms.exist() && ...
                 conditionsPrms.exist() && ...
                 channelsPrms.exist())
-                o.notifyWrn('Data import check', 'Data import must be performed before to proceed');
+                if ~quiet
+                    o.notifyWrn('Data import check', 'Data import must be performed (or newly performed) before to proceed');
+                end
                 return
             end
             if isempty(subjectsPrms.FilesList)
-                o.notifyWrn('Data import check', 'The list of imported data files is empty. Check:\n%s', ...
-                    subjectsPrms.getFileName(true));
+                if ~quiet
+                    o.notifyWrn('Data import check', 'The list of imported data files is empty. Check:\n%s', ...
+                        subjectsPrms.getFileName(true));
+                end
                 return
             end
-            if isempty(conditionsPrms.ConditionsList);
-                o.notifyWrn('Data import check', 'The list conditions is empty. Check:\n%s', ...
-                    conditionsPrms.getFileName(true));
+            if isempty(subjectsPrms.ImportedSubjectsList)
+                if ~quiet
+                    o.notifyWrn('Data import check', 'The list of imported subjects is empty. Check:\n%s', ...
+                        subjectsPrms.getFileName(true));
+                end
+                return
+            end
+            if isempty(conditionsPrms.ConditionsList)
+                if ~quiet
+                    o.notifyWrn('Data import check', 'The list conditions is empty. Check:\n%s', ...
+                        conditionsPrms.getFileName(true));
+                end
                 return
             end
 
             done = true;
         end
 
-        function done = checkWaveletAnalysisDone(o, checkLists)
-            checkLists = nargin < 2 || checkLists;
-            done = o.checkImportDone();
+        function done = checkWaveletAnalysisDone(o, quiet, checkLists)
+            quiet = nargin > 1 && quiet;
+            checkLists = nargin < 3 || checkLists;
+            done = o.checkImportDone(quiet);
             if ~done 
                 return
             end
 
+            basicPrms = o.Config.Basic;
             waveletPrms = o.Config.WaveletTransform;
             condsGrandPrms = o.Config.ConditionsGrand;
             subjsGrandPrms = o.Config.SubjectsGrand;
             done = false;
 
-            if ~(waveletPrms.exist() && ...
-                 subjsGrandPrms.exist() && ...
-                 condsGrandPrms.exist())
-                 o.notifyWrn('Wavelet analysis check', 'Wavelet analysis must be performed before to proceed');
-                 return
+            if  ~basicPrms.WaveletAnalysisDone || ...
+                ~(waveletPrms.exist() && subjsGrandPrms.exist() && condsGrandPrms.exist())
+                if ~quiet
+                    o.notifyWrn('Wavelet analysis check', 'Wavelet analysis must be performed (or newly performed) before to proceed');
+                end
+                return
             end
             
             if checkLists
                 if isempty(subjsGrandPrms.SubjectsList)
-                    o.notifyWrn('Wavelet analysis check', 'The list of subjects for the grand average is empty. Check:\n%s', ...
-                        subjsGrandPrms.getFileName(true));
+                    if ~quiet
+                        o.notifyWrn('Wavelet analysis check', 'The list of subjects for the grand average is empty. Check:\n%s', ...
+                            subjsGrandPrms.getFileName(true));
+                    end
                     return
                 end
                 if isempty(condsGrandPrms.ConditionsList)
-                    o.notifyWrn('Wavelet analysis check', 'The list of conditions for the grand average is empty. Check:\n%s', ...
-                        condsGrandPrms.getFileName(true));
+                    if ~quiet
+                        o.notifyWrn('Wavelet analysis check', 'The list of conditions for the grand average is empty. Check:\n%s', ...
+                            condsGrandPrms.getFileName(true));
+                    end
                     return
                 end
             end
@@ -132,17 +154,51 @@ classdef WTProject < WTClass
             done = true;
         end
 
-        function done = checkChopAndBaselineCorrectionDone(o)
-            done = o.checkWaveletAnalysisDone();
+        function done = checkChopAndBaselineCorrectionDone(o, quiet)
+            quiet = nargin > 1 && quiet;
+            done = o.checkWaveletAnalysisDone(quiet);
             if ~done 
                 return
             end  
-                      
+            
+            basicPrms = o.Config.Basic;
             baselineChopPrms = o.Config.BaselineChop;
-            done = baselineChopPrms.exist(); 
+            done = basicPrms.ChopAndBaselineCorrectionDone && baselineChopPrms.exist(); 
 
-            if ~done
-                o.notifyWrn([], 'Chop and baseline correction must be performed before to proceed');
+            if ~done && ~quiet
+                o.notifyWrn([], 'Chop and baseline correction must be performed (or newly performed) before to proceed');
+            end
+        end
+
+        function done = checkConditionsDifferenceDone(o, quiet)
+            quiet = nargin > 1 && quiet;
+            done = o.checkChopAndBaselineCorrectionDone(quiet);
+            if ~done 
+                return
+            end  
+            
+            basicPrms = o.Config.Basic;
+            condsGrandPrms = o.Config.ConditionsGrand;
+            done = basicPrms.ConditionsDifferenceDone && condsGrandPrms.exist(); 
+
+            if ~done && ~quiet
+                o.notifyWrn([], 'Conditions difference must be performed (or newly performed) before to proceed');
+            end
+        end
+
+        function done = checkGrandAverageDone(o, quiet)
+            quiet = nargin > 1 && quiet;
+            done = o.checkConditionsDifferenceDone(quiet);
+            if ~done 
+                return
+            end  
+            
+            basicPrms = o.Config.Basic;
+            grandAveragePrms = o.Config.GrandAverage;
+            done = basicPrms.GrandAverageDone && grandAveragePrms.exist(); 
+
+            if ~done && ~quiet
+                o.notifyWrn([], 'Grand average must be performed (or newly performed) before to proceed');
             end
         end
 

@@ -369,7 +369,7 @@ function varargout = wtools(varargin)
         wtLog.contextOn('ConditionsDifference');
         updateApplicationStatus(hObject, handles, true);
         try
-            wtDifference();
+            wtConditionsDifference();
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to perform conditions difference');
@@ -393,7 +393,7 @@ function varargout = wtools(varargin)
         updateApplicationStatus(hObject, handles, true);
         try
             wtGrandAverage();
-            updateTotalSubjects(hObject, handles)
+            updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to perform grand average');
@@ -449,7 +449,7 @@ function varargout = wtools(varargin)
         unlock(hObject, handles);
     
     % --- Executes on button press in AverageWithStdErrorPlotsPushButton.
-    function AvergeWithStdErrorPlots_Callback(hObject, eventdata, handles)
+    function AverageWithStdErrorPlots_Callback(hObject, eventdata, handles)
         % hObject    handle to AverageWithStdErrorPlotsPushButton (see GCBO)
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)

@@ -28,7 +28,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkWaveletAnalysisDone() 
+    if ~wtProject.checkGrandAverageDone() 
         return
     end
 

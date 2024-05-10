@@ -170,6 +170,13 @@ function success = wtPerformCWT()
         end
     end
 
+    basicParams.WaveletAnalysisDone = 1;
+
+    if ~basicParams.persist()
+        wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');
+        return
+    end
+
     wtProject.notifyInf([], 'Time/Frequency analysis completed!');
     success = true;
 end

@@ -12,6 +12,34 @@ classdef WTConfigFormatter
 
     methods(Static)
 
+        function txt = stringField(fieldName, value)
+            try
+                txt = sprintf('%s = ''%s'';', fieldName, value);
+            catch me
+                WTLog().except(me, false);
+                txt = '';
+            end   
+        end
+
+        function txt = intField(fieldName, value)
+            try
+                WTValidations.mustBeInt(value);
+                txt = sprintf('%s = %d;', fieldName, value);
+            catch me
+                WTLog().except(me, false);
+                txt = '';
+            end   
+        end
+
+        function txt = doubleField(fieldName, value)
+            try
+                txt = sprintf('%s = %s;', fieldName, num2str(value));
+            catch me
+                WTLog().except(me, false);
+                txt = '';
+            end   
+        end
+
         function txt = stringCellsField(fieldName, cells)
             try
                 quoted = WTStringUtils.quoteMany(cells{:});

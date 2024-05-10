@@ -30,7 +30,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkWaveletAnalysisDone() 
+    if ~wtProject.checkChopAndBaselineCorrectionDone() 
         return
     end
 
@@ -54,6 +54,14 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         if isempty(fileNames)
             return
         end
+    end
+
+    grandAverage = isempty(subject);
+    if grandAverage && ~wtProject.checkGrandAverageDone()
+        return
+    end
+
+    if interactive
         if ~setChansAvgPlotsParams(logFlag) 
             return
         end
@@ -65,7 +73,6 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     basicPrms = wtProject.Config.Basic;
     conditionsGrandPrms = wtProject.Config.ConditionsGrand;
     conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
-    grandAverage = isempty(subject);
 
     if interactive
         [conditionsToPlot, emptyConditionFiles] = WTIOProcessor.getConditionsFromBaselineCorrectedFileNames(fileNames);

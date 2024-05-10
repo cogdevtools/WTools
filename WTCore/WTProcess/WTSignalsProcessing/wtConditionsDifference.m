@@ -1,20 +1,20 @@
-% wtDifference.m
+% wtConditionsDifference.m
 % Created by Eugenio Parise
 % CDC CEU 2010 - 2011
-% Calculate the wtDifference between two conditions (e.g. cA-cB C3-C4);
+% Calculate the wtConditionsDifference between two conditions (e.g. cA-cB C3-C4);
 % Store the resulting files in the subject folder.
 % IMPORTANT! Define the condition you want to subtract by editing the variable 'condiff'
 % in the file 'cond.m' ('cfg' folder).
 % To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and  digit wtDifference([]) at the console prompt.
-% Add evoked = true  as last argument to compute conditions wtDifference of evoked
+% edit 'subj.m' in the 'cfg' folder and  digit wtConditionsDifference([]) at the console prompt.
+% Add evoked = true  as last argument to compute conditions wtConditionsDifference of evoked
 % oscillations (of course, if they have been previously computed).
 %
 % Usage:
 %
-% wtDifference('01');
-% wtDifference([]);
-% wtDifference([], true);
+% wtConditionsDifference('01');
+% wtConditionsDifference([]);
+% wtConditionsDifference([], true);
 
 % By Luca
 % Input params are now:
@@ -22,7 +22,8 @@
 %  - wtProject.Config.Difference 
 %  if the project is interactive (wtProject.Interactive = true), both can be modified via the GUI
 
-function wtDifference(subjects)
+function success = wtConditionsDifference(subjects)
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -64,10 +65,12 @@ function wtDifference(subjects)
     % Note: setDifferencePrms() updates both condsGrandPrms, differencePrms
     condsGrandPrms = wtProject.Config.ConditionsGrand;
     condiff = condsGrandPrms.ConditionsDiff;
-    if length(condiff) == 0
+    if isempty(condiff)
         wtProject.notifyWrn([], 'User selected no conditions differences');
         return
     end
+
+    basicPrms = wtProject.Config.Basic;
     differencePrms = wtProject.Config.Difference;
     conditions = condsGrandPrms.ConditionsList;
     ioProc = wtProject.Config.IOProc;
@@ -211,7 +214,15 @@ function wtDifference(subjects)
     end
 
     wtLog.popStatus();
+    basicPrms.ConditionsDifferenceDone = 1;
+
+    if ~basicPrms.persist()
+        wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');
+        return
+    end
+
     wtProject.notifyInf([], 'Difference computation completed!');
+    success = true;
 end
 
 function success = setDifferencePrms()   

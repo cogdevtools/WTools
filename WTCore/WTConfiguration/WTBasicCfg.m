@@ -3,11 +3,19 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable
     properties(Constant,Access=private)
         FldFileName = 'filename'
         FldSourceSystem = 'srcsys'
+        FldWaveletAnalysisDone = 'analisys'
+        FldChopAndBaselineCorrectionDone = 'correction'
+        FldConditionsDifferenceDone = 'difference'
+        FldGrandAverageDone = 'average'
     end
 
     properties
         FilesPrefix char {mustBeNonempty} = 'UnnamedProject'
         SourceSystem char 
+        WaveletAnalysisDone uint8 {WTValidations.mustBeZeroOrOne} = 0
+        ChopAndBaselineCorrectionDone uint8 {WTValidations.mustBeZeroOrOne} = 0
+        ConditionsDifferenceDone uint8 {WTValidations.mustBeZeroOrOne} = 0
+        GrandAverageDone uint8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
     methods
@@ -19,11 +27,16 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable
         function default(o) 
             o.FilesPrefix = 'UnnamedProject';
             o.SourceSystem = '';
+            o.WaveletAnalysisDone = 0;
+            o.ChopAndBaselineCorrectionDone = 0;
+            o.GrandAverageDone = 0;
         end
         
         function success = load(o) 
             % For backward compatibility we accept file having only FldFileName...
-            [success, pfx, srcSys] = o.read(o.FldFileName, o.FldSourceSystem);
+            [success, pfx, srcSys, wtAnalisys, chopAndBaseline, condsDiff, grandAvg] = o.read(o.FldFileName, ...
+                o.FldSourceSystem, o.FldWaveletAnalysisDone, o.FldChopAndBaselineCorrectionDone, ... 
+                o.FldConditionsDifferenceDone, o.FldGrandAverageDone);
             if ~success
                 WTLog().info('Load of ''%s'' failed, maybe for backward compatibility issues: trying with old format...', o.DataFileName);
                 [success, pfx] = o.read(o.FldFileName);
@@ -35,6 +48,10 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable
             try
                 o.FilesPrefix = pfx;
                 o.SourceSystem = srcSys;
+                o.WaveletAnalysisDone = wtAnalisys;
+                o.ChopAndBaselineCorrectionDone = chopAndBaseline;
+                o.ConditionsDifferenceDone = condsDiff;
+                o.GrandAverageDone = grandAvg;
             catch me
                 WTLog().except(me);
                 success = false;
@@ -44,7 +61,11 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable
         function success = persist(o)
             txt1 = WTConfigFormatter.stringCellsFieldArgs(o.FldFileName, o.FilesPrefix);
             txt2 = WTConfigFormatter.stringCellsFieldArgs(o.FldSourceSystem, o.SourceSystem);
-            success = ~isempty(txt1) && ~isempty(txt2) && o.write(txt1, txt2);
+            txt3 = WTConfigFormatter.intField(o.FldWaveletAnalysisDone, o.WaveletAnalysisDone);
+            txt4 = WTConfigFormatter.intField(o.FldChopAndBaselineCorrectionDone, o.ChopAndBaselineCorrectionDone);
+            txt5 = WTConfigFormatter.intField(o.FldConditionsDifferenceDone, o.ConditionsDifferenceDone);
+            txt6 = WTConfigFormatter.intField(o.FldGrandAverageDone, o.GrandAverageDone);
+            success = ~isempty(txt1) && ~isempty(txt2) && o.write(txt1, txt2, txt3, txt4, txt5, txt6);
         end
     end
 end

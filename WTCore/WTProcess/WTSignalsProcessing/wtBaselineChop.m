@@ -27,6 +27,7 @@ function success = wtBaselineChop()
 
     interactive = wtProject.Interactive;
     ioProc = wtProject.Config.IOProc;
+    basicPrms = wtProject.Config.Basic;
     subjectsGrandParams = wtProject.Config.SubjectsGrand;
     conditionsGrandParams = wtProject.Config.ConditionsGrand;
     waveletTransformParams = wtProject.Config.WaveletTransform;
@@ -151,6 +152,13 @@ function success = wtBaselineChop()
     end
 
     wtLog.popStatus();
+    basicPrms.ChopAndBaselineCorrectionDone = 1;
+
+    if ~basicPrms.persist()
+        wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');
+        return
+    end
+
     wtProject.notifyInf([], 'Baseline correction and edges chopping processing completed!');
     success = true;
 end

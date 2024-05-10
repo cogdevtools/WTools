@@ -20,6 +20,14 @@ classdef WTConditionsCfg < WTConfigStorage & matlab.mixin.Copyable
             o.ConditionsList = {};
         end
 
+        function set.ConditionsList(o, value)
+            o.ConditionsList = sort(unique(value));
+        end
+
+        function set.ConditionsDiff(o, value)
+            o.ConditionsDiff = sort(unique(value));
+        end
+
         function success = load(o) 
             [success, conds, diff] = o.read(o.FldConditions, o.FldConditionsDiff);
             if ~success

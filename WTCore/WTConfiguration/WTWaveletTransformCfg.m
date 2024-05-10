@@ -41,6 +41,14 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable
             o.WaveletsCycles = 7;
         end
 
+        function set.ChannelsList(o, value)
+            o.ChannelsList = unique(value);
+        end
+
+        function set.EpochsList(o, value)
+            o.EpochsList = unique(value);
+        end
+
         function success = load(o) 
             [success, cells] = o.read(o.FldDefaultAnswer);
             if ~success 

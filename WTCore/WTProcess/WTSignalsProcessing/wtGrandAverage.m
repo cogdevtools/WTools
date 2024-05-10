@@ -18,7 +18,8 @@
 %   subjects & conditions are used only if the project is not interactive
 %   subjects empty means: use all subjects
 %   conditions empty means: use all conditions
-function wtGrandAverage(subjects, conditions)
+function success = wtGrandAverage(subjects, conditions)
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -27,6 +28,7 @@ function wtGrandAverage(subjects, conditions)
     end
 
     interactive = wtProject.Interactive;
+    basicPrms = wtProject.Config.Basic;
     subjectsGrandPrms = wtProject.Config.SubjectsGrand;
 
     if length(subjectsGrandPrms.SubjectsList) < 2 
@@ -117,7 +119,7 @@ function wtGrandAverage(subjects, conditions)
         end
         
         dataToSave.WT = mean(WT, 4);
-        dataToSave.nepoch = nSubjects; % in accordance to ERPWAVELAB file structure
+        dataToSave.nEpochs = nSubjects; % in accordance to ERPWAVELAB file structure
 
         [success, filePath] = ioProc.writeGrandAverage(conditions{cnd}, measure, false, '-struct', 'dataToSave');
         if ~success
@@ -140,5 +142,13 @@ function wtGrandAverage(subjects, conditions)
     end
 
     wtLog.popStatus();
+    basicPrms.GrandAverageDone = 1;
+
+    if ~basicPrms.persist()
+        wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');
+        return
+    end
+
     wtProject.notifyInf([], 'Computation of the grand average completed!');
+    success = true;
 end

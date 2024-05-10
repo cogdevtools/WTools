@@ -52,7 +52,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkWaveletAnalysisDone() 
+    if ~wtProject.checkChopAndBaselineCorrectionDone() 
         return
     end
 
@@ -75,6 +75,14 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         if isempty(fileNames)
             return
         end
+    end
+
+    grandAverage = isempty(subject);
+    if grandAverage && ~wtProject.checkGrandAverageDone()
+        return
+    end
+
+    if interactive
         if ~set2DScalpMapPlotsParams(logFlag, maxNumSubPlots) 
             return
         end
@@ -86,8 +94,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     basicPrms = wtProject.Config.Basic;
     conditionsGrandPrms = wtProject.Config.ConditionsGrand;
     conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
-    grandAverage = isempty(subject);
-
+    
     if interactive
         [conditionsToPlot, emptyConditionFiles] = WTIOProcessor.getConditionsFromBaselineCorrectedFileNames(fileNames);
         if ~isempty(emptyConditionFiles)

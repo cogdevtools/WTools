@@ -55,9 +55,6 @@ function success = wtEEGLabToEEGLab()
     subjects = subjectsPrms.ImportedSubjectsList;
     subjectFileNames = subjectsPrms.FilesList;
     nSubjects = length(subjects);
-    conditionsPrms = wtProject.Config.Conditions;
-    conditions = conditionsPrms.ConditionsList;
-    nConditions = length(conditions);
     channelsPrms = wtProject.Config.Channels;
     outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
 

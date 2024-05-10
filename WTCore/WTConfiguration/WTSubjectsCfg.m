@@ -24,6 +24,14 @@ classdef WTSubjectsCfg < WTConfigStorage & matlab.mixin.Copyable
             o.FilesList = {};
         end
 
+        function set.SubjectsList(o, value)
+            o.SubjectsList = sort(unique(value));
+        end
+
+        function set.FilesList(o, value)
+            o.FilesList = sort(unique(value));
+        end
+
         function success = load(o) 
             [success, subjs, imported, files] = o.read(o.FldSubjects, o.FldImportedSubjects, o.FldFiles);
             if ~success
