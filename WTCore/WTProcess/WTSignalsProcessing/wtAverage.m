@@ -105,7 +105,8 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     avWTi = 0;
     WTavi = 0;
     t = 0;
-    N = length(timeMin:dt:timeMax);
+    timeIdxs = timeMin:dt:timeMax;
+    N = timeIdxs;
     nFlatEpochs = 0;
 
     if isempty(selection)
@@ -139,13 +140,13 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             if k == 1
                 wtLog.dbg('Operating on channel nr: %d/%d', k, nChans);
             else
-                wtLog.dbg('Operating on channel nr: %d/%d, estimated time remaining %.2f minutes', k, nChans, (nChans-k)*(cputime-t)/60);
+                wtLog.dbg('Operating on channel nr: %d/%d, estimated time remaining %.2f minutes', k, nChans, (nChans-k)*(cpuTime-t)/60);
             end
-            t = cputime;
+            t = cpuTime;
             if strcmp(waveletType,'Gabor (stft)')
-                WT(k,:,:,:) = gabortf(squeeze(X(j,:,:)), Fa, Fs, fb,timeMin:dt:timeMax);
+                WT(k,:,:,:) = gabortf(squeeze(X(j,:,:)), Fa, Fs, fb, timeIdxs);
             else
-                WT(k,:,:,:) = fastwavelet(squeeze(X(j,:,:)), scales, waveletType,fb, timeMin:dt:timeMax);
+                WT(k,:,:,:) = fastwavelet(squeeze(X(j,:,:)), scales, waveletType, fb, timeIdxs);
             end
         end
     else
@@ -166,17 +167,17 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             if i == 1
                 wtLog.dbg('Operating on epoch %d/%d', i, nChans);
             else
-                wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
+                wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cpuTime-t)/60);
             end
 
-            t = cputime;
+            t = cpuTime;
             
             if strcmp(waveletType,'Gabor (stft)')
-                WT = gabortf(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, Fs, fb, timeMin:dt:timeMax);
+                WT = gabortf(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, Fs, fb, timeIdxs);
             elseif strcmp(waveletType,'cmor')
-                WT = fastwavelet(squeeze(X(chansToAnalyse,:,actualEpoch))', scales, waveletType, fb, timeMin:dt:timeMax);
+                WT = fastwavelet(squeeze(X(chansToAnalyse,:,actualEpoch))', scales, waveletType, fb, timeIdxs);
             elseif strcmp(waveletType,'cwt')  %Introduced by Eugenio Parise
-                WT = wtCWT(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, timeMin:dt:timeMax, cwtMatrix);
+                WT = wtCWT(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, timeIdxs, cwtMatrix);
             else 
                 wtLog.err('Unknown wavelet type: ''%s''', waveletType);
                 return
@@ -228,7 +229,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     end
 
     wtLog.info('Saving time/frequency analisys: this might take a while...');
-    tim = EEG.times(timeMin:dt:timeMax);
+    tim = EEG.times(timeIdxs);
     waveType = [waveletType '-' num2str(fb)];
     chanlocs = chanlocs(chansToAnalyse);
 

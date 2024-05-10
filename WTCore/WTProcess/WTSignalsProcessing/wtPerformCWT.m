@@ -92,11 +92,10 @@ function success = wtPerformCWT()
                 EEG.event = EEG.event(1);
             end
     
-            % ENLARGE the edges before starting the wavelet transformation
+            % Extend the edges before starting the wavelet transformation
             if (waveletTransformParams.EdgePadding / waveletTransformParams.FreqMin) >= 1 % There is edges padding
                 timeToAdd = single(waveletTransformParams.EdgePadding);
-                % to enlarge the edges and avoid distortions.
-                % It will be added to the left and to the right of the epoch.
+                % To avoid distortions the padding will be performed to the left and to the right of the epoch.
                 try
                     timeRes = EEG.times(2) - EEG.times(1); % find time resolution
                 catch % find time resolution and restore EEG.times when there is only one trial (e.g. for evoked oscillations).
@@ -140,7 +139,7 @@ function success = wtPerformCWT()
                     timeRes = EEG.times(2) - EEG.times(1);
                 end
                 
-                EEG.times = min(EEG.times): timeRes : max(EEG.times);
+                EEG.times = min(EEG.times) : timeRes : max(EEG.times);
                 
                 % Adjust times limits according to the sampling and the new edges
                 % and find them as timepoints in EEG.times

@@ -22,7 +22,7 @@ function coeffs = wtCWT(signal, scales, points, cwMatrix)
         for iFreq = 1:(length(scales)) 
             waveletRe = (cwMatrix{iFreq,1});
             waveletIm = (cwMatrix{iFreq,2}); 
-            % New optimized algoritm by Luca Filippin, using MATLAB function conv();  
+            % New optimized algorithm by Luca Filippin, using MATLAB function conv();  
             coeffs(iFreq,ch,:) = sqrt(conv2(signal(ch,:), ...
                 waveletRe, 'same').^2 + conv2(signal(ch,:), waveletIm, 'same').^2);
         end

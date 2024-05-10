@@ -37,10 +37,10 @@ function copiedCount = wtCopyData()
         fileFilter = {fileExt, sprintf('%s (%s)', system, fileExt)};
 
         [srcFiles, srcDir, ~] = WTDialogUtils.uiGetFiles(fileFilter, -1, -1, ...
-            sprintf('Select all the files to import from %s system',  system), 'MultiSelect', 'on');
+            sprintf('Select all the files to copy from %s system',  system), 'MultiSelect', 'on');
 
         if isempty(srcFiles) 
-            if WTEEGLabUtils.eeglabYesNoDlg('Confirm', 'Quit import?')
+            if WTEEGLabUtils.eeglabYesNoDlg('Confirm', 'Quit copy?')
                 return
             end
             continue
@@ -51,7 +51,7 @@ function copiedCount = wtCopyData()
             srcPath = fullfile(srcDir, srcFile);
 
             if isempty(ioProc.getSubjectsFromImportFiles(system, srcFile))
-                wtLog.err('Not a valid %s file name for import: %s', system, srcFile);
+                wtLog.err('Not a valid %s file name: %s', system, srcFile);
                 notCopiedFiles = [notCopiedFiles srcPath];
                 continue
             end 
@@ -91,20 +91,20 @@ function copiedCount = wtCopyData()
             end
 
             if copyFailed
-                wtLog.err('File ''%s'' (and/or an auxiliary file, if any) could not be imported successfully', srcPath);
+                wtLog.err('File ''%s'' (and/or an auxiliary file, if any) could not be copied successfully', srcPath);
                 notCopiedFiles = [notCopiedFiles srcPath];
             else
-                wtLog.info('File ''%s'' imported successfully', srcPath);
+                wtLog.info('File ''%s'' copied successfully', srcPath);
             end
         end
 
-        if ~WTEEGLabUtils.eeglabYesNoDlg('Other imports', 'Continue to import?')
+        if ~WTEEGLabUtils.eeglabYesNoDlg('Other copies', 'Continue to copy source data?')
             break;
         end            
     end
 
     if ~isempty(notCopiedFiles) 
-        WTEEGLabUtils.eeglabMsgDlg('Errors', 'The following files could not be imported. Check the log...\n%s', ... 
+        WTEEGLabUtils.eeglabMsgDlg('Errors', 'The following files could not be copied. Check the log...\n%s', ... 
             char(join(notCopiedFiles, '\n')));
     end
 
