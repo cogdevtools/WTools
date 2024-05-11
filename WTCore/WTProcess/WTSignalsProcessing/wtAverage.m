@@ -106,7 +106,7 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     WTavi = 0;
     t = 0;
     timeIdxs = timeMin:dt:timeMax;
-    N = timeIdxs;
+    N = length(timeIdxs);
     nFlatEpochs = 0;
 
     if isempty(selection)
