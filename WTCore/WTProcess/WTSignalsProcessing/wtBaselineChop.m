@@ -153,6 +153,8 @@ function success = wtBaselineChop()
 
     wtLog.popStatus();
     basicPrms.ChopAndBaselineCorrectionDone = 1;
+    basicPrms.ConditionsDifferenceDone = 0;
+    basicPrms.GrandAverageDone = 0;
 
     if ~basicPrms.persist()
         wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');

@@ -170,7 +170,10 @@ function success = wtPerformCWT()
     end
 
     basicParams.WaveletAnalysisDone = 1;
-
+    basicParams.ChopAndBaselineCorrectionDone = 0;
+    basicParams.ConditionsDifferenceDone = 0;
+    basicParams.GrandAverageDone = 0;
+    
     if ~basicParams.persist()
         wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');
         return

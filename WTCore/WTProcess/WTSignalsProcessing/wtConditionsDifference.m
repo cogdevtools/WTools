@@ -117,7 +117,7 @@ function success = wtConditionsDifference(subjects)
             % Both conditions not found in the difference string
             if isempty(matchString{1,1}) && temp(1) == 0 && temp(2) == 0 && j == nConditions
                 wtProject.notifyErr([], ['Both conditions in the pair %s do not match any experimental condition!\n' ...
-                    'Edit %s in the configuration folder and correct your setting'], ...
+                    'Edit %s in the configuration directory and correct your setting'], ...
                     condiff{i}, condsGrandPrms.getFileName());
                 return
             % One condition found in the difference string
@@ -150,7 +150,7 @@ function success = wtConditionsDifference(subjects)
                 j = nConditions;
 
                 wtProject.notifyWrn([], ['Condition %s will be subtracted from itself!\n' ...
-                    'Consider to edit %s in the configuration folder and correct your setting.'], ...
+                    'Consider to edit %s in the configuration directory and correct your setting.'], ...
                     conditions{temp(1)}, condsGrandPrms.getFileName());
             end
             
@@ -160,7 +160,7 @@ function success = wtConditionsDifference(subjects)
         % One condition not found in the difference string
         if temp(1) == 0 || temp(2) == 0
             wtProject.notifyErr([], ['One condition in the pair %s do not match any experimental condition!\n' ...
-                'Edit %s in the configuration folder and correct your setting'], condiff{i}, condsGrandPrms.getFileName());
+                'Edit %s in the configuration directory and correct your setting'], condiff{i}, condsGrandPrms.getFileName());
             return
         else
             condsToSubtract = cat(2,condsToSubtract,temp);
@@ -206,7 +206,7 @@ function success = wtConditionsDifference(subjects)
                 wtLog.popStatus();
                 return
             else
-                wtLog.info('Difference (%s - %s) saved in subject %s folder.', cA, cB, subjects{s});  
+                wtLog.info('Difference (%s - %s) saved in subject %s directory.', cA, cB, subjects{s});  
             end
 
             correction = correction + 1;          
