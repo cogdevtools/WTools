@@ -20,22 +20,26 @@ function coeffs = wtCWT(signal, scales, points, cwMatrix)
     % to speed up computation)
     if  ~isOldConv2Function() 
         for iFreq = 1:(length(scales)) 
-            waveletRe = (cwMatrix{iFreq,1});
-            waveletIm = (cwMatrix{iFreq,2}); 
-            % New optimized algorithm by Luca Filippin, using MATLAB function conv();  
-            coeffs(iFreq,ch,:) = sqrt(conv2(signal(ch,:), ...
-                waveletRe, 'same').^2 + conv2(signal(ch,:), waveletIm, 'same').^2);
+            for ch = 1:nChans
+                waveletRe = (cwMatrix{iFreq,1});
+                waveletIm = (cwMatrix{iFreq,2}); 
+                % New optimized algorithm by Luca Filippin, using MATLAB function conv();  
+                coeffs(iFreq,ch,:) = sqrt(conv2(signal(ch,:), ...
+                    waveletRe, 'same').^2 + conv2(signal(ch,:), waveletIm, 'same').^2);
+            end
         end
     else 
-        for iFreq = 1:(length(scales))     
-            waveletRe = (cwMatrix{iFreq,1});
-            waveletIm = (cwMatrix{iFreq,2});
-            re = (conv(signal(ch,:), waveletRe).^2);
-            ptDiff = floor((length(re)-size(signal,2))/2);
-            re = re(ptDiff+1:ptDiff+size(signal,2));
-            im = (conv(signal(ch,:), waveletIm).^2);
-            im = im(ptDiff+1:ptDiff+size(signal,2));
-            coeffs(iFreq,ch,:) = sqrt(re + im);
+        for iFreq = 1:(length(scales))
+            for ch = 1:nChans     
+                waveletRe = (cwMatrix{iFreq,1});
+                waveletIm = (cwMatrix{iFreq,2});
+                re = (conv(signal(ch,:), waveletRe).^2);
+                ptDiff = floor((length(re)-size(signal,2))/2);
+                re = re(ptDiff+1:ptDiff+size(signal,2));
+                im = (conv(signal(ch,:), waveletIm).^2);
+                im = im(ptDiff+1:ptDiff+size(signal,2));
+                coeffs(iFreq,ch,:) = sqrt(re + im);
+            end
         end
     end
     coeffs = permute(coeffs,[1 3 2]); 
