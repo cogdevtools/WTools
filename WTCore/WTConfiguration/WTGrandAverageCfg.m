@@ -7,7 +7,7 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable
     properties
         UseAllSubjects(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         PerSubjectAgerage(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        Log10Enable(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
+        LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
@@ -20,7 +20,7 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable
         function default(o) 
             o.UseAllSubjects = 1;
             o.PerSubjectAgerage = 1;
-            o.Log10Enable = 0;
+            o.LogarithmicTransform = 0;
             o.EvokedOscillations = 0;
         end
 
@@ -33,7 +33,7 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable
                 if length(cells) >= 4
                     o.UseAllSubjects = cells{1};
                     o.PerSubjectAgerage = cells{2};
-                    o.Log10Enable = cells{3};
+                    o.LogarithmicTransform = cells{3};
                     o.EvokedOscillations = cells{4};
                 else 
                     o.default()
@@ -47,7 +47,7 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.UseAllSubjects, o.PerSubjectAgerage, o.Log10Enable, o.EvokedOscillations);
+            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.UseAllSubjects, o.PerSubjectAgerage, o.LogarithmicTransform, o.EvokedOscillations);
             success = ~isempty(txt) && o.write(txt);
         end
     end

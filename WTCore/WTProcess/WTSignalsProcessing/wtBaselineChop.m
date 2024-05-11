@@ -98,8 +98,9 @@ function success = wtBaselineChop()
     frequencies = data.Fa;
     chopMinIdx = find(data.tim == baselineChopParams.ChopMin);
     chopMaxIdx = find(data.tim == baselineChopParams.ChopMax);
+    logarithmicTransform = baselineChopParams.LogarithmicTransform && ~waveletTransformParams.LogarithmicTransform;
 
-    if baselineChopParams.Log10Enable
+    if logarithmicTransform
         wtLog.info('Data will be log-transformed before baseline correction');
     end
 
@@ -123,9 +124,12 @@ function success = wtBaselineChop()
                 return
             end
             
-            if ~baselineChopParams.Log10Enable 
+            if ~logarithmicTransform
+                % Data must not be log10-ed or they have been already during Wavelet transform
                 awt = data.WT(:,1:length(data.Fa),:);            
-            else            
+            else  
+                % Data must not be log10-ed as they have not been during Wavelet transform and 
+                % the user want so during chop & baseline correction         
                 awt = log10(data.WT(:,1:length(data.Fa),:));            
             end
             

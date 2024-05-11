@@ -47,7 +47,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     end
     
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.Log10Enable;
+        wtProject.Config.BaselineChop.LogarithmicTransform;
 
     if interactive
         [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(false, false, -1);

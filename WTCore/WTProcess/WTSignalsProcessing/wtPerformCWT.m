@@ -153,7 +153,11 @@ function success = wtPerformCWT()
             if doItOnce
                 timeMinIdx = find(EEG.times == timeMin);
                 timeMaxIdx = find(EEG.times == timeMax);  
-                [cwMatrix, Fa] = generateMorletWavelets(EEG.srate);     
+                [cwMatrix, Fa] = generateMorletWavelets(EEG.srate);   
+                
+                if waveletTransformParams.LogarithmicTransform 
+                    wtLog.warn('Epochs will be log-transformed after wavelet transformation!');
+                end
             end
             
             [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMinIdx, timeMaxIdx, 'cwt', ...
@@ -173,7 +177,7 @@ function success = wtPerformCWT()
     basicParams.ChopAndBaselineCorrectionDone = 0;
     basicParams.ConditionsDifferenceDone = 0;
     basicParams.GrandAverageDone = 0;
-    
+
     if ~basicParams.persist()
         wtProject.notifyErr([], 'Failed to save basic configuration params related to the processing status.');
         return
@@ -280,7 +284,8 @@ function success = setUpdateTransformPrms(timeRange, maxFreq, maxChans)
     wtProject = WTProject();
 
     waveletTransformParams = copy(wtProject.Config.WaveletTransform);
-    bsLogEnabled = wtProject.Config.BaselineChop.Log10Enable;
+    baselineChopParams = wtProject.Config.BaselineChop;
+    bsLogEnabled = baselineChopParams.exist() && baselineChopParams.LogarithmicTransform;
 
     if ~WTTransformGUI.defineCWTParams(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
         return
@@ -328,8 +333,4 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
     end
 
     wtLog.popStatus().info('Wavelets saved in cell array matrix');
-    
-    if waveletTransformParams.LogarithmicTransform 
-        wtLog.warn('Epochs will be log-transformed after wavelet transformation!');
-    end
 end

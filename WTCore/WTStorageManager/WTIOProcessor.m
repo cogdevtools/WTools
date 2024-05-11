@@ -4,7 +4,7 @@ classdef WTIOProcessor < handle
         LogSubDir        = 'Logs'
         ConfigSubDir     = 'Config'
         ImportSubDir     = 'Import'
-        WaveletsSubDir   = 'Wavelets'
+        WaveletsSubDir   = 'WaveletTransform'
         AnalysisSubDir   = 'Analysis'
         GrandAvgSubDir   = 'GrandAvg'
         StatisticsSubDir = 'Statistics'

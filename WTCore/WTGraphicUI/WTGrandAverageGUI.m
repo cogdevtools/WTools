@@ -3,13 +3,13 @@ classdef WTGrandAverageGUI
     
     methods(Static)
 
-        function success = defineGrandAverageParams(wtGrandAveragePrms, logFlag, evokFlag)
-            WTValidations.mustBeA(wtGrandAveragePrms, ?WTGrandAverageCfg);
+        function success = defineGrandAverageParams(grandAveragePrms, logFlag, evokFlag)
+            WTValidations.mustBeA(grandAveragePrms, ?WTGrandAverageCfg);
             success = false;
             wtLog = WTLog();
             
-            useAllSubjects = wtGrandAveragePrms.UseAllSubjects;
-            perSbjAvg = wtGrandAveragePrms.PerSubjectAgerage;
+            useAllSubjects = grandAveragePrms.UseAllSubjects;
+            perSbjAvg = grandAveragePrms.PerSubjectAgerage;
 
             parameters = { ...
                 { 'style' 'checkbox' 'string' 'Use all processed subjects'                      'value'   useAllSubjects } ...
@@ -24,10 +24,10 @@ classdef WTGrandAverageGUI
                 return;
             end
 
-            wtGrandAveragePrms.UseAllSubjects = answer{1};
-            wtGrandAveragePrms.PerSubjectAgerage = answer{2};
-            wtGrandAveragePrms.Log10Enable = answer{3};
-            wtGrandAveragePrms.EvokedOscillations = answer{4};
+            grandAveragePrms.UseAllSubjects = answer{1};
+            grandAveragePrms.PerSubjectAgerage = answer{2};
+            grandAveragePrms.LogarithmicTransform = answer{3};
+            grandAveragePrms.EvokedOscillations = answer{4};
             success = true;
         end
     end

@@ -177,7 +177,7 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
     end
 
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.Log10Enable;
+        wtProject.Config.BaselineChop.LogarithmicTransform;
 
     timeIdxs = find(data.tim == statsPrms.TimeMin):find(data.tim == statsPrms.TimeMax);
     freqIdxs = find(data.Fa == statsPrms.FreqMin):find(data.Fa == statsPrms.FreqMax);

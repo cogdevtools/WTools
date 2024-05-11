@@ -12,7 +12,8 @@ classdef WTBaselineChopGUI
 
             evokedOscillations = (waveletTransformParamsExist && waveletTransformParams.EvokedOscillations) || ...
                 (baselineChopParamsExist && baselineChopParams.EvokedOscillations);
-            enableUV = WTCodingUtils.ifThenElse(waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform, 'on', 'off');
+            logTransformedAlready = waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform;
+            enableUV = WTCodingUtils.ifThenElse(logTransformedAlready, 'off', 'on');
             enableBs = WTCodingUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
@@ -20,7 +21,7 @@ classdef WTBaselineChopGUI
                 num2str(baselineChopParams.ChopMax), ...
                 num2str(baselineChopParams.BaselineMin), ...
                 num2str(baselineChopParams.BaselineMax), ...
-                baselineChopParams.Log10Enable, ...
+                WTCodingUtils.ifThenElse(logTransformedAlready, 1, baselineChopParams.LogarithmicTransform), ...
                 baselineChopParams.NoBaselineCorrection, ...
                 evokedOscillations };
             
@@ -59,7 +60,7 @@ classdef WTBaselineChopGUI
                 try
                     baselineChopParams.ChopMin = WTNumUtils.str2double(answer{1,1});
                     baselineChopParams.ChopMax = WTNumUtils.str2double(answer{1,2});
-                    baselineChopParams.Log10Enable = answer{1,5};
+                    baselineChopParams.LogarithmicTransform = answer{1,5};
                     baselineChopParams.NoBaselineCorrection = answer{1,6};
                     baselineChopParams.EvokedOscillations = answer{1,7};
 

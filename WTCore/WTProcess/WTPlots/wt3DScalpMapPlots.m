@@ -72,7 +72,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
 
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.Log10Enable;
+        wtProject.Config.BaselineChop.LogarithmicTransform;
 
     if interactive
         [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(false, false, -1);

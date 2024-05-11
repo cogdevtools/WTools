@@ -18,7 +18,7 @@ classdef WTAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqCfg
         end
 
         function default(o) 
-            default@WTTimeFreqCfg(o)
+            default@WTTimeFreqCfg(o);
             o.Scale = [-10.0 10.0];
             o.Contours = 0;
             o.AllChannels = 1;
@@ -40,7 +40,7 @@ classdef WTAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqCfg
                     o.AllChannels = cells{7};
                     o.validate();
                 else
-                    o.default()
+                    o.default();
                     WTLog().warn(['The  parameters for average plots (%s) were set by a\n' ...
                         'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end

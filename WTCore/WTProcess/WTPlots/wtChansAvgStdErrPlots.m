@@ -44,7 +44,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
     end
     
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.Log10Enable;
+        wtProject.Config.BaselineChop.LogarithmicTransform;
 
     if interactive
         [fileNames, ~, measure] = WTPlotsGUI.selectFilesToPlot(true, true, 2);

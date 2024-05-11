@@ -232,7 +232,7 @@ function success = setDifferencePrms()
     condsGrandPrms = copy(wtProject.Config.ConditionsGrand);
     differencePrms = copy(wtProject.Config.Difference);
     logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.Log10Enable;
+        wtProject.Config.BaselineChop.LogarithmicTransform;
     wtEvok = wtProject.Config.WaveletTransform.EvokedOscillations;
 
     if ~WTDifferenceGUI.defineDifferenceParams(differencePrms, condsGrandPrms, logFlag, wtEvok)

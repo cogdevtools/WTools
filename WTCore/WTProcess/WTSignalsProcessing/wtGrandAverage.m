@@ -57,7 +57,7 @@ function success = wtGrandAverage(subjects, conditions)
     else
         grandAveragePrms = copy(grandAveragePrms);
         logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-            wtProject.Config.BaselineChop.Log10Enable;
+            wtProject.Config.BaselineChop.LogarithmicTransform;
         evokFlag = wtProject.Config.BaselineChop.EvokedOscillations;
 
         if ~WTGrandAverageGUI.defineGrandAverageParams(grandAveragePrms, logFlag, evokFlag)

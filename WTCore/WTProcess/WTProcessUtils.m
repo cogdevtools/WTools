@@ -61,7 +61,7 @@ classdef WTProcessUtils
                     wtProject.Config.SubjectsGrand = sbjsGrdPrms;
                 end
             end
-            
+
             wtLog.contextOff();
         end
 
@@ -74,7 +74,7 @@ classdef WTProcessUtils
             wtProject = WTProject();
             conditionsGrandPrms = wtProject.Config.ConditionsGrand;
             logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-                wtProject.Config.BaselineChop.Log10Enable;
+                wtProject.Config.BaselineChop.LogarithmicTransform;
            
             if any(ismember(conditions, conditionsGrandPrms.ConditionsDiff))
                 differencePrms = wtProject.Config.Difference;
@@ -87,7 +87,7 @@ classdef WTProcessUtils
         
             if chkGrandAvg
                 grandAveragePrms = wtProject.Config.GrandAverage;
-                if logical(grandAveragePrms.Log10Enable) ~= logFlag
+                if logical(grandAveragePrms.LogarithmicTransform) ~= logFlag
                     wtProject.notifyWrn([], ['The [Grand Average] paramaters are not up to date.\n' ...
                         'Run [Grand Average] again before plotting.'])
                     grandAvgConsistency = 0;
