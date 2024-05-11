@@ -3,9 +3,7 @@
 WTools is a Matlab® based toolbox & EEGLab plugin for wavelet based time-frequency analysis.
 It provides also a variety of plotting and data export utilities.
 
-<p align="center" width="100%">
-    <img width="80%" src="https://github.com/lucaf/WTools/tree/general-improvements/WTResources/WTPictures/WtoolsFullSplash.png"> 
-</p>
+![WTools Splash](WTResources/WTPictures/WtoolsFullSplash.png)
 
 ## Dependencies
 WTools requires [EEGLab](https://eeglab.org) to be installed. 
@@ -18,9 +16,9 @@ of EEGLab from which it will be then available under [Tools]->[WTools (wavelet a
 From the Matlab®'s Command Window, change directory to the WTools project and run 'wtools'.
 Typing 'wtools help' will display the following information:
 
->  WTools v2.0.0 - December 2023
+> WTools v2.0.0 - December 2023
 >
->  Usage: wtools [ no-splash | configure | close | help ]
+> Usage: wtools [ no-splash | configure | close | help ]
 >
 >        no-splash : do not display splash screen on start
 >                    (when the relative configuration option is enabled)
