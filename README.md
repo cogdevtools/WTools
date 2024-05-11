@@ -1,5 +1,5 @@
 # WTools
-A Matlab® based toolbox & an EEGLab plugin for time-frequency analysis
+A Matlab® based toolbox & EEGLab plugin for wavelet based time-frequency analysis.
 
 ## Structure
 + WTCore: core wtools modules
@@ -13,7 +13,7 @@ A Matlab® based toolbox & an EEGLab plugin for time-frequency analysis
     + WTStatistics: statistc reports
     + WTSubjectsManager: subjects management
   + WTStorageManager: global storage manager
-  + WTBasicUtilities: general and less general utilities
+  + WTBasicUtilities: general utilities
 + WTExternal: external (3rd party) code
   + WTModified: code that have been improved
   + WTOriginal: non modified code
