@@ -54,7 +54,7 @@ classdef WTEEGLabUtils
             
             try
                 if nargin < 3 % no argument, just run eeglab by default
-                    [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', 'eeglab');
+                    [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', 'eeglab(''nogui'')');
                 else
                     cmdStr = sprintf('%s(varargin{2:length(varargin)});', varargin{1});
                     [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', cmdStr);
