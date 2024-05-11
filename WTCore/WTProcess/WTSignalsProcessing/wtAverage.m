@@ -140,9 +140,9 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             if k == 1
                 wtLog.dbg('Operating on channel nr: %d/%d', k, nChans);
             else
-                wtLog.dbg('Operating on channel nr: %d/%d, estimated time remaining %.2f minutes', k, nChans, (nChans-k)*(cpuTime-t)/60);
+                wtLog.dbg('Operating on channel nr: %d/%d, estimated time remaining %.2f minutes', k, nChans, (nChans-k)*(cputime-t)/60);
             end
-            t = cpuTime;
+            t = cputime;
             if strcmp(waveletType,'Gabor (stft)')
                 WT(k,:,:,:) = gabortf(squeeze(X(j,:,:)), Fa, Fs, fb, timeIdxs);
             else
@@ -167,10 +167,10 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
             if i == 1
                 wtLog.dbg('Operating on epoch %d/%d', i, nChans);
             else
-                wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cpuTime-t)/60);
+                wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
             end
 
-            t = cpuTime;
+            t = cputime;
             
             if strcmp(waveletType,'Gabor (stft)')
                 WT = gabortf(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, Fs, fb, timeIdxs);
