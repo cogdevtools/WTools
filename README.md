@@ -4,7 +4,7 @@ WTools is a Matlab® based toolbox & EEGLab plugin for wavelet based time-freque
 It provides also a variety of plotting and data export utilities.
 
 <p align="center" width="100%">
-    <img width="80%" src="WTResources/WTPictures/WtoolsFullSplash.png"> 
+    <img width="80%" src="https://github.com/lucaf/WTools/tree/general-improvements/WTResources/WTPictures/WtoolsFullSplash.png"> 
 </p>
 
 ## Dependencies
