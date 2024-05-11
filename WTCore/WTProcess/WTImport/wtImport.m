@@ -10,10 +10,10 @@ function success = wtImport(forceCopy)
 
     nCopied = 0;
 
-    if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Import source system data files?')
+    if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Do you need to copy source system data files?')
         nCopied = wtCopyData();
         if nCopied == 0 && ...
-            ~WTEEGLabUtils.eeglabYesNoDlg('Import', 'No files were imported. Continue?')
+            ~WTEEGLabUtils.eeglabYesNoDlg('Import', 'No files were copied. Continue?')
             return
         end
     end
