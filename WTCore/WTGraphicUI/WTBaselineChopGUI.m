@@ -17,10 +17,10 @@ classdef WTBaselineChopGUI
             enableBs = WTCodingUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
-                num2str(baselineChopParams.ChopMin), ...
-                num2str(baselineChopParams.ChopMax), ...
-                num2str(baselineChopParams.BaselineMin), ...
-                num2str(baselineChopParams.BaselineMax), ...
+                num2str(baselineChopParams.ChopTimeMin), ...
+                num2str(baselineChopParams.ChopTimeMax), ...
+                num2str(baselineChopParams.BaselineTimeMin), ...
+                num2str(baselineChopParams.BaselineTimeMax), ...
                 WTCodingUtils.ifThenElse(logTransformedAlready, 1, baselineChopParams.LogarithmicTransform), ...
                 baselineChopParams.NoBaselineCorrection, ...
                 evokedOscillations };
@@ -58,8 +58,8 @@ classdef WTBaselineChopGUI
                 end
 
                 try
-                    baselineChopParams.ChopMin = WTNumUtils.str2double(answer{1,1});
-                    baselineChopParams.ChopMax = WTNumUtils.str2double(answer{1,2});
+                    baselineChopParams.ChopTimeMin = WTNumUtils.str2double(answer{1,1});
+                    baselineChopParams.ChopTimeMax = WTNumUtils.str2double(answer{1,2});
                     baselineChopParams.LogarithmicTransform = answer{1,5};
                     baselineChopParams.NoBaselineCorrection = answer{1,6};
                     baselineChopParams.EvokedOscillations = answer{1,7};
@@ -70,8 +70,8 @@ classdef WTBaselineChopGUI
                         answer{1,3} = [];
                         answer{1,4} = [];
                     else
-                        baselineChopParams.BaselineMin = WTNumUtils.str2double(answer{1,3});
-                        baselineChopParams.BaselineMax = WTNumUtils.str2double(answer{1,4});
+                        baselineChopParams.BaselineTimeMin = WTNumUtils.str2double(answer{1,3});
+                        baselineChopParams.BaselineTimeMax = WTNumUtils.str2double(answer{1,4});
                     end
                     baselineChopParams.validate(true);
                 catch me

@@ -5,10 +5,10 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
     end
 
     properties
-        ChopMin(1,1) single
-        ChopMax(1,1) single
-        BaselineMin(1,1) single
-        BaselineMax(1,1) single
+        ChopTimeMin(1,1) single
+        ChopTimeMax(1,1) single
+        BaselineTimeMin(1,1) single
+        BaselineTimeMax(1,1) single
         LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         NoBaselineCorrection(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) uint8  {WTValidations.mustBeZeroOrOne} = 0
@@ -20,10 +20,10 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function default(o) 
-            o.ChopMin = 0;
-            o.ChopMax = 0;
-            o.BaselineMin = 0;
-            o.BaselineMax = 0;
+            o.ChopTimeMin = 0;
+            o.ChopTimeMax = 0;
+            o.BaselineTimeMin = 0;
+            o.BaselineTimeMax = 0;
             o.LogarithmicTransform = 0;
             o.NoBaselineCorrection = 0;
             o.EvokedOscillations = 0;
@@ -36,10 +36,10 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
             end 
             try
                 if length(cells) >= 7 
-                    o.ChopMin = WTNumUtils.str2double(cells{1});
-                    o.ChopMax = WTNumUtils.str2double(cells{2});
-                    o.BaselineMin = WTNumUtils.str2double(cells{3});
-                    o.BaselineMax = WTNumUtils.str2double(cells{4});
+                    o.ChopTimeMin = WTNumUtils.str2double(cells{1});
+                    o.ChopTimeMax = WTNumUtils.str2double(cells{2});
+                    o.BaselineTimeMin = WTNumUtils.str2double(cells{3});
+                    o.BaselineTimeMax = WTNumUtils.str2double(cells{4});
                     o.LogarithmicTransform = cells{5};
                     o.NoBaselineCorrection = cells{6};
                     o.EvokedOscillations = cells{7};
@@ -61,22 +61,22 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable
             throwExcpt = nargin > 1 && throwExcpt; 
             success = true;
 
-            if o.ChopMin > o.ChopMax 
-                WTCodingUtils.throwOrLog(WTException.badValue('Field ChopMax < ChopMin'), ~throwExcpt);
+            if o.ChopTimeMin > o.ChopTimeMax 
+                WTCodingUtils.throwOrLog(WTException.badValue('Field ChopTimeMax < ChopTimeMin'), ~throwExcpt);
                 success = false;
             end
-            if ~o.NoBaselineCorrection && o.BaselineMin > o.BaselineMax
-                WTCodingUtils.throwOrLog(WTException.badValue('Field BaselineMax < BaselineMin'), ~throwExcpt);
+            if ~o.NoBaselineCorrection && o.BaselineTimeMin > o.BaselineTimeMax
+                WTCodingUtils.throwOrLog(WTException.badValue('Field BaselineTimeMax < BaselineTimeMin'), ~throwExcpt);
                 success = false;
             end
         end
 
         function success = persist(o)
             txt = WTConfigFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, ...
-                WTConfigFormatter.FmtIntStr, o.ChopMin, ...
-                WTConfigFormatter.FmtIntStr, o.ChopMax, ...
-                WTConfigFormatter.FmtIntStr, o.BaselineMin, ...
-                WTConfigFormatter.FmtIntStr, o.BaselineMax, ...
+                WTConfigFormatter.FmtIntStr, o.ChopTimeMin, ...
+                WTConfigFormatter.FmtIntStr, o.ChopTimeMax, ...
+                WTConfigFormatter.FmtIntStr, o.BaselineTimeMin, ...
+                WTConfigFormatter.FmtIntStr, o.BaselineTimeMax, ...
                 WTConfigFormatter.FmtInt, o.LogarithmicTransform, ...
                 WTConfigFormatter.FmtInt, o.NoBaselineCorrection, ...
                 WTConfigFormatter.FmtInt, o.EvokedOscillations);

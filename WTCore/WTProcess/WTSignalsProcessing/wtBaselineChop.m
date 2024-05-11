@@ -94,10 +94,10 @@ function success = wtBaselineChop()
     wtLog.info('Baseline correction and edges chopping processing begin...');
 
     timeRes = data.tim(2) - data.tim(1); 
-    latencies = baselineChopParams.ChopMin : timeRes : baselineChopParams.ChopMax;
+    latencies = baselineChopParams.ChopTimeMin : timeRes : baselineChopParams.ChopTimeMax;
     frequencies = data.Fa;
-    chopMinIdx = find(data.tim == baselineChopParams.ChopMin);
-    chopMaxIdx = find(data.tim == baselineChopParams.ChopMax);
+    chopMinIdx = find(data.tim == baselineChopParams.ChopTimeMin);
+    chopMaxIdx = find(data.tim == baselineChopParams.ChopTimeMax);
     logarithmicTransform = baselineChopParams.LogarithmicTransform && ~waveletTransformParams.LogarithmicTransform;
 
     if logarithmicTransform
@@ -107,8 +107,8 @@ function success = wtBaselineChop()
     if baselineChopParams.NoBaselineCorrection
         wtLog.info('No baseline correction will be performed');
     else
-        baselineMinIdx = find(data.tim == baselineChopParams.BaselineMin);
-        baselineMaxIdx = find(data.tim == baselineChopParams.BaselineMax);
+        baselineMinIdx = find(data.tim == baselineChopParams.BaselineTimeMin);
+        baselineMaxIdx = find(data.tim == baselineChopParams.BaselineTimeMax);
     end
 
     wtLog.pushStatus().contextOn().HeaderOn = false;
@@ -174,10 +174,10 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
     success = false;
     wtProject = WTProject();
     timeRes = data.tim(2) - data.tim(1); 
-    chopMin = baselineChopParams.ChopMin;
-    chopMax = baselineChopParams.ChopMax;
-    baselineMin = baselineChopParams.BaselineMin;
-    baselineMax = baselineChopParams.BaselineMax;
+    chopMin = baselineChopParams.ChopTimeMin;
+    chopMax = baselineChopParams.ChopTimeMax;
+    baselineMin = baselineChopParams.BaselineTimeMin;
+    baselineMax = baselineChopParams.BaselineTimeMax;
     timeMin = min(data.tim);
     timeMax = max(data.tim);
 
@@ -224,9 +224,9 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
         end
     end
 
-    baselineChopParams.ChopMin = chopMin;
-    baselineChopParams.ChopMax = chopMax;
-    baselineChopParams.BaselineMin = baselineMin;
-    baselineChopParams.BaselineMax = baselineMax;
+    baselineChopParams.ChopTimeMin = chopMin;
+    baselineChopParams.ChopTimeMax = chopMax;
+    baselineChopParams.BaselineTimeMin = baselineMin;
+    baselineChopParams.BaselineTimeMax = baselineMax;
     success = true;
 end
