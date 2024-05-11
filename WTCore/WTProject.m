@@ -188,7 +188,7 @@ classdef WTProject < WTClass
 
         function done = checkGrandAverageDone(o, quiet)
             quiet = nargin > 1 && quiet;
-            done = o.checkConditionsDifferenceDone(quiet);
+            done = o.checkChopAndBaselineCorrectionDone(quiet);
             if ~done 
                 return
             end  
