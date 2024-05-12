@@ -12,7 +12,7 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFr
 
     methods
         function o = WTChansAvgPlotsCfg(ioProc)
-            o@WTConfigStorage(ioProc, 'xavr_cfg.m');
+            o@WTConfigStorage(ioProc, 'chavr_cfg.m');
             o@WTTimeFreqCfg();
             o.default()
         end

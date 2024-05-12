@@ -6,7 +6,7 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WT
 
     methods
         function o = WTChansAvgStdErrPlotsCfg(ioProc)
-            o@WTConfigStorage(ioProc, 'xavrse_cfg.m');
+            o@WTConfigStorage(ioProc, 'chavrse_cfg.m');
             o@WTTimeFreqCfg();
             o.default()
         end
