@@ -1,4 +1,3 @@
-% Function for internal use only
 function [success, EEG] = wtReReferenceChannels(system, EEG)
     success = true; 
     wtProject = WTProject();

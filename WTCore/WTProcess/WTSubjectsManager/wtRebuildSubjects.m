@@ -1,12 +1,3 @@
-% wtRebuildSubjects.m
-% Created by Eugenio Parise
-% CDC CEU 2012
-% Function to rebuild subj.m and subgrand.m afer importing and
-% processing new subjects. It only works from GUI.
-%
-% Usage:
-% wtRebuildSubjects();
-
 function success = wtRebuildSubjects()
     success = false;
     wtProject = WTProject();

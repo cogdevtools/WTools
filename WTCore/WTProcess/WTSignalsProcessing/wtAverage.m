@@ -1,51 +1,8 @@
-% Function call to perform time-frequency analysis
-%
-% Written by Morten M�rup (originally called tfanalysis.m)
-%
-% Modified by Eugenio Parise (CDC CEU 2010 - 2011) to perform time-frequency analysis
-% using Gergo's original algorithm, to perform on individual epochs if needed,
-% and to cut the extra points at the edges before saving.
-%
-% Usage:
-%   [filename,pathname]=tfanalysis(EEG,str,Fa,timeMin,timeMax,dt,waveletType,fb,chansToAnalyse,res,normalization)
-%
-% Input:
-%   EEG         the EEG CURRENTSET structure
-%   str         pathname and filename to save the ERPWAVELAB dataset to
-%   Fa          The frequencies at which transform is to be calculated
-%   timeMin        time index of EEG.times at which to start transformation
-%   timeMax        time index of EEG.times at which to end transformation
-%   dt          interval between timepoints in samples for time-frequency analysis
-%   waveletType       name of time-frequency transformation method
-%   fb          Width parameter for time-frequency transformation
-%   chansToAnalyse  The indices of channels to analyze
-%   res         What measures to calculate:
-%                   res(i)=1: measure i is calculated;
-%                   res(i)=0: measure i is not calculated.
-%                   if res=[] the full time-frequency transform of all
-%                   epochs is stored.
-%                       res(1): ITPC
-%                       res(2): ITLC
-%                       res(3): ERSP
-%                       res(4): avWT
-%                       res(5): WTav
-%                       res(6): INDUCED
-%                   if res=[0 0 1 0 0 1] then both the ERSP and INDUCED is
-%                   given stored in the file savefile-ERSP and
-%                   savefile-INDUCED.
-%   normalization    if specific measures are calculated this gives how the
-%               time-frequency coefficients are to be normalized prior to
-%               calcuting each measure.
-%               normalization=[bt1,bt2] then data is normalized by background
-%                                  activity between time sample bt1 and bt2.
-%               normalization=0         no normalization
-%
-%   Output:
-%   files       path and name of files generated
-%
-% Copyright (C) Morten M�rup and Technical University of Denmark,
+% Credits: a modified version of the tfanalisys.m function from (ERPWAVELAB)
+% ---------------------------------------------------------------------------
+% Copyright (C) Morten M¯rup and Technical University of Denmark, 
 % September 2006
-%
+%                                          
 % This program is free software; you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation; either version 2 of the License, or

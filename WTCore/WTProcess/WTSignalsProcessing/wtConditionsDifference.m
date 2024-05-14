@@ -1,27 +1,3 @@
-% wtConditionsDifference.m
-% Created by Eugenio Parise
-% CDC CEU 2010 - 2011
-% Calculate the wtConditionsDifference between two conditions (e.g. cA-cB C3-C4);
-% Store the resulting files in the subject folder.
-% IMPORTANT! Define the condition you want to subtract by editing the variable 'condiff'
-% in the file 'cond.m' ('cfg' folder).
-% To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and  digit wtConditionsDifference([]) at the console prompt.
-% Add evoked = true  as last argument to compute conditions wtConditionsDifference of evoked
-% oscillations (of course, if they have been previously computed).
-%
-% Usage:
-%
-% wtConditionsDifference('01');
-% wtConditionsDifference([]);
-% wtConditionsDifference([], true);
-
-% By Luca
-% Input params are now:
-%  - subjects (cells array of strings) [optional] or if undefined, wtProject.Config.Subjects.SubjectsList
-%  - wtProject.Config.Difference 
-%  if the project is interactive (wtProject.Interactive = true), both can be modified via the GUI
-
 function success = wtConditionsDifference(subjects)
     success = false;
     wtProject = WTProject();

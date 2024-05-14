@@ -1,38 +1,3 @@
-% wt3DScalpMapPlots.m
-% Created by Eugenio Parise
-% CDC CEU 2011
-% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-% It plots 3D scalpmaps of wavelet transformed EEG channels (for each condition).
-% It uses headplot function from EEGLab, so EEGLab must be installed and
-% included in Matlab path.
-% It can plot a single timepoint, the average of a time window, as well as a
-% single frequency or an averaged frequency band.
-%
-% It does not plot scalpmap series! Please, use smavr.m for this purpose.
-%
-% Add 'evok' as last argument to compute 3D scalp maps of evoked
-% oscillations (of course, if they have been previously computed).
-% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-% Interactive user interface needs inputgui.m from EEGLab.
-%
-% Usage:
-%
-% wt3DScalpMapPlots(subj,tMintMax,FrMinFrMax,scale);
-%
-% wt3DScalpMapPlots('01',800,15,[-0.2 0.2]); % to plot a single subject,
-% at 800 ms and at 15 Hz
-%
-% wt3DScalpMapPlots('05',[240 680],5,[-0.2 0.2]); % to plot a single subject,
-% average between 240 and 680 ms at 5 Hz
-%
-% wt3DScalpMapPlots('grand',350,[10 60],[-0.2 0.2]); % to plot the grand average,
-% average between at 350 ms in the 10 to 60 Hz averaged band
-%
-% wt3DScalpMapPlots('grand',[100 400],[10 60],[-0.2 0.2]); % to plot the grand average,
-% average between 100 and 400 ms in the 10 to 60 Hz averaged band
-%
-% wt3DScalpMapPlots(); to run via GUI
-
 function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();

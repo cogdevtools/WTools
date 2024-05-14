@@ -1,23 +1,3 @@
-% wtGrandAverage.m
-% Created by Eugenio Parise
-% CDC CEU 2010 - 2011
-% Function to calculate the grand average matrix by condition from baseline
-% corrected and chopped files (individual subjects files).
-% This script is set to process the whole final sample of subjects of the study.
-% Add 'evok' as argument to compute the grand average of evoked
-% oscillations (of course, if they have been previously computed).
-% 
-% Usage:
-% 
-% wtGrandAverage(); to compute grand average of previously computed total-induced
-% oscillations.
-% wtGrandAverage('evok'); to compute grand average of previously computed evoked
-% oscillations.
-
-% Luca:
-%   subjects & conditions are used only if the project is not interactive
-%   subjects empty means: use all subjects
-%   conditions empty means: use all conditions
 function success = wtGrandAverage(subjects, conditions)
     success = false;
     wtProject = WTProject();

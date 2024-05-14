@@ -1,20 +1,3 @@
-% wtEGIToEEGLab.m
-% Created by Eugenio Parise
-% CDC CEU 2010
-% Function to import netstation files in EEGLAB. Netstation files must be
-% previously exported in .mat format, each trial in individual array. Only
-% good segments must be exported. After importing the original dataset in
-% one EEGLAB file, the script will segmented such file into multiple EEGLAB datasets:
-% one for each experimental condition.
-% To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and digit wtEGIToEEGLab() (with no argument) at
-% the console prompt.
-%
-% Usage:
-%   wtEGIToEEGLab(subjects)
-%   wtEGIToEEGLab('01');
-%   wtEGIToEEGLab();
-
 function success = wtEGIToEEGLab()
     success = false;
     wtProject = WTProject();

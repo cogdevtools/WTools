@@ -1,27 +1,3 @@
-% wtStatistics.m
-% Created by Eugenio Parise
-% CDC CEU 2010 - 2013
-% Function to estract time-frequency points from ERPWAVELABv1.1 compatible data files.
-% Baseline correction is assumed to be already done.
-% It is set to process the whole final sample of subjectsList of the study.
-% Set indFr to 0 to extract a frequency band (e.g. the average between 5 and
-% 10 Hz). Set it to 1 to extract individual freqStrs (e.g. at 5, 6, 7, 8,
-% 9 and 10 Hz separately).
-% Add 'evok' as last argument to retrieve averages of evoked
-% oscillations (of course, if they have been previously computed).
-% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-% Interactive user interface needs inputgui.m from EEGLab.
-% 
-% Usage:
-% 
-% wtStatistics(ChannelsList,tMin,tMax,FrMin,indFr,FrMax);
-% wtStatistics(ChannelsList,tMin,tMax,FrMin,FrMax,indFr,varargin);
-% wtStatistics();
-% 
-% wtStatistics({'E1' 'E57' 'Cz'},600,800,34,41,0);
-% wtStatistics({'E1' 'E57' 'Cz'},600,800,34,41,1,'evok');
-% wtStatistics();
-
 function success = wtStatistics(subjectsList, conditionsList, channelsList, evokedOscillations)
     success = false;
     wtProject = WTProject();
@@ -241,7 +217,6 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
 end
 
 function [success, subjectsList, conditionsList] = setStatisticsParams()
-    success = false;
     wtProject = WTProject();
     statsPrms = copy(wtProject.Config.Statistics);
     subjectsGrandPrms =  copy(wtProject.Config.SubjectsGrand);

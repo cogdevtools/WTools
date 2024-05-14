@@ -1,12 +1,3 @@
-% wtNewProject.m
-% Created by Eugenio Parise
-% CDC CEU 2011
-% Create a new project/folder for a WTools project. Subfolders Config and
-% Import are created as well; exported.m and filenm.m stored in Config folder.
-% A variable called PROJECTPATH is created in the 'base' Wokspace.
-%
-% Usage: wtNewProject()
-
 function success = wtNewProject
     success = false;
     wtProject = WTProject();

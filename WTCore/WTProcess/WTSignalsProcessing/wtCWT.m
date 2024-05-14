@@ -1,7 +1,4 @@
-% Complex Morlet wavelet
-% Based on cwt_channel.c, algorithm in c++ provided by Gergo
-% Matlab porting by Eugenio Parise, CDC CEU 2010        
-
+% Complex Morlet wavelet transform     
 function coeffs = wtCWT(signal, scales, points, cwMatrix)
     % Define parameters and matrices
     signal = signal';

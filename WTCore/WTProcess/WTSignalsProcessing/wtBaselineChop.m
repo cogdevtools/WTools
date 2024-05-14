@@ -1,21 +1,3 @@
-% wtBaselineChop.m
-% Created by Eugenio Parise
-% CDC CEU 2010 - 2011
-% Function to baseline correct and chop ERPWAVELABv1.1 compatible data files.
-% To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and digit wtBaselineChop([],...); ([]=empty).
-% Add 'evok' as last argument to compute baseline correction of evoked
-% oscillations (of course, if they have been previously computed).
-%
-% Usage:
-%
-% wtAverage(subject,timewindow begin,timewindow end,baseline begin,baseline end,higher...
-% frequency,lower frequency,log-transformation,no baseline correction);
-%
-% wtBaselineChop('01',-200,1200,-200,0,0,0);
-% wtBaselineChop([],-200,1200,-200,0,1,0);
-% wtBaselineChop([],-200,1200,[],[],0,1,'evok');
-
 function success = wtBaselineChop()
     success = false;
     wtProject = WTProject();

@@ -1,29 +1,3 @@
-% chavrse.m
-% Created by Eugenio Parise
-% CDC CEU 2013
-% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-% Plots the average frequency activity along time for the desired channels
-% (individual or average of channels) with the Standard Error bars on top.
-% It only works for the grand average file and max two conditions at once.
-% Add 'evok' as last argument to plot evoked oscillations
-% (of course, if they have been previously computed).
-% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-% Interactive user interface needs inputgui.m from EEGLab.
-%
-% Usage:
-%
-% At present thgis function only works for grand average files, thus
-% subj='grand'
-%
-% chavrse(subj, channels, tMin, tMax, FrMin, FrMax, varargin);
-%
-% chavrse('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60); %to plot average of channels from the grand average
-%
-% chavrse('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,'evok'); %to
-% plot average of channels from the grand average of evoked oscillations
-%
-% chavrse(); to run via GUI
-
 function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();

@@ -1,19 +1,3 @@
-% wtEEPToEEGLab.m
-% Created by Eugenio Parise
-% CDC CEU 2011
-% Function to import ANT EEProbe files in EEGLAB. After importing the
-% original one EEGLAB file, the script will segmented such file
-% into multiple EEGLAB datasets: one for each experimental condition.
-% To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and digit wtEEPToEEGLab([],...) (empty value) at
-% the console prompt.
-% 
-% Usage:
-% 
-% wtEEPToEEGLab(subjects,epochlimits,hpf,lpf)
-% wtEEPToEEGLab('02',[-200 1000],0.3,65)
-% wtEEPToEEGLab([],[-200 1000],0.3,65)
-
 function success = wtEEPToEEGLab()
     success = false;
     wtProject = WTProject();

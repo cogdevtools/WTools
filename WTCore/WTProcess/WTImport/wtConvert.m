@@ -1,10 +1,3 @@
-% wtConvert.m
-% Created by Eugenio Parise
-% CDC CEU 2012
-% Function to select the eeg system to import. It only works from GUI.
-%
-% Usage: wtConvert();
-
 function success = wtConvert()
     success = false;
     wtProject = WTProject();

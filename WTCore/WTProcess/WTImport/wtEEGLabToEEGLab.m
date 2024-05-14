@@ -1,24 +1,3 @@
-% eggl2eegl.m
-% Created by Eugenio Parise
-% Lancaster University 2017
-% Function to import segmented EEGLAB datasets in EEGLAB/WTools. Files must be
-% in .set format (including a separate .fdt), and already segmented/cleaned. Only
-% good segments are assumed to be in the dataset. After importing the original dataset in
-% EEGLAB/WTools, the script will segmented the file into multiple EEGLAB datasets:
-% one for each experimental condition.
-% Call the script from the main WTools GUI.
-% NON GUI USAGE (not tested!):
-% To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and digit wtEEGLabToEEGLab() (with no argument) at
-% the console prompt.
-% 
-% Usage:
-% 
-% wtEEGLabToEEGLab(subjects)
-% 
-% wtEEGLabToEEGLab('01');
-% wtEEGLabToEEGLab();
-
 function success = wtEEGLabToEEGLab()
     success = false;
     wtProject = WTProject();

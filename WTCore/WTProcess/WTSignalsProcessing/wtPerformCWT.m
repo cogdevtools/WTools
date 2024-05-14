@@ -1,25 +1,3 @@
-% wtPerformCWT.m
-% Created by Eugenio Parise
-% CDC CEU 2010 - 2011
-% Function to calculate the individual subject time-frequency transformed
-% matrix using complex Morlet wavelts algorithm.
-% Wavelets transformation will be calculated for each experimental
-% condition.
-% This script does not perform the actual wavelet transormation (done by the
-% chain average.m and wtCWT.m), but prepares the eeg file enlarging the
-% edges to avoid distortion and it calculates the wavelets at each frequency.
-% It also runs through subjects and conditions to process the whole study.
-% To set this script to process the whole final sample of subjects in a study,
-% edit 'subj.m' in the 'cfg' folder and digit wtPerformCWT([],...); ([]=empty).
-% Add 'evok' as last argument to compute of evoke oscillations
-% (of course, if they have been previously computed).
-% 
-% Usage:
-% 
-% wtPerformCWT('01',-300,1200,1,10,90,1,0,[],[],0,7,1);
-% wtPerformCWT([],-300,1200,1,10,90,1,2000,[],[],0,7,1);
-% wtPerformCWT([],-300,1200,1,10,90,1,2000,[],[],0,7,0,'evok');
-
 function success = wtPerformCWT()
     success = false;
     wtProject = WTProject();

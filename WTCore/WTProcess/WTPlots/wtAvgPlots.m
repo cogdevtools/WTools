@@ -1,37 +1,6 @@
-% wtAvgPlots.m
-% Created by Eugenio Parise
-% CDC CEU 2010 - 2011
-% Based on topmontageplot.m Written by Morten Moerup (ERPWAVELABv1.1)
-% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-% Plots the time-frequency activity of the 3-way array WT in the
-% correct position according to each channels topographic location.
-% Datafile are located in the folder 'grand', already separated by
-% condition, baseline corrected and chopped.
-% Add 'evok' as last argument to plot evoked oscillations
-% (of course if they have been previously computed).
-% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-% Interactive user interface needs inputgui.m from EEGLab.
-%
-% Usage:
-%
-% contr=0, no contours will be plotted; set to 1 to plot them.
-%
-% wtAvgPlots(subj,tMin,tMax,FrMin,FrMax,scale);
-% wtAvgPlots(subj,tMin,tMax,FrMin,FrMax,scale,'evok');
-%
-% wtAvgPlots('01',-200,1200,10,90,[-0.5 0.5],1); %to plot a single subject
-%
-% wtAvgPlots('grand',-200,1200,10,90,[-0.5 0.5],0); %to plot the grand average
-%
-% wtAvgPlots('grand',-200,1200,10,90,[-0.5 0.5],0,'evok'); %to plot the grand
-% average of evoked oscillations
-%
-% wtAvgPlots(); to run via GUI
-
-% Now isempty(subject) => grand average
+%     isempty(subject) => grand average
 %     isempty(conditionsToPlot) => all conditions
 %     isempty(channelsToPlot) => all channels
-
 function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();

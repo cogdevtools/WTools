@@ -1,34 +1,3 @@
-% wtAvgStdErrPlots.m
-% Created by Eugenio Parise
-% CDC CEU 2013
-% Based on wtAvgPlots.m Written by Morten Moerup (ERPWAVELABv1.1)
-% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-% Plots the time-frequency activity of a frequency band with Standard Error bars on top.
-% Channels are plotted in the correct head position according to each channel
-% topographic location.
-% Datafile are located in the folder 'grand', already separated by
-% condition, baseline corrected and chopped.
-% Add 'evok' as last argument to plot evoked oscillations
-% (of course if they have been previously computed).
-% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-% Interactive user interface needs inputgui.m from EEGLab.
-%
-% Usage:
-%
-% At present thgis function only works for grand average files, thus
-% subj='grand'
-%
-% wtAvgStdErrPlots(subj,tMin,tMax,FrMin,FrMax);
-% wtAvgStdErrPlots(subj,tMin,tMax,FrMin,FrMax,'evok');
-%
-% wtAvgStdErrPlots('grand',-200,1200,10,90); %to plot the grand average
-%
-% wtAvgStdErrPlots('grand',-200,1200,10,90,'evok'); %to plot the grand
-% average of evoked oscillations
-%
-% wtAvgStdErrPlots(); to run via GUI
-
-% Plots only the grand average (subject is not a parameter)
 function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();

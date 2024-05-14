@@ -1,31 +1,3 @@
-% chavr.m
-% Created by Eugenio Parise
-% CDC CEU 2011
-% One line of code has been taken from Luca Filippin's EGIWaveletPlot.m
-% Plots the average time-frequency activity of the desired channels for an
-% individual subject or for the grand average.
-% Add 'evok' as last argument to plot evoked oscillations
-% (of course, if they have been previously computed).
-% DO NOT ENTER ARGUMENTS TO RUN THIS FUNCTION INTERACTIVELY THROUGH GUI.
-% Interactive user interface needs inputgui.m from EEGLab.
-%
-% Usage:
-%
-% contr=0, no contours will be plotted; set to 1 to plot them.
-%
-% chavr(subj, channels, tMin, tMax, FrMin, FrMax, scale, contr);
-%
-% chavr('01',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],0);
-% to plot average of channels from a single subject
-%
-% chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1);
-% to plot average of channels from the grand average
-%
-% chavr('grand',{'E2' 'E8' 'E9' 'E14'},-200,1200,10,60,[-0.75 0.75],1,'evok');
-% to plot average of channels from the grand average of evoked oscillations
-%
-% chavr(); to run via GUI
-
 function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();

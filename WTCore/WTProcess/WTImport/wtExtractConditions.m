@@ -1,5 +1,3 @@
-% Function for internal use only...
-    
 function success = wtExtractConditions(subject)
     wtProject = WTProject();
     wtLog = WTLog();
