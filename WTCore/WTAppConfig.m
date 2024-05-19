@@ -179,6 +179,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
             try
                 data = struct(); 
                 data.(o.FldShowSplashScreen) = o.ShowSplashScreen;
+                data.(o.FldPlotsColorMap) = o.PlotsColorMap;
                 data.(o.FldDefaultStdLogLevel) = WTLog.logLevelStr(o.DefaultStdLogLevel);
                 data.(o.FldProjectLogLevel) = WTLog.logLevelStr(o.ProjectLogLevel);
                 data.(o.FldMuteStdLog) = o.MuteStdLog;

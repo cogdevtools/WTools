@@ -69,7 +69,7 @@ function createWToolsMenu(parentMenu)
 end
 
 function wtRun(~, ~) 
-    wtools('no-splash');
+    wtools();
 end 
 
 % function wtClose(~, ~) 
