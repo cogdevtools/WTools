@@ -31,8 +31,8 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         return
     end
 
-    if ~WTIOUtils.fileExist(splineFile)
-        wtLog.warn('Mesh file not found: %s', meshFile);
+    if ~WTIOUtils.fileExist(meshFile)
+        wtLog.warn('Mesh file ''%s'' not found: default one will be used instead', meshFile);
         meshFile = [];
     end
 
