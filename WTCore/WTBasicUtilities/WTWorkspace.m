@@ -67,6 +67,16 @@ classdef WTWorkspace < handle
             end
         end
 
+        function popToCaller(o, clear) 
+            if nargin == 2 && clear 
+                evalin('caller', 'clearvars')
+            end
+            ws = o.pop();
+            for i=1:size(ws,2)
+                assignin('caller', ws{1,i},  ws{2,i});
+            end
+        end
+
         function wsStruct = popToStruct(o) 
             wsStruct = o.popStruct();
         end
