@@ -1,7 +1,7 @@
 classdef WTEval
 
     methods(Static)
-        function [success, varargout] = evalinLog(cmd, inBase) 
+        function [success, varargout] = evalin(cmd, inBase) 
             success = false;
             varargout = cell(1, nargout-1);
             workspace = 'caller';
