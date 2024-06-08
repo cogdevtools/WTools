@@ -5,7 +5,7 @@ classdef WTPlotUtils
         function waitUIs(UIs) 
             for i = 1:length(UIs)
                 try
-                    uiwait(UIs(i));
+                    uiwait(UIs{i});
                 catch
                 end
             end
@@ -116,13 +116,33 @@ classdef WTPlotUtils
                  point(2) <= pos(2) + pos(4); 
         end
 
+        function bringObjectsToFront(hFigures)
+            for i = 1:length(hFigures)
+                if isvalid(hFigures(i))
+                    figure(hFigures(i));
+                end
+            end
+        end
+
         % --- Callbacks -- ON ---
 
         function keepWindowSizeRatioCb(hObject, event, whRatio) 
+            if strcmp(hObject.WindowState, 'fullscreen')
+                return
+            end
             pos = hObject.Position;
             scale = (pos(3) + pos(4) * whRatio) / 2;
-            pos(3) = scale;
-            pos(4) = scale / whRatio;
+            width = scale;
+            height = scale / whRatio;
+            if ~strcmp(hObject.Units, 'normalized') 
+                width = floor(width);
+                height = floor(height);
+            end
+            if pos(3) == width && pos(4) == height
+                return
+            end
+            pos(3) = width;
+            pos(4) = height;
             hObject.Position = pos;
         end
 
@@ -143,6 +163,11 @@ classdef WTPlotUtils
             catch me
                 WTLog().except(me);
             end     
+        end
+
+        function bringChildrenObjectsToFrontCb(hObject, event, childrenObjField)
+            subFigures = WTStructUtils.xGetField(hObject.UserData, childrenObjField);
+            bringObjectsToFront(subFigures)
         end
 
         % Keep track in the parent object of all existing children-objects & close all them
@@ -235,14 +260,15 @@ classdef WTPlotUtils
         %       hControlledObjects: array of graphic objects
         % - hControlledObjects(i).UserData.<originalPositionField>
         %       for each object in hControlledObjects
-        function onKeyPressResizeObjectsCb(hObject, event, controlledObjectsField, originalPositionField)
+        function onKeyPressResizeObjectsCb(hObject, event, KeyMinus, keyPlus, controlledObjectsField, originalPositionField)
             try
                 hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
-                switch event.Character
-                    case '+'  
-                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, event.Character)
-                    case '-'
-                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, event.Character)
+                key = lower(event.Character);
+                switch key
+                    case keyPlus  
+                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, character)
+                    case KeyMinus
+                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, character)
                     otherwise
                         return
                 end
@@ -257,14 +283,111 @@ classdef WTPlotUtils
         %       hControlledObjects: array of graphic objects
         % - hControlledObjects(i).UserData.<originalPositionField>
         %       for each object in hControlledObjects
-        function onKeyPressResetObjectsPositionCb(hObject, event, controlledObjectsField, originalPositionField)
+        function onKeyPressResetObjectsPositionCb(hObject, event, keyReset, controlledObjectsField, originalPositionField)
             try
-                switch event.Character
-                    case 'r' % rearrange controlled objects into the original opening position
+                switch lower(event.Character)
+                    case keyReset % rearrange controlled objects into the original opening position
                         hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
                         for i = 1:length(hControlledObjects)
+                            hControlledObjects(i).Visible = 'on';
                             hControlledObjects(i).Position = WTStructUtils.xGetField(hControlledObjects(i).UserData, originalPositionField);
                         end
+                end
+            catch me
+                WTLog().except(me);
+            end
+        end
+
+        function onKeyPressBringSingleObjectToFrontCb(hObject, event, keyFront, targetObjectField)
+            try
+                switch lower(event.Character)
+                    case keyFront 
+                        hTargetObject = WTStructUtils.xGetField(hObject.UserData, targetObjectField);
+                        if isvalid(hTargetObject)
+                            hTargetObject.Visible = 'on';
+                            figure(hTargetObject);
+                        end
+                end
+            catch me
+                WTLog().except(me);
+            end
+        end
+
+        function onKeyPressBringObjectsToFrontCb(hObject, event, keyFront, targetObjectsField)
+            try
+                switch lower(event.Character)
+                    case keyFront 
+                        targetObjects = WTStructUtils.xGetField(hObject.UserData, targetObjectsField);
+                        for i = 1:length(targetObjects)
+                            if isvalid(targetObjects{i})
+                                targetObjects{i}.Visible = 'on';
+                                figure(targetObjects{i});
+                            end
+                        end
+                end
+            catch me
+                WTLog().except(me);
+            end
+        end
+
+        function onKeyPressCloseObjectsCb(hObject, event, keyClose, targetObjectsField)
+            try
+                switch lower(event.Character)
+                    case keyClose 
+                        targetObjects = WTStructUtils.xGetField(hObject.UserData, targetObjectsField);
+                        for i = 1:length(targetObjects)
+                            if isvalid(targetObjects{i})
+                                close(targetObjects{i});
+                            end
+                        end
+                end
+            catch me
+                WTLog().except(me);
+            end
+        end
+
+        % onKeyPressSetObjectAndChildrenVisibilityCb() manage the visibility of a graphic object (show/hide) and
+        % its children. If the graphic object is part of a pool, make sure that at least one object in the pool 
+        % is visible. 
+        % - hObject.UserData.<poolObjectsField>: 
+        %       cell array of handles
+        % - hObject.UserData.<targetObjectField>: 
+        %       cell array of handles
+        % - hObject.UserData.<targetChildrenField>: 
+        %       array of handles
+        % When poolObjectsField is empty, that means that there's no pool. When targetObjectField is empty, then the
+        % target object is the one for which the callback has been registered.
+        function onKeyPressSetObjectAndChildrenVisibilityCb(hObject, event, keyHide, keyShow, poolObjectsField, targetObjectField, targetChildrenField)
+            try
+                switch lower(event.Character)
+                    case keyHide
+                        visible = 'off';
+                    case keyShow
+                        visible = 'on';
+                    otherwise
+                        return
+                end
+                if isempty(targetObjectField)
+                    hTargetObject = hObject;
+                else
+                    hTargetObject = WTStructUtils.xGetField(hObject.UserData, targetObjectField);
+                end
+                if ~isempty(poolObjectsField)
+                    hPoolObjects = WTStructUtils.xGetField(hObject.UserData, poolObjectsField);
+                    visibleObjects = cellfun(@(hObj)isvalid(hObj) && strcmp(hObj.Visible, 'on'), hPoolObjects);
+                    hPoolObjects = hPoolObjects(visibleObjects);
+                    if (length(hPoolObjects) == 1 && hPoolObjects{1} == hTargetObject && strcmp(visible, 'off'))
+                        return
+                    end
+                end
+                if isvalid(hTargetObject)
+                    hTargetObject.Visible = visible;
+                end
+                hChildrenObjects = WTStructUtils.xGetField(hObject.UserData, targetChildrenField);
+                for i = 1:length(hChildrenObjects)
+                    if isvalid(hChildrenObjects(i))
+                        hChildrenObjects(i).Visible = visible;
+                    end
                 end
             catch me
                 WTLog().except(me);
@@ -342,8 +465,10 @@ classdef WTPlotUtils
         %  - function cbC(hObject, event)
         %  - ...
         function cb = composeGraphicCallbacks(varargin)
+            nArgIn = nargin;
+
             function cb_(hObject, event) 
-                for i = 1:nargin
+                for i = 1:nArgIn
                     try
                         if iscell(varargin{i})
                             cbDef = varargin{i};

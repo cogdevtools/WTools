@@ -117,7 +117,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
     wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
-    mainPlots = [];
+    hMainPlots = WTHandle(cell(1, nConditionsToPlot));
 
     try
         % The width / height ratio of the main figure
@@ -125,6 +125,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, figureRelWidth, 0.1, true);
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
         channelAnnotationHeight = 0.05;
+        colorMap = WTPlotUtils.getPlotsColorMap(); 
 
         if nSubPlots > 1
             % Create struct to store all the useful params used here and by the callbacks
@@ -137,9 +138,8 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             prms.peripheralElectrodes = peripheralElectrodes;
             prms.nSubPlots = nSubPlots;
             prms.nSubPlotsGridCols = ceil(sqrt(nSubPlots));
-            prms.nSubPlotsGridRows = ceil(nSubPlots / prms.nSubPlotsGridCols);;
-            prms.data = WTHandle(cell(1, nConditionsToPlot));
-            prms.subPlotsPrms = WTHandle(cell(1, nSubPlots));
+            prms.nSubPlotsGridRows = ceil(nSubPlots / prms.nSubPlotsGridCols);
+            prms.colorMap = colorMap;
         end
 
         for cnd = 1:nConditionsToPlot
@@ -157,10 +157,11 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
             figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
+            
             hFigure = figure('NumberTitle', 'off', ...
                 'Name', figureName, 'ToolBar', 'none', 'Units', 'normalized', 'Position', figuresPosition{cnd});
 
-            mainPlots(cnd) = hFigure;
+            hMainPlots.Value{cnd} = hFigure;
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
             data.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
@@ -178,12 +179,16 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                         data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
                         plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
+                colormap(colorMap);
                 pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
                 pace = pace(2) - pace(1);
                 colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
                 set(get(colorBar,'xlabel'), 'String', xLabel.String, 'FontSize', 12, ...
                     'FontWeight', 'bold', 'Rotation', xLabel.Rotation, 'Position', [xLabel.Position 2 * pace]);
             else
+                prms.data = WTHandle(cell(1, nConditionsToPlot));
+                prms.subPlotsPrms = WTHandle(cell(1, nSubPlots));
+
                 % Set annotation for multi-plots case
                 hWhichSubPlotAnnotation = annotation('textbox',[0.9, 0.95 .09 channelAnnotationHeight]);
                 hWhichSubPlotAnnotation.Color = [1 0 0];
@@ -226,6 +231,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                     WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                             subPlotData.data, data.chanlocs, 'electrodes', labels, 'maplimits',...
                             plotsPrms.Scale, 'intrad', peripheralElectrodes, 'numcontour', contours);
+                    colormap(colorMap);
                     title(subPlotData.title, 'FontSize', 8, 'FontWeight', 'bold');
                     figure(hFigure);
 
@@ -234,6 +240,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 end
 
                 % Set main figure user data
+                hFigure.UserData.MainPlots = hMainPlots;
                 hFigure.UserData.OpenSubPlots = [];
                 hFigure.UserData.Annotation = hWhichSubPlotAnnotation;
                 hFigure.UserData.SubPlotsPolys = cellfun(@(x)[ x(1), x(1)+x(3), x(1)+x(3), x(1); x(2), x(2), x(2)+x(4), x(2)+x(4) ], ...
@@ -241,7 +248,11 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 % Set callbacks
                 hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
                 hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};
-                hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'};
+                hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
+                    {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'r', 'OpenSubPlots', 'OriginalPosition'}, ...
+                    {@WTPlotUtils.onKeyPressBringObjectsToFrontCb, 'a', 'MainPlots.Value'}, ...
+                    {@WTPlotUtils.onKeyPressCloseObjectsCb, 'q', 'MainPlots.Value'}, ...
+                    {@WTPlotUtils.onKeyPressSetObjectAndChildrenVisibilityCb, 'h', 's', 'MainPlots.Value', [], 'OpenSubPlots'});
                 hFigure.WindowButtonMotionFcn = {@setSubPlotAnnotationSetCb, prms};
                 wtLog.contextOff();
             end
@@ -253,7 +264,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
 
     % Wait for all main plots to close
-    WTPlotUtils.waitUIs(mainPlots);
+    WTPlotUtils.waitUIs(hMainPlots.Value);
     wtLog.info('Plotting done.');
 end
 
@@ -305,25 +316,19 @@ function position = getSubPlotPosition(row, col, nGridRows, nGridCols, whRatio)
     position = [ xOnScreen yOnScreen widthOnScreen heightOnScreen ];   
 end
 
-function bringSubPlotsToFront(hMainPlot)
-    subPlots = hMainPlot.UserData.OpenSubPlots;
-    for i=1:length(subPlots)
-        if isvalid(subPlots(i))
-            figure(subPlots(i));
-        end
-    end
-end
-
 function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
     try
         hGraphicObject = gca;
+        openSubPlots = hMainPlot.UserData.OpenSubPlots;
+        WTPlotUtils.bringObjectsToFront(openSubPlots);
+
         if ~isfield(hGraphicObject.UserData, 'FigureSubPlotIdx')
             figure(hMainPlot);
             return
         end
         % If the click of the mouse is off any sub plot, gca returns the main plot current axes.
         % In such case we want to avoid opening the corresponding sub-plot so we have to check 
-        % if the position of the moouse is inside the gca object. If not, we return.
+        % if the position of the mouse is inside the gca object. If not, we return.
         if hGraphicObject == hMainPlot.CurrentAxes && ...
             ~WTPlotUtils.isPointInCurrentAxes(hMainPlot.CurrentPoint)
             return
@@ -331,11 +336,9 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
 
         subPlotIdx = hGraphicObject.UserData.FigureSubPlotIdx;
         % Determine if the subPlot has been already drawed, in which case put it in foreground and exit
-        openSubPlots = hMainPlot.UserData.OpenSubPlots;
         figureTag = [ 'SubPlot.' num2str(subPlotIdx) ];
         hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag), openSubPlots));
         if ~isempty(hFigure)
-            bringSubPlotsToFront(hMainPlot);
             return
         end
         % Determine position and size of the new subplot which opens on screen
@@ -347,6 +350,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         subPlotData = prms.subPlotsPrms.Value{subPlotIdx};
         data = prms.data.Value{subPlotData.conditionIdx};
 
+        
         hFigure = figure('NumberTitle', 'off', ...
             'Name', subPlotData.figureName, ...
             'ToolBar','none', ...
@@ -355,7 +359,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
             'Tag', figureTag);
 
         hMainPlot.UserData.OpenSubPlots = [hMainPlot.UserData.OpenSubPlots hFigure];
-        hFigure.CloseRequestFcn = {@WTPlotUtils.childObjectCloseRequestCb, 'MainPlot', 'OpenSubPlots'};
+       
         subPlotPrms = struct();
         subPlotPrms.MainPlot = hMainPlot;
         subPlotPrms.OriginalPosition = subPlotPosition;
@@ -368,6 +372,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
                 subPlotData.data, data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
                 scale, 'intrad', prms.peripheralElectrodes, 'numcontour', prms.contours);
 
+        colormap(prms.colorMap);
         pace = linspace(min(scale), max(scale), 64);
         pace = pace(2) - pace(1);
         colorBar = colorbar('peer', gca, 'YTick', sort([0 scale]));
@@ -378,9 +383,8 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
 
         set(colorBar, 'visible', 'on');
         title(subPlotData.title, 'FontSize', 12, 'FontWeight', 'bold');
-
-        % Bring all open subplots to front
-        bringSubPlotsToFront(hMainPlot);
+        hFigure.CloseRequestFcn = {@WTPlotUtils.childObjectCloseRequestCb, 'MainPlot', 'OpenSubPlots'};
+        hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressBringSingleObjectToFrontCb, 'm', 'MainPlot'};
     catch me
         WTLog().except(me);
     end 

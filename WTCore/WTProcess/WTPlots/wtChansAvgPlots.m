@@ -108,7 +108,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
 
     wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
-    mainPlots = [];
+    hMainPlots = WTHandle(cell(1, nConditionsToPlot));
 
     try
         figureWHRatio = 4/3; 
@@ -138,11 +138,12 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
 
             % Create the figure
             hFigure = figure('Position', figuresPosition{cnd});
-            mainPlots(end+1) = hFigure;
+            hMainPlots.Value{cnd} = hFigure;
             colormap(colorMap);
             hFigure.NumberTitle = 'off'; 
             hFigure.Name = figureName;
             hFigure.ToolBar = 'none';
+            hFigure.UserData.MainPlots = hMainPlots;
             
             imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
                 interp2(squeeze(WTChansAvg(1, freqIdxs, timeIdxs)), 4, 'spline'));
@@ -194,6 +195,10 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
 
             % Set the callback to manage grid style change
             hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
+            % Set the callback to manage keys
+            hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
+                {@WTPlotUtils.onKeyPressBringObjectsToFrontCb, 'a', 'MainPlots.Value'}, ...
+                {@WTPlotUtils.onKeyPressCloseObjectsCb, 'q', 'MainPlots.Value'});
             wtLog.contextOff(); 
         end
     catch me
@@ -202,7 +207,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     end
 
     % Wait for all main plots to close
-    WTPlotUtils.waitUIs(mainPlots);
+    WTPlotUtils.waitUIs(mainPlots.Value);
     wtLog.info('Plotting done.');
 end
 

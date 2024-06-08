@@ -114,12 +114,13 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
     wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
-    mainPlots = [];
+    hMainPlots = WTHandle(cell(1, nConditionsToPlot));
 
     try
         figureWHRatio = 4/3; 
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        colorMap = WTPlotUtils.getPlotsColorMap();
 
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -136,10 +137,12 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
             figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
+            
             hFigure = figure('NumberTitle', 'off', ...
                 'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
 
-            mainPlots(cnd) = hFigure;
+            hMainPlots.Value{cnd} = hFigure;
+            hFigure.UserData.MainPlots = hMainPlots;
 
             % Convert the data back to non-log scale straight in percent change in case logFlag is set
             data.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
@@ -157,11 +160,21 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                     'headplot', data.WT, splineFile, 'meshfile', meshFile, ...
                     'electrodes', 'off', 'maplimits', plotsPrms.Scale, 'cbar', 0);
             end
+            
+            colormap(colorMap);
 
             set(get(hColorbar,'xlabel'), 'String', ...
                 xLabel.String, 'Rotation', xLabel.Rotation, 'FontSize', 12, ...
                 'FontWeight', 'bold', 'Position', [8 0.55]);
 
+            % Disable listeners that block figure callbacks udpate
+            hManager = uigetmodemanager(hFigure);
+            arrayfun(@(h)setfield(h, 'Enabled', 0), hManager.WindowListenerHandles);
+            % Set the callback to manage keys
+            hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
+                hFigure.WindowKeyPressFcn, ...
+                {@WTPlotUtils.onKeyPressBringObjectsToFrontCb, 'a', 'MainPlots.Value'}, ...
+                {@WTPlotUtils.onKeyPressCloseObjectsCb, 'q', 'MainPlots.Value'});
             wtLog.contextOff();
         end
     catch me
@@ -170,7 +183,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
 
     % Wait for all main plots to close
-    WTPlotUtils.waitUIs(mainPlots);
+    WTPlotUtils.waitUIs(hMainPlots.Value);
     wtLog.info('Plotting done.');
 end
 

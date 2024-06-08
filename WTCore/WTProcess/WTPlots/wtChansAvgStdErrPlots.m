@@ -100,7 +100,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
 
     wtLog.info('Plotting channels grand average & standard error...');
     wtLog.pushStatus().HeaderOn = false;
-    mainPlots = [];    
+    mainPlots = cell(1, 1);    
 
     try
         % The width / height ratio of the main figure
@@ -113,7 +113,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
 
         % Create the figure
         hFigure = figure('Position', figuresPosition{1});
-        mainPlots(end+1) = hFigure;
+        mainPlots{1} = hFigure;
         hFigure.NumberTitle = 'off'; 
         hFigure.Name = figureName;
         hFigure.ToolBar = 'none';

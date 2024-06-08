@@ -108,7 +108,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     nChannelsToPlot = numel(channelsToPlot);
     wtLog.info('Plotting grand average & standard error...');
     wtLog.pushStatus().HeaderOn = false;
-    mainPlots = [];    
+    mainPlots = cell(1, 1);    
         
     try
         % The annotation text's height which will appear on the top left corner
@@ -153,7 +153,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         % Create main plot figure
         figureName = sprintf('%s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
         hFigure = figure('Position', figuresPosition{1});
-        mainPlots(end+1) = hFigure;  
+        mainPlots{1} = hFigure;  
         hFigure.Name = figureName;
         hFigure.NumberTitle = 'off';
         hFigure.ToolBar = 'none';
@@ -237,8 +237,8 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
             hFigure.WindowButtonDownFcn = @mainPlotOnButtonDownCb;
             % Set the callback to resize/rearrange subplots 
             hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
-                {@WTPlotUtils.onKeyPressResizeObjectsCb, 'SubPlotsAxes', 'OriginalPosition'}, ...
-                {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'OpenSubPlots',  'OriginalPosition'});
+                {@WTPlotUtils.onKeyPressResizeObjectsCb, '-', '+', 'SubPlotsAxes', 'OriginalPosition'}, ...
+                {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'r', 'OpenSubPlots',  'OriginalPosition'});
             hFigure.WindowScrollWheelFcn = {@WTPlotUtils.onMouseScrollResizeObjectsCb, ...
                 'SubPlotsAxes', 'OriginalPosition'};
             % Set the callback to display sub plot lable when mouse hover on it
@@ -270,6 +270,8 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
     try
         prms = hMainPlot.UserData.onButtonDownCbPrms.Value;
         plotsPrms = prms.plotsPrms;
+        openSubPlots = hMainPlot.UserData.OpenSubPlots;
+        WTPlotUtils.bringObjectsToFront(openSubPlots);
 
         % Check if the click point falls into the axes extent, if not quit 
         [subPlotIdx, clickPosRelToAxes] = WTPlotUtils.getClickedSubObjectIndex(hMainPlot, hMainPlot.UserData.SubPlotAxesCenter);
@@ -283,7 +285,6 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         % Check if the subPlot figure is already open (already clicked on), if yes, just focus on it...
         % This prevent to reopen many times the same plot and so clutter the screen with no use.
         figureTag = prms.channelsLocations(subPlotIdx).labels;
-        openSubPlots = hMainPlot.UserData.OpenSubPlots;
         hFigure = openSubPlots(arrayfun(@(figure)strcmp(figure.Tag, figureTag), openSubPlots));
         if ~isempty(hFigure)
             figure(hFigure);
@@ -365,6 +366,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         hold('on');  
         % Set the callback to manage grid style change
         hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
+        hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressBringSingleObjectToFrontCb, 'm', 'MainPlot'};
     catch me
         WTLog().except(me);
     end  
