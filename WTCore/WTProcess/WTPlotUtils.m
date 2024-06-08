@@ -465,10 +465,10 @@ classdef WTPlotUtils
         %  - function cbC(hObject, event)
         %  - ...
         function cb = composeGraphicCallbacks(varargin)
-            nArgIn = nargin;
+            nArgsIn = nargin;
 
             function cb_(hObject, event) 
-                for i = 1:nArgIn
+                for i = 1:nArgsIn
                     try
                         if iscell(varargin{i})
                             cbDef = varargin{i};

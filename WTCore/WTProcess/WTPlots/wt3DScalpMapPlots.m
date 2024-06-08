@@ -175,6 +175,12 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 hFigure.WindowKeyPressFcn, ...
                 {@WTPlotUtils.onKeyPressBringObjectsToFrontCb, 'a', 'MainPlots.Value'}, ...
                 {@WTPlotUtils.onKeyPressCloseObjectsCb, 'q', 'MainPlots.Value'});
+            % Not much sure about deleting the global key management, but it interferes otherwise...
+            hFigure.KeyPressFcn = [];
+            hFigure.KeyReleaseFcn = [];
+            % Enable listeners
+            arrayfun(@(h)setfield(h, 'Enabled', 1), hManager.WindowListenerHandles);
+
             wtLog.contextOff();
         end
     catch me
