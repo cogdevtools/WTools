@@ -55,18 +55,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         end
 
         function [colorMap, valid] = validColorMap(colorMap, throwExcpt)
-            % colormap needs a figure or it will open one
-            hFigure = figure('Visible', 'off');
-            oldColorMap = colormap();
-            try
-                colormap(colorMap);
-                valid = true;   
-            catch
-                valid = false;      
-            end
-            colormap(oldColorMap);
-            delete(hFigure);
-            if ~valid
+            if ~WTGraphicUtils.isValidColorMap(colorMap)
                 excp = WTException.badValue('Not a valid colormap: ''%s''', colorMap);
                 WTCodingUtils.throwOrLog(excp, ~throwExcpt);
             end
