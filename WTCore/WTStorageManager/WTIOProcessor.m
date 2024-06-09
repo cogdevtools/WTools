@@ -78,7 +78,7 @@ classdef WTIOProcessor < handle
 
         function success = writeTxtFile(dir, file, varargin) 
             fName = fullfile(dir, file);
-            success = WTIOUtils.writeTxtFile(dir, file, 'wt', varargin{:});
+            success = WTIOUtils.writeTxtFile(dir, file, 'wt', 'UTF-8', varargin{:});
             if ~success 
                 WTLog().err('Failed to write file ''%s''', fName);
             end

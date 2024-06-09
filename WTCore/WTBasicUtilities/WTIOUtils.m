@@ -86,10 +86,43 @@ classdef WTIOUtils
             response = exist(dirName, 'dir');
         end
 
-        function success = writeTxtFile(dirName, fileName, mode, varargin)
+        function [txt, success] = readTxtFile(dirName, fileName, encoding, chunkSize)
+            chunkSize = WTCodingUtils.ifThenElse(nargin > 3, @()chunkSize, 10000);
+            success = false;
+            wtLog = WTLog();
+            txt = [];
+            closeFile = @WTCodingUtils.nop;
+
+            try
+                fullName = WTCodingUtils.ifThenElse(isempty(dirName), fileName, @()fullfile(dirName, fileName));
+                file = fopen(fullName, 'r', 'native', encoding);
+                if file < 0
+                    wtLog.err('Failed to open file for read: ''%s''', fileName);
+                    return
+                end
+                closeFile =  @()fclose(file);
+                while true
+                    [txtChunk, n] = fread(file, chunkSize, 'char');
+                    txt = [txt char(txtChunk)'];
+                    if n < chunkSize
+                        break
+                    end
+                end
+                success = true;
+            catch me
+                wtLog.except(me);
+                wtLog.err('Failed to read txt file: ''%s''', fileName);
+                txt = [];
+            end
+
+            closeFile();
+        end
+
+        function success = writeTxtFile(dirName, fileName, mode, encoding, varargin)
             success = false;
             fullName = [];
             wtLog = WTLog();
+            closeFile = @WTCodingUtils.nop;
 
             try
                 if nargin < 4
@@ -99,18 +132,20 @@ classdef WTIOUtils
                     wtLog.err('Failed to make dir ''%s''', dirName);
                     return
                 end
-                fullName = fullfile(dirName, fileName);
-                file = fopen(fullName, mode, 'native', 'UTF-8');
-                if file >= 0 
+                fullName = WTCodingUtils.ifThenElse(isempty(dirName), fileName, @()fullfile(dirName, fileName));
+                file = fopen(fullName, mode, 'native', encoding);
+                if file >= 0
+                    closeFile = @()fclose(file); 
                     varargin = cellfun(@(a)WTCodingUtils.ifThenElse(iscell(a), char(join(a, '\n')), a), varargin, 'UniformOutput', false);
                     text = join(varargin, '\n');
                     fprintf(file, strcat(text{1}, newline));
-                    fclose(file);
                     success = true;
                 end
             catch me
                 wtLog.except(me);
             end
+
+            closeFile();
 
             if ~success 
                 wtLog.err('Failed to write text to file ''%s''', WTCodingUtils.ifThenElse(isempty(fullName), '<?>', fullName));
@@ -237,6 +272,15 @@ classdef WTIOUtils
                 [dir, module, ~] = fileparts(fileName);
                 [success, varargout{:}] = WTIOUtils.readModule(dir, module, varargin{:});
             end
+        end
+
+        function jsonText = jsonEncodePrettyPrint(varargin)
+            try
+                jsonText = jsonencode(varargin{:}, 'PrettyPrint', true);
+                return
+            catch
+            end
+            jsonText = jsonencode(varargin{:});
         end
     end
 end

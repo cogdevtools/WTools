@@ -126,7 +126,11 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
             throwExcpt = nargin > 1 && throwExcpt;
             success = true;
             try
-                jsonText = fileread(o.ConfigFile, 'Encoding', 'UTF-8');
+                [jsonText, success] = WTIOUtils.readTxtFile([], o.ConfigFile, 'UTF-8');
+                if ~success 
+                    WTException.ioErr('Failed to read application configuration').throw();
+                end
+
                 data = jsondecode(jsonText);
                 c = copy(o);
 
@@ -174,8 +178,10 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
                 data.(o.FldMuteStdLog) = o.MuteStdLog;
                 data.(o.FldProjectLog) = o.ProjectLog;
                 data.(o.FldColorizedLog) = o.ColorizedLog;
-                jsonText = jsonencode(data, 'PrettyPrint', true);
-                writelines(jsonText, o.ConfigFile, 'Encoding', 'UTF-8');
+                jsonText = WTIOUtils.jsonEncodePrettyPrint(data);
+                if ~WTIOUtils.writeTxtFile([], o.ConfigFile, 'wt', 'UTF-8', jsonText)
+                    WTException.ioErr('Failed to write application configuration').throw();
+                end
                 success = true;
             catch me
                 WTLog().except(me);

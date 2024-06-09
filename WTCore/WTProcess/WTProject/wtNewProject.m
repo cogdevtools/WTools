@@ -18,7 +18,8 @@ function success = wtNewProject
         end
     end
 
-    prjParentDir = WTDialogUtils.uiGetDir('.', 'Select the project parent directory...');
+    prjParentDir = WTDialogUtils.uiGetDir('.', 'Select the project parent directory...', ... 
+        'excludeDirs', ['^' regexptranslate('escape', WTLayout.getToolsDir())]);
     if ~ischar(prjParentDir)
         return
     end

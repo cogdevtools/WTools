@@ -1,6 +1,9 @@
 classdef WTCodingUtils
 
     methods(Static)
+        function nop(varargin)
+        end
+        
         % argsName() returns the names of argument passed on as a cell array of strings.
         function cells = argsName(varargin) 
             cells = cellfun(@inputname, num2cell(1:nargin), 'UniformOutput', false);

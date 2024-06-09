@@ -1,7 +1,9 @@
 function success = wtOpenProject
     success = false;
 
-    prjPath = WTDialogUtils.uiGetDir('.', 'Select the project directory...');
+    prjPath = WTDialogUtils.uiGetDir('.', 'Select the project directory...' ...
+        'excludeDirs', ['^' regexptranslate('escape', WTLayout.getToolsDir())]);
+        
     if ~ischar(prjPath)
         return
     end

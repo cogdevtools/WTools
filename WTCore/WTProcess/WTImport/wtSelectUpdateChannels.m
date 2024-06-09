@@ -8,7 +8,8 @@ function success = wtSelectUpdateChannels(system)
     fileExt = ['*.' WTIOProcessor.getSystemChansLocationFileExtension(system)];
     selectionFlt = fullfile(ioProc.ImportDir, fileExt);
     [chanLocFile, ~, ~] = WTDialogUtils.uiGetFiles(selectionFlt, -1, -1, 'Select channels location file', ...
-        'MultiSelect', 'off', 'restrictToDirs', ['^' WTLayout.getDevicesDir() ], WTLayout.getDevicesDir());
+        'MultiSelect', 'off', 'restrictToDirs',  ['^' regexptranslate('escape', WTLayout.getDevicesDir()) ], ...
+        WTLayout.getDevicesDir());
     if isempty(chanLocFile) 
         wtLog.warn('No channel location file selected');
         return
@@ -16,7 +17,8 @@ function success = wtSelectUpdateChannels(system)
 
     selectionFlt = fullfile(ioProc.ImportDir, ioProc.SplineFileTypeFlt);
     [splineFile, ~, ~] = WTDialogUtils.uiGetFiles(selectionFlt, -1, -1, 'Select spline file', ...
-        'MultiSelect', 'off', 'restrictToDirs', ['^' WTLayout.getDevicesDir() ], WTLayout.getDevicesDir());
+        'MultiSelect', 'off', 'restrictToDirs',  ['^' regexptranslate('escape', WTLayout.getDevicesDir()) ], ...
+        WTLayout.getDevicesDir());
     if isempty(splineFile) 
         wtLog.warn('No spline file selected');
         return

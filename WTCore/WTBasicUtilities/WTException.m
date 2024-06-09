@@ -9,6 +9,7 @@ classdef WTException < MException
         MissingValue        = 'MissingValue'
         IncompatibleValues  = 'IncompatibleValues'
         IOArgsMismatch      = 'IOArgsMismatch'
+        IOErr               = 'IOError'
         MissingArg          = 'MissingArg'
         BadArg              = 'BadArg'
         BadArgType          = 'BadArgType'
@@ -70,6 +71,10 @@ classdef WTException < MException
 
         function e = ioArgsMismatch(msg, varargin)
             e = WTException(WTException.IOArgsMismatch, msg, varargin{:});
+        end
+
+        function e = ioError(msg, varargin)
+            e = WTException(WTException.IOErr, msg, varargin{:});
         end
 
         function e = missingArg(msg, varargin)

@@ -20,7 +20,7 @@ classdef WTPlotsGUI
                 rootSelectionDir = WTCodingUtils.ifThenElse(averageOnly, ioProc.GrandAvgDir, ioProc.AnalysisDir);
                 
                 [fileNames, filesPath, ~] = WTDialogUtils.uiGetFiles(fileFilter, -1, maxFilesNum, title, ...
-                    'MultiSelect', 'on', 'restrictToDirs', ['^' rootSelectionDir], rootSelectionDir);
+                    'MultiSelect', 'on', 'restrictToDirs',  ['^' regexptranslate('escape', rootSelectionDir)], rootSelectionDir);
                 if isempty(fileNames) 
                     wtProject.notifyWrn([], 'No files to plot selected');
                     return
