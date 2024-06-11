@@ -178,8 +178,8 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
         cursor = 0;
 
         for sbj = 1:nSubjects
-            wtLog.info('Processing subject %s', subjectsList{sbj});
-            subject = subjectsList{1};
+            subject = subjectsList{sbj};
+            wtLog.info('Processing subject %s', subject);
             statsData = cell(1, nConditions);
             wtLog.contextOn();
 
