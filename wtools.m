@@ -585,7 +585,7 @@ function varargout = wtools(varargin)
         wtLog.contextOn('Help');
         updateApplicationStatus(hObject, handles, true);
         try
-            web('https://github.com/cogdevtools/WTools/wiki/WTools-tutorial', '-browser')
+            web('https://github.com/cogdevtools/WTools/wiki/WTools-Tutorial-v2.0', '-browser')
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to show help');
