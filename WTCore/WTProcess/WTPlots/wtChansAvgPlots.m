@@ -207,7 +207,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     end
 
     % Wait for all main plots to close
-    WTPlotUtils.waitUIs(mainPlots.Value);
+    WTPlotUtils.waitUIs(hMainPlots.Value);
     wtLog.info('Plotting done.');
 end
 
