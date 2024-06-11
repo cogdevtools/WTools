@@ -218,7 +218,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
                 hFigure.UserData.SubPlotsAxes = [hFigure.UserData.SubPlotsAxes hSubPlotAxes];
                 hold('on');        
                 imagesc(squeeze(prms.WT(channelsToPlotIdxs(chn), freqIdxs, timeIdxs)));
-                clim(plotsPrms.Scale);
+                caxis(plotsPrms.Scale);
                 axis('off');
                 text(0, 0, channelLabel, 'FontSize', 8, 'FontWeight', 'bold');
                 hold('off');   
@@ -331,7 +331,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
                     squeeze(prms.WT(subPlotIdx, prms.freqIdxs, prms.timeIdxs)), 'k');
         end
 
-        clim(plotsPrms.Scale);
+        caxis(plotsPrms.Scale);
         xConst = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 200;
         xPace = (plotsPrms.TimeMax - plotsPrms.TimeMin) / xConst;
         xTick = plotsPrms.TimeMin : xPace : plotsPrms.TimeMax;

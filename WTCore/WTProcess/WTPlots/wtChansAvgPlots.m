@@ -156,7 +156,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
                         squeeze(WTChansAvg(1, freqIdxs, timeIdxs)), 'k');
             end
 
-            clim(plotsPrms.Scale);
+            caxis(plotsPrms.Scale);
             xConst = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 200;
             xPace = (plotsPrms.TimeMax - plotsPrms.TimeMin) / xConst;
             xTick = plotsPrms.TimeMin : xPace : plotsPrms.TimeMax;
