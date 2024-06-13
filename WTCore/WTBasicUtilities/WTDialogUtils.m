@@ -73,7 +73,7 @@ classdef WTDialogUtils
                 else 
                     retDir = uigetdir(startPath);
                 end
-                if isempty(retDir)
+                if ~ischar(retDir)
                     return
                 end
                 if ~isempty(excludeDirs) && ...

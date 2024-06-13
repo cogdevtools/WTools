@@ -33,7 +33,7 @@ classdef WTIOProcessor < handle
         PerSbjGrandAvgFileExt = '.ss'
         SubjIdRe = '^\d+$'
         SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTCodingUtils.ifThenElse(ispc, '\\','/'));
-        EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment(?<segment>\d+)$'
+        EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment[^0-9]*(?<segment>\d+)$'
         BaselineCorrectedFileNameRe = ['^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+)(?:\' ...
             WTIOProcessor.GrandAvgFileExt '|\' WTIOProcessor.PerSbjGrandAvgFileExt ')$'] 
     end

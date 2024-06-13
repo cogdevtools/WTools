@@ -44,13 +44,13 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     logTransform = cwtParams.LogarithmicTransform;
     evokedOscillations = cwtParams.EvokedOscillations;
 
-    dt = cwtParams.TimeRes;
+    dt = double(cwtParams.TimeRes);
     fb = double(cwtParams.WaveletsCycles)/2;
     Fs = EEG.srate/dt;
     X = double(EEG.data);
     chanlocs = EEG.chanlocs;
     Fc = 1;
-    scales = Fc*Fs./Fa;
+    scales = Fc*Fs./double(Fa);
     nEpochs = size(X,3);
     nChans = length(chansToAnalyse);
     ITPC = 0;

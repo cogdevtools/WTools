@@ -5,5 +5,5 @@
     "ProjectLogLevel": "INFO",
     "MuteStdLog": false,
     "ProjectLog": true,
-    "ColorizedLog": false
+    "ColorizedLog": true
 }

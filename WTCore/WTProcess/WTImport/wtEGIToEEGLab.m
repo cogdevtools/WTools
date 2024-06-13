@@ -69,10 +69,18 @@ function success = wtEGIToEEGLab()
         end
 
         try
+            wtLog.warn('Attempt to import data in EEGLab: IGNORE any possible reported error');
+            success = false;
             eeg_getversion(); % Introduced in EEGLAB v9.0.0.0b
             fileToImport = ioProc.getImportFile(subjFileName);
-            deleteFileToImport = false;
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_importegimat', ...
+                fileToImport, samplingPrms.SamplingRate, EGI2EEGLabPrms.TriggerLatency);
         catch
+        end
+
+        if ~success
+            wtLog.warn('Attempt to import data in EEGLab FAILED. Ignore previous error. Proceeding with data fixing...');
+
             [success, data] = filterAndRenameDataFields(subjFileName); 
             if ~success 
                 wtLog.popStatus();
@@ -80,19 +88,16 @@ function success = wtEGIToEEGLab()
             end
             
             fileToImport = ioProc.getTemporaryFile();
-            deleteFileToImport = true;
 
             if ~WTIOUtils.saveTo([], fileToImport, '-struct', 'data')
-                wtProject.notifyErr([], 'Failed to save temporary data file with trial ajustments (%s)', subjFileName)
+                wtProject.notifyErr([], 'Failed to save temporary data file with trial ajustments (%s)', subjFileName);
                 wtLog.popStatus();
                 return
             end
-        end
 
-        [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_importegimat', ...
-            fileToImport, samplingPrms.SamplingRate, EGI2EEGLabPrms.TriggerLatency);
-
-        if deleteFileToImport
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_importegimat', ...
+                fileToImport, samplingPrms.SamplingRate, EGI2EEGLabPrms.TriggerLatency);
+            
             wtLog.dbg('Deleting temporary adjusted import file ''%s''', fileToImport);
             delete(fileToImport);
         end
@@ -223,22 +228,25 @@ function success = setMinMaxTrialId()
     success = true;
 end
 
+% Rename trials in continous way to avoid premature import stop in EEGLAB old versions
 function [success, dataOut] = filterAndRenameDataFields(subjFileName)
     wtProject = WTProject();
     wtLog = WTLog();
     ioProc = wtProject.Config.IOProc;
     dataOut = struct();
+    wtLog.pushStatus().contextOn('TrialsAdjustment');
 
     try
         wtLog.info('Import file needs trial adjustment...');
+        wtLog.HeaderOn = false;
 
         [success, data] = ioProc.loadImport(WTIOProcessor.SystemEGI, subjFileName);
         if ~success 
             wtProject.notifyErr([], 'Failed to read subject data from %s', subjFileName);
+            wtLog.popStatus();
             return
         end
 
-        ioProc = wtProject.IOProc;
         selectedConditions = wtProject.Config.Conditions.ConditionsList;
         minMaxTrialIdPrms = wtProject.Config.MinMaxTrialId;
         minMaxTrialIdPrms = minMaxTrialIdPrms.interpret();
@@ -248,44 +256,48 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
         minTrial = minMaxTrialIdPrms.MinTrialId;
         maxTrial = minMaxTrialIdPrms.MaxTrialId;
 
-        data = orderfields(data);
+        % fields should be normally ordered and we keep the same order
         dataFields = fieldnames(data);
         % find the <condition>_Segment<#> fields
         reResult = regexp(dataFields, ioProc.EGIConditionSegmentFldRe, 'once', 'tokens');
         selected = ~cellfun(@isempty, reResult); 
         selectedIdxs = find(selected);
         % extract conditions name
-        matches = reResult(selection);
+        matches = reResult(selected);
         cndSeg = cat(1, matches{:});  % {{'cnd'}, {'seg'}}
         conditions = unique(cndSeg(:,1));
         % create a counters for each condition
         counters = cell2struct(repmat({zeros(1)}, 1, length(conditions)), conditions, 2);
         
         for i = 1:length(selectedIdxs)
-            fldIdx = idxs(i);
+            fldIdx = selectedIdxs(i);
             cndName = reResult{fldIdx}{1};
             if ~any(strcmp(cndName, selectedConditions)) % ignore unselected conditions
                 continue
             end
             segNum = WTNumUtils.str2double(reResult{fldIdx}{2});
-            if ~allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of rangre
-                % not sure why when allTrials we should rename fields...
+            if allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of ranre
                 continue
             end
-            cndName = reResult{fldIdx}{1};
-            newSegNum = counters.(fldName)+1;
+            newSegNum = counters.(cndName)+1;
             counters.(cndName) = newSegNum;
             newFieldName = [cndName '_Segment' num2str(newSegNum)];
             dataOut.(newFieldName) = data.(dataFields{fldIdx});
+            wtLog.dbg('Renamed data field %s => %s', dataFields{fldIdx}, newFieldName);
         end
 
-        invariantFields = char(dataFields(~selected));
-        dataOut.(invariantFields) = data.(invariantFields);
+        invariantFields = dataFields(~selected);
+        for i = 1:length(invariantFields)
+            dataOut.(invariantFields{i}) = data.(invariantFields{i});
+            wtLog.dbg('Preserved data field %s', invariantFields{i});
+        end
     catch me
         wtLog.except(me);
         wtProject.notifyErr([], 'Failed to perform trial ajustments (%s)', subjFileName);
         success = false;
     end
+
+    wtLog.popStatus();
 end
 
 
