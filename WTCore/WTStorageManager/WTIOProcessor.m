@@ -351,16 +351,16 @@ classdef WTIOProcessor < handle
             [fName, fileExist] = WTIOProcessor.exist(shouldExist, o.ConfigDir, cfgFile);
         end
 
-        function [fullPath, filePath] = getTemporaryFile(o, fileName, extension)
+        function [fullPath, filePath] = getTemporaryFile(o, fileNamePrefix, fileNamePostfix)
             filePath = o.TemporaryDir;
-            if nargin < 2 || isempty(fileName)
-                fullPath = tempname(filePath);
-            else
-                fullPath = fullfile(filePath, fileName);
+            if nargin < 2 
+                fileNamePrefix = '';
             end
-            if nargin > 2 
-                filePath = [filePath extension];
+            if nargin < 3 
+                fileNamePostfix = '';
             end
+            fileName = [fileNamePrefix WTIOUtils.getPathTail(tempname('.')) fileNamePostfix];
+            fullPath = fullfile(filePath, fileName);
         end  
 
         % In this case fileName can be either scalar or a cell array of strings

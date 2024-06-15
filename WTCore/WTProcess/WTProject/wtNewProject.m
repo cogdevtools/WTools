@@ -6,7 +6,7 @@ function success = wtNewProject
     while true 
         prms = { { 'style' 'text' 'string' 'New project name:' } ...
                  { 'style' 'edit' 'string' prjName } };
-        answer = WTEEGLabUtils.eeglabInputMask( 'geometry', { [1 2] }, 'uilist', prms, 'title', '[WTools] Set project name');
+        answer = WTEEGLabUtils.eeglabInputMask( 'geometry', { [1 2] }, 'uilist', prms, 'title', 'Set project name');
 
         if isempty(answer)
             return 

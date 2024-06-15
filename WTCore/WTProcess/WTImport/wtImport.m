@@ -10,17 +10,17 @@ function success = wtImport(forceCopy)
 
     nCopied = 0;
 
-    if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Do you need to copy source system data files?')
+    if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Do you need to copy new source data files?')
         nCopied = wtCopyData();
         if nCopied == 0 && ...
-            ~WTEEGLabUtils.eeglabYesNoDlg('Import', 'No files were copied. Continue?')
+            ~WTEEGLabUtils.eeglabYesNoDlg('Import', 'No new files were copied. Continue with the import?')
             return
         end
     end
 
     if wtProject.checkWaveletAnalysisDone(true)
         if nCopied == 0 && ~WTEEGLabUtils.eeglabYesNoDlg('Import', ...
-            'An analysis has been already performed on the current imported data. Continue?')
+            'An analysis has been already performed on the current imported data. Proceed anyway?')
             return
         end 
         if ~WTEEGLabUtils.eeglabYesNoDlg('Import', ...

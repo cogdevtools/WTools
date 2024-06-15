@@ -76,12 +76,18 @@ classdef WTEEGLabUtils
                 WTException.eeglabDependency('Can''t find ''inputgui.m''').throw();
             end
             varargout = cell(nargout,1);
+            % Update title if defined
+            for i = 1:nargin
+                if ischar(varargin{i}) && strcmpi(varargin{i}, 'title') && nargin > i && ischar(varargin{i+1})
+                    varargin{i+1} = [ WTDialogUtils.WToolsDialogTitlePrefix ' ' varargin{i+1}];
+                    break
+                end
+            end
             [varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'inputgui', varargin{:});
         end
 
         function varargout = eeglabMsgDlg(title, fmt, varargin)
             varargout = cell(nargout,1);
-            tit = sprintf('[WTools] %s', title);
             msg = sprintf(fmt, varargin{:});
             msg = strrep(msg, '\n', newline);
             prms = splitlines(msg)';
@@ -92,7 +98,7 @@ classdef WTEEGLabUtils
                 geom{i} = 1;
             end
             try
-                [varargout{:}] = WTEEGLabUtils.eeglabInputMask('geometry', geom, 'uilist', prms, 'title', tit);
+                [varargout{:}] = WTEEGLabUtils.eeglabInputMask('geometry', geom, 'uilist', prms, 'title', title);
             catch
                 WTLog().err('Failed to display on GUI the following msg:\n\nTitle: %s\nMessage: %s', title, msg);
             end

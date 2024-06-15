@@ -76,7 +76,7 @@ classdef WTAppConfigGUI
 
             while ~success
                 parameters = setParameters(answer);
-                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'WTools configuration');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Configuration');
                 
                 if isempty(answer)
                     wtAppConfig = [];

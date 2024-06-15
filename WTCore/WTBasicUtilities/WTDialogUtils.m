@@ -1,6 +1,14 @@
 classdef WTDialogUtils 
 
+    properties (Constant, Hidden, Access=public)
+        WToolsDialogTitlePrefix = '[WTools]'
+    end
+
     methods (Static, Access=private)
+
+        function title = formatTitle(title) 
+            title = [WTDialogUtils.WToolsDialogTitlePrefix ' ' title];
+        end
 
         function [options, msg] = setDlgOptions(fontSize, fmt, varargin)
             options = struct();
@@ -22,28 +30,28 @@ classdef WTDialogUtils
 
         function hlpDlg(title, fmt, varargin)
             [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
-            uiwait(helpdlg(text, strcat('[WTools] ', title), options));
+            uiwait(helpdlg(text, WTDialogUtils.formatTitle(title), options));
         end
 
         function errDlg(title, fmt, varargin)
             [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
-            uiwait(errordlg(text, strcat('[WTools] ', title), options));
+            uiwait(errordlg(text, WTDialogUtils.formatTitle(title), options));
         end
 
         function wrnDlg(title, fmt, varargin)
             [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
-            uiwait(warndlg(text, strcat('[WTools] ', title), options));
+            uiwait(warndlg(text, WTDialogUtils.formatTitle(title), options));
         end
 
         function msgBox(title, fmt, varargin)
             [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
-            uiwait(msgbox(text, strcat('[WTools] ', title), options));
+            uiwait(msgbox(text, WTDialogUtils.formatTitle(title), options));
         end
         
         function choice = askDlg(title, fmt, fmtArgs, choices, defaultchoice)
             [options, text] = WTDialogUtils.setDlgOptions(14, fmt, fmtArgs{:});
             options.Default = defaultchoice;
-            choice = questdlg(text, strcat('[WTools] ', title), choices{:}, options);
+            choice = questdlg(text, WTDialogUtils.formatTitle(title), choices{:}, options);
         end
 
         function msgBoxIf(cnd, title, fmt, varargin)

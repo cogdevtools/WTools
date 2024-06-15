@@ -87,7 +87,8 @@ function success = wtEGIToEEGLab()
                 return
             end
             
-            fileToImport = ioProc.getTemporaryFile();
+            fileToImport = ioProc.getTemporaryFile('', subjFileName);
+            wtLog.info('Creating temporary file to adjust import data: ''%s''', fileToImport);
 
             if ~WTIOUtils.saveTo([], fileToImport, '-struct', 'data')
                 wtProject.notifyErr([], 'Failed to save temporary data file with trial ajustments (%s)', subjFileName);
@@ -98,7 +99,7 @@ function success = wtEGIToEEGLab()
             [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_importegimat', ...
                 fileToImport, samplingPrms.SamplingRate, EGI2EEGLabPrms.TriggerLatency);
             
-            wtLog.dbg('Deleting temporary adjusted import file ''%s''', fileToImport);
+            wtLog.info('Deleting temporary file created to adjust import data: ''%s''', fileToImport);
             delete(fileToImport);
         end
 
