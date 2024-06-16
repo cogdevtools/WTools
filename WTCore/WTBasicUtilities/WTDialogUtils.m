@@ -10,18 +10,26 @@ classdef WTDialogUtils
             title = [WTDialogUtils.WToolsDialogTitlePrefix ' ' title];
         end
 
-        function [options, msg] = setDlgOptions(fontSize, fmt, varargin)
+        function [options, msg] = setDlgOptions(fmt, varargin)
             options = struct();
             options.Resize = 'on';
             options.Interpreter = 'tex';
             options.WindowStyle = 'modal';
+            if ismac()
+                fontSize = 14;
+                fontName = 'Helvetica';
+            else
+                fontSize = 12;
+                fontName = 'MS Sans Serif';
+            end
+            fontNameFmt = sprintf('\\fontname{%s}', fontName);
             fontSizeFmt = sprintf('\\fontsize{%d}', fontSize);
             msg = WTCodingUtils.ifThenElse(isempty(varargin), fmt, @()sprintf(fmt, varargin{:}));
             % Escape Tex control chars + replace \n with newline. Note that the order of char counts:
             % The \ must be replaced before the other chars but after \n 
             msg = regexprep(msg, { '\\n',   '\\',   '\{' , '\}' , '\^'  }, ...
                                  { newline, '\\\\', '\\{', '\\}', '\\^' });
-            msg = [ fontSizeFmt  msg ];
+            msg = [ fontNameFmt fontSizeFmt  msg ];
         end
 
     end
@@ -29,27 +37,27 @@ classdef WTDialogUtils
     methods(Static)
 
         function hlpDlg(title, fmt, varargin)
-            [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
+            [options, text] = WTDialogUtils.setDlgOptions(fmt, varargin{:});
             uiwait(helpdlg(text, WTDialogUtils.formatTitle(title), options));
         end
 
         function errDlg(title, fmt, varargin)
-            [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
+            [options, text] = WTDialogUtils.setDlgOptions(fmt, varargin{:});
             uiwait(errordlg(text, WTDialogUtils.formatTitle(title), options));
         end
 
         function wrnDlg(title, fmt, varargin)
-            [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
+            [options, text] = WTDialogUtils.setDlgOptions(fmt, varargin{:});
             uiwait(warndlg(text, WTDialogUtils.formatTitle(title), options));
         end
 
         function msgBox(title, fmt, varargin)
-            [options, text] = WTDialogUtils.setDlgOptions(14, fmt, varargin{:});
+            [options, text] = WTDialogUtils.setDlgOptions(fmt, varargin{:});
             uiwait(msgbox(text, WTDialogUtils.formatTitle(title), options));
         end
         
         function choice = askDlg(title, fmt, fmtArgs, choices, defaultchoice)
-            [options, text] = WTDialogUtils.setDlgOptions(14, fmt, fmtArgs{:});
+            [options, text] = WTDialogUtils.setDlgOptions(fmt, fmtArgs{:});
             options.Default = defaultchoice;
             choice = questdlg(text, WTDialogUtils.formatTitle(title), choices{:}, options);
         end

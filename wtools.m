@@ -173,6 +173,11 @@ function varargout = wtools(varargin)
             hObject.UserData.BailOut = true;
             return
         end
+        if ismac() 
+            WTGraphicUtils.recursivePropertySet(hObject, ...
+                'FontName', 'Helvetica', ...
+                'FontSize', 12);
+        end
 
     % --- Executes during object deletion, before destroying properties.
     function WTools_DeleteFcn(hObject, eventdata, handles)
@@ -202,7 +207,7 @@ function varargout = wtools(varargin)
         if ~success
             return
         end
-        option = WTDialogUtils.askDlg('Confirm', 'Sure to quit?', {}, {'Continue', 'Quit'}, 'Continue');
+        option = WTDialogUtils.askDlg('Confirm', 'Do you really want to quit WTools?', {}, {'Continue', 'Quit'}, 'Continue');
         unlock(hObject, handles);
         if strcmp(option, 'Continue')
             return
@@ -219,7 +224,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('NEW PROJECT');
+        wtProject = WTProject().newContext('New project');
         wtLog.contextOn('NewProject');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -245,7 +250,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('OPEN PROJECT');
+        wtProject = WTProject().newContext('Open Project');
         wtLog.contextOn('OpenProject');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -271,7 +276,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('DATA IMPORT');
+        wtProject = WTProject().newContext('Data Import');
         wtLog.contextOn('Import');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -294,7 +299,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('SUBJECTS MANAGER');
+        wtProject = WTProject().newContext('Subjects manager');
         wtLog.contextOn('SubjectsManager');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -318,7 +323,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('TIME/FREQ ANALYSIS');
+        wtProject = WTProject().newContext('Time/Freq analysis');
         wtLog.contextOn('TimeFreqAnalysis');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -342,7 +347,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('BASELINE/CHOPPING');
+        wtProject = WTProject().newContext('Baseline/Chopping');
         wtLog.contextOn('Baseline/Chopping');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -365,7 +370,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('CONDITIONS DIFFERENCE');
+        wtProject = WTProject().newContext('Conditions difference');
         wtLog.contextOn('ConditionsDifference');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -388,7 +393,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('SUBJECTS GRAND AVERAGE');
+        wtProject = WTProject().newContext('Subjects grand average');
         wtLog.contextOn('SubjectsGrandAverage');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -412,7 +417,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('AVERAGE PLOTS');
+        wtProject = WTProject().newContext('Average plots');
         wtLog.contextOn('AveragePlots');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -435,7 +440,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('CHANNELS AVERAGE PLOTS');
+        wtProject = WTProject().newContext('Channels average plots');
         wtLog.contextOn('ChannelsAveragePlots');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -458,7 +463,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('AVERAGE WITH STDERR PLOTS');
+        wtProject = WTProject().newContext('Average with StdErr plots');
         wtLog.contextOn('AveragePlotsWithStdError');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -481,7 +486,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('CHANNELS AVERAGE WITH STDERR PLOTS');
+        wtProject = WTProject().newContext('Channels average with StdErr plots');
         wtLog.contextOn('ChannelsAveragePlotsWithStdError');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -504,7 +509,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('2D SCALP MAP PLOTS');
+        wtProject = WTProject().newContext('2D scalp map plots');
         wtLog.contextOn('TwoDimensionalScalpMapPlots');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -527,7 +532,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('3D SCALP MAP PLOTS');
+        wtProject = WTProject().newContext('3D scalp map plots');
         wtLog.contextOn('3DScalpMapPlots');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -550,7 +555,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('EXPORT STATISTICS');
+        wtProject = WTProject().newContext('Export statistics');
         wtLog.contextOn('ExportStatistics');
         updateApplicationStatus(hObject, handles, true);
         try
@@ -581,7 +586,7 @@ function varargout = wtools(varargin)
             return
         end
         wtLog = WTLog();
-        wtProject = WTProject().newContext('HELP');
+        wtProject = WTProject().newContext('Help');
         wtLog.contextOn('Help');
         updateApplicationStatus(hObject, handles, true);
         try

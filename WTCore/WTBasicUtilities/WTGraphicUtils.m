@@ -44,5 +44,27 @@ classdef WTGraphicUtils
             colorMapsInternal = colorMapsInternal(1:nValid);
             colorMaps = colorMapsInternal;
         end
+
+        % Recusively set the properties defined in varargin for handle and all
+        % the children handles. 
+        % Ex: recursivePropertySet(h, 'FontName', 'Helvetica', 'FontSize', 10)
+        function recursivePropertySet(handle, varargin)
+            function trySetProperty(handle, property, value)
+                try 
+                    set(handle, property, value); 
+                catch 
+                end
+            end
+            if ~isscalar(handle)
+                for i = 1:length(handle)
+                    WTGraphicUtils.recursivePropertySet(handle(i), varargin{:}); 
+                end
+            elseif ~isempty(handle) && isvalid(handle) 
+                for i = 0:(nargin-1)/2-1
+                    trySetProperty(handle, varargin{i*2+1}, varargin{i*2+2}); 
+                end
+                WTGraphicUtils.recursivePropertySet(allchild(handle), varargin{:})
+            end
+        end
     end
 end
