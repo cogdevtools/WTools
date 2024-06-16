@@ -94,7 +94,7 @@ classdef WTDialogUtils
                 end
                 if ~isempty(excludeDirs) && ...
                     any(cell2mat(cellfun(@(d)~isempty(regexp(retDir, char(d), 'once')), excludeDirs, 'UniformOutput', false)))
-                    WTDialogUtils.wrnDlg('', 'Only select directories not matching the following regexp(s):\n\n  - %s', char(join(excludeDirs,'\n  - ')));
+                    WTDialogUtils.wrnDlg('', 'Only select directories not matching the following regular expression(s):\n\n  - %s', char(join(excludeDirs,'\n  - ')));
                     continue
                 end
                 break
@@ -133,7 +133,7 @@ classdef WTDialogUtils
                 end
                 if ~isempty(restrictToDirs) && ...
                    all(cell2mat(cellfun(@(d)isempty(regexp(filesDir, char(d), 'once')), restrictToDirs, 'UniformOutput', false)))
-                    WTDialogUtils.wrnDlg('', 'Only select files within the directories matching the following regexp(s):\n\n  - %s', char(join(restrictToDirs,'\n  - ')));
+                    WTDialogUtils.wrnDlg('', 'Only select files within the directories matching the following regular expression(s):\n\n  - %s', char(join(restrictToDirs,'\n  - ')));
                     continue
                 end
                 if minFiles > 0 && length(fileNames) < minFiles
