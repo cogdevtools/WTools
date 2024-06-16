@@ -20,7 +20,7 @@ function success = wtPerformCWT()
         if ~selectUpdateSubjectsGrand() || ~selectUpdateConditionsGrand()
             return
         end
-        if ~setUpdateTransformPrms(timeRange, maxFreq, maxChans)
+        if ~setTransformPrms(timeRange, maxFreq, maxChans)
             return
         end
     end
@@ -257,7 +257,7 @@ function [success, timeRange, maxFreq, maxChans] = getTransformDomain()
     maxChans = size(EEG.data, 1);
 end
 
-function success = setUpdateTransformPrms(timeRange, maxFreq, maxChans) 
+function success = setTransformPrms(timeRange, maxFreq, maxChans) 
     success = false;
     wtProject = WTProject();
 
