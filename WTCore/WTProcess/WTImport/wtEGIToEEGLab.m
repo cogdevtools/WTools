@@ -277,7 +277,7 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
                 continue
             end
             segNum = WTNumUtils.str2double(reResult{fldIdx}{2});
-            if allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of ranre
+            if allTrials && (segNum < minTrial || segNum > maxTrial) % ignore trials out of range
                 continue
             end
             newSegNum = counters.(cndName)+1;
