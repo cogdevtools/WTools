@@ -1,7 +1,7 @@
 
 function success = wtImport(forceCopy)
     success = false;
-    forceCopy = nargin > 1 && forceCopy;
+    forceCopy = nargin > 0 && forceCopy;
     wtProject = WTProject();
 
     if ~wtProject.checkIsOpen()
@@ -10,7 +10,7 @@ function success = wtImport(forceCopy)
 
     nCopied = 0;
 
-    if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Do you need to copy new source data files?')
+    if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Would you like to copy new source data files?')
         nCopied = wtCopyData();
         if nCopied == 0 && ...
             ~WTEEGLabUtils.eeglabYesNoDlg('Import', 'No new files were copied. Continue with the import?')
