@@ -10,19 +10,7 @@ classdef WTDifferenceGUI
             WTValidations.mustBeA(differencePrms, ?WTDifferenceCfg)
             WTValidations.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
             
-            answer = { 1, 1, 1, logFlag, evokFlag }; 
-            enableLog = 'off';
-            enableEvok ='off';
-
-            if differencePrms.exist()
-                answer{1} = differencePrms.Condition1;
-                answer{2} = differencePrms.Condition2;
-                answer{3} = differencePrms.ConditionsDiff;
-            end 
-
-            % Assign conditions and conditionsDiff to the base workspace to prevent errors of the gui
             conditions = conditionsGrandPrms.ConditionsList;
-            conditionsDiff = conditionsGrandPrms.ConditionsDiff;
             nConditions = length(conditions);
 
             if nConditions <= 1
@@ -30,12 +18,28 @@ classdef WTDifferenceGUI
                 return
             end
 
+            conditionsDiff = conditionsGrandPrms.ConditionsDiff;
+            nConditionsDiff = length(conditionsDiff);
+            
+            answer = { 1, 1, 1, logFlag, evokFlag }; 
+            enableLog = 'off';
+            enableEvok ='off';
+
+            if differencePrms.exist()
+                answer{1} = WTCodingUtils.ifThenElse(differencePrms.Condition1 <= nConditions, ...
+                    differencePrms.Condition1, 1);
+                answer{2} = WTCodingUtils.ifThenElse(differencePrms.Condition2 <= nConditions, ...
+                    differencePrms.Condition2, 1);
+                answer{3} = WTCodingUtils.ifThenElse(differencePrms.ConditionsDiff <= nConditionsDiff, ...
+                    differencePrms.ConditionsDiff, 1);
+            end 
+
             try
                 userData = struct();
                 userData.conditions = conditions;
                 userData.conditionsDiff = conditionsDiff;
-                userData.cnd1 = conditions{WTCodingUtils.ifThenElse(answer{1,1} < length(conditions), answer{1,1}, 1)};
-                userData.cnd2 = conditions{WTCodingUtils.ifThenElse(answer{1,2} < length(conditions), answer{1,2}, 1)};
+                userData.cnd1 = conditions{answer{1,1}};
+                userData.cnd2 = conditions{answer{1,2}};
                 hUserData = WTHandle(userData);
                 
                 cbList1 = [ ...
