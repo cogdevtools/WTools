@@ -127,7 +127,8 @@ classdef WTPlotUtils
         % --- Callbacks -- ON ---
 
         function keepWindowSizeRatioCb(hObject, event, whRatio) 
-            if strcmp(hObject.WindowState, 'fullscreen')
+            if strcmp(hObject.WindowState, 'fullscreen') || ...
+               strcmp(hObject.WindowState, 'maximized')
                 return
             end
             pos = hObject.Position;
