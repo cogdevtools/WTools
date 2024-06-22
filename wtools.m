@@ -636,6 +636,7 @@ function varargout = wtools(varargin)
         userData = hObject.UserData;
         if isstruct(userData) && isfield(userData, 'PathsContext') && ~isempty(userData.PathsContext)
             path(userData.PathsContext);
+            rehash();
         end
     
     function handles = updateProjectName(hObject, handles) 

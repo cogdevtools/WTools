@@ -3,7 +3,8 @@ function success = wtGrandAverage(subjects, conditions)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkChopAndBaselineCorrectionDone()
+    if ~wtProject.checkChopAndBaselineCorrectionDone() || ...
+        ~wtProject.checkRepeatedGrandAverage()
         return
     end
 
@@ -36,9 +37,18 @@ function success = wtGrandAverage(subjects, conditions)
         end
     else
         grandAveragePrms = copy(grandAveragePrms);
-        logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-            wtProject.Config.BaselineChop.LogarithmicTransform;
-        evokFlag = wtProject.Config.BaselineChop.EvokedOscillations;
+        waveletTransformPrms = wtProject.Config.WaveletTransform;
+        baselineChopPrms =  wtProject.Config.BaselineChop;
+        logFlag = grandAveragePrms.LogarithmicTransform;
+        evokFlag = grandAveragePrms.EvokedOscillations;
+
+        if waveletTransformPrms.exist()
+            logFlag = waveletTransformPrms.LogarithmicTransform; 
+            evokFlag = waveletTransformPrms.EvokedOscillations;
+        end
+        if baselineChopPrms.exist() 
+            logFlag = baselineChopPrms.LogarithmicTransform; 
+        end
 
         if ~WTGrandAverageGUI.defineGrandAverageParams(grandAveragePrms, logFlag, evokFlag)
             return
@@ -54,6 +64,10 @@ function success = wtGrandAverage(subjects, conditions)
 
         if ~grandAveragePrms.UseAllSubjects 
             subjects = WTDialogUtils.stringsSelectDlg('Select subjects\nto average:', subjects, false, false);
+            if length(subjects) == 0
+                wtLog.warn('No subjects selected');
+                return
+            end
             if length(subjects) <= 1
                 wtProject.notifyWrn([], 'No enough subjects selected');
                 return
@@ -108,17 +122,17 @@ function success = wtGrandAverage(subjects, conditions)
             return
         end
 
-        if grandAveragePrms.PerSubjectAgerage
+        if grandAveragePrms.PerSubjectAverage
             dataToSave.SS = WT;
 
             [success, filePath] = ioProc.writeGrandAverage(conditions{cnd}, measure, true, '-struct', 'dataToSave');
             if ~success
-                wtProject.notifyErr([], 'Failed to save per subject average data to ''%s''', filePath);
+                wtProject.notifyErr([], 'Failed to save garnd average with per subject data to ''%s''', filePath);
                 wtLog.popStatus();
                 return
             end
             wtLog.info('Per subject average files for condition ''%s'' successfully saved', conditions{cnd});    
-        end      
+        end
     end
 
     wtLog.popStatus();

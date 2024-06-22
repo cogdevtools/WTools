@@ -221,9 +221,15 @@ function [success, subjectsList, conditionsList] = setStatisticsParams()
     statsPrms = copy(wtProject.Config.Statistics);
     subjectsGrandPrms =  copy(wtProject.Config.SubjectsGrand);
     conditionsGrandPrms = copy(wtProject.Config.ConditionsGrand);
+    waveletTransformParams = wtProject.Config.WaveletTransform;
+
+    evokFlag = statsPrms.EvokedOscillations;
+    if waveletTransformParams.exist()
+        evokFlag =  waveletTransformParams.EvokedOscillations;
+    end
 
     [success, subjectsList, conditionsList] = WTStatisticsGUI.defineStatisticsSettings(statsPrms, ...
-        subjectsGrandPrms, conditionsGrandPrms);
+        subjectsGrandPrms, conditionsGrandPrms, evokFlag);
     if ~success
         return
     end

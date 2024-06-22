@@ -8,6 +8,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         ConfigFileName = 'wtools.json'
 
         FldShowSplashScreen = "ShowSplashScreen"
+        FldDangerWarnings = "DangerWarnings"
         FldDefaultStdLogLevel = 'DefaultStdLogLevel'
         FldProjectLogLevel = 'ProjectLogLevel'
         FldProjectLog = 'ProjectLog'
@@ -22,6 +23,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
 
     properties(Access=public)
         ShowSplashScreen(1,1) logical
+        DangerWarnings(1,1) logical
         DefaultStdLogLevel(1,1) uint8
         ProjectLogLevel(1,1) uint8
         ProjectLog(1,1) logical
@@ -76,6 +78,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         function copyFrom(o, oo)
             WTValidations.mustBeA(oo, ?WTAppConfig);
             o.ShowSplashScreen = oo.ShowSplashScreen;
+            o.DangerWarnings = oo.DangerWarnings;
             o.DefaultStdLogLevel = oo.DefaultStdLogLevel;
             o.ProjectLogLevel = oo.ProjectLogLevel;
             o.MuteStdLog = oo.MuteStdLog;
@@ -92,6 +95,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         function same = equalTo(o, oo)
             WTValidations.mustBeA(oo, ?WTAppConfig); 
             same = o.ShowSplashScreen == oo.ShowSplashScreen && ...
+                o.DangerWarnings == oo.DangerWarnings && ...
                 o.DefaultStdLogLevel == oo.DefaultStdLogLevel && ...
                 o.ProjectLogLevel == oo.ProjectLogLevel && ...
                 o.MuteStdLog == oo.MuteStdLog && ...
@@ -102,11 +106,12 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
 
         function o = default(o)
             o.ShowSplashScreen = false;
+            o.DangerWarnings = true;
             o.DefaultStdLogLevel = WTLog.LevelInf;
             o.ProjectLogLevel = WTLog.LevelInf;
             o.ProjectLog = false;
             o.MuteStdLog = false;
-            o.ColorizedLog = false;
+            o.ColorizedLog = true;
             o.PlotsColorMap = 'parula';
         end
         
@@ -136,6 +141,9 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
 
                 if isfield(data, o.FldShowSplashScreen)
                     c.ShowSplashScreen = data.(o.FldShowSplashScreen);
+                end
+                if isfield(data, o.FldDangerWarnings)
+                    c.DangerWarnings = data.(o.FldDangerWarnings);
                 end
                 if isfield(data, o.FldDefaultStdLogLevel)
                     logLevelStr = char(data.(o.FldDefaultStdLogLevel));
@@ -172,6 +180,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
             try
                 data = struct(); 
                 data.(o.FldShowSplashScreen) = o.ShowSplashScreen;
+                data.(o.FldDangerWarnings) = o.DangerWarnings;
                 data.(o.FldPlotsColorMap) = o.PlotsColorMap;
                 data.(o.FldDefaultStdLogLevel) = WTLog.logLevelStr(o.DefaultStdLogLevel);
                 data.(o.FldProjectLogLevel) = WTLog.logLevelStr(o.ProjectLogLevel);

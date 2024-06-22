@@ -9,14 +9,17 @@ classdef WTDifferenceGUI
 
             WTValidations.mustBeA(differencePrms, ?WTDifferenceCfg)
             WTValidations.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
+            
+            answer = { 1, 1, 1, logFlag, evokFlag }; 
+            enableLog = 'off';
+            enableEvok ='off';
 
             if differencePrms.exist()
-                answer = { differencePrms.Condition1,  differencePrms.Condition2, differencePrms.ConditionDiff, ...
-                    differencePrms.LogDiff, differencePrms.EvokedOscillations };
-            else
-                answer = { 1, 1, 1, 0, evokFlag }; 
+                answer{1} = differencePrms.Condition1;
+                answer{2} = differencePrms.Condition2;
+                answer{3} = differencePrms.ConditionsDiff;
             end 
-            
+
             % Assign conditions and conditionsDiff to the base workspace to prevent errors of the gui
             conditions = conditionsGrandPrms.ConditionsList;
             conditionsDiff = conditionsGrandPrms.ConditionsDiff;
@@ -81,8 +84,8 @@ classdef WTDifferenceGUI
                     { 'Style' 'listbox' 'tag' 'list2' 'string' conditions 'value' answer{1,2} 'callback' cbList2 }, ...
                     { 'Style' 'pushbutton' 'string' '>>>' 'callback' cbPair } ...
                     { 'Style' 'listbox' 'tag' 'list3' 'string' conditionsDiff 'value' answer{1,3} } ...
-                    { 'style' 'checkbox' 'string' 'Log10-Transformed data' 'value' logFlag 'enable' 'off' } ...
-                    { 'style' 'checkbox' 'string' 'Evoked Oscillations' 'value' answer{1,5} } ...
+                    { 'style' 'checkbox' 'string' 'Log10-Transformed data' 'value' answer{1,4} 'enable' enableLog } ...
+                    { 'style' 'checkbox' 'string' 'Evoked Oscillations' 'value' answer{1,5} 'enable' enableEvok } ...
                     { 'style' 'text' 'string'  '' } ...
                     { 'Style' 'pushbutton' 'string' 'Delete difference' 'callback' cbDel } };
                 
@@ -92,8 +95,8 @@ classdef WTDifferenceGUI
                     conditionsGrandPrms.ConditionsDiff = hUserData.Value.conditionsDiff;
                     differencePrms.Condition1 = answer{1,1};
                     differencePrms.Condition2 = answer{1,2};
-                    differencePrms.ConditionDiff = answer{1,3};
-                    differencePrms.LogDiff = answer{1,4};
+                    differencePrms.ConditionsDiff = answer{1,3};
+                    differencePrms.LogarithmicTransform = answer{1,4};
                     differencePrms.EvokedOscillations = answer{1,5};
                     success = true;
                 end

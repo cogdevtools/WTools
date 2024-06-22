@@ -31,6 +31,16 @@ classdef WTProject < WTClass
             end
             msg(1) = WTCodingUtils.ifThenElse(isempty(o.Context), upper(msg(1)), lower(msg(1)));
         end
+
+        function ok = repeatedOperationAlert(o, title)
+            choice = WTDialogUtils.askDlg(title, ...
+                [ 'You have already performed this operation. Repeating it might produce inconsistent data and cause ', ...
+                  'unexpected errors. The processing parameters should keep the same at each step of the analysis, ' ...
+                  'across the whole set of data. As a safer option, consider creating a new project from scratch.\n\n' ... 
+                  'Check the tutorial for more details.' ], ...
+                  {}, {'Continue', 'Abandon'}, 'Abandon');
+            ok = strcmp(choice, 'Continue');
+        end
     end
 
     methods
@@ -200,6 +210,36 @@ classdef WTProject < WTClass
             if ~done && ~quiet
                 o.notifyWrn([], 'Grand average must be performed (or newly performed) before to proceed');
             end
+        end
+
+        function ok = checkRepeatedImport(o)
+            ok = ~WTAppConfig().DangerWarnings || ...
+                 ~o.checkImportDone(true) || ...
+                  o.repeatedOperationAlert('New import');
+        end
+
+        function ok = checkRepeatedWaveletAnalysis(o)
+            ok = ~WTAppConfig().DangerWarnings || ...
+                 ~o.checkWaveletAnalysisDone(true, false) || ...
+                  o.repeatedOperationAlert('New wavelet analysis');
+        end
+
+        function ok = checkRepeatedChopAndBaselineCorrection(o)
+            ok = ~WTAppConfig().DangerWarnings || ...
+                 ~o.checkChopAndBaselineCorrectionDone(true) || ...
+                  o.repeatedOperationAlert('New chop and baseline correction');
+        end
+
+        function ok = checkRepeatedConditionsDifference(o)
+            ok = ~WTAppConfig().DangerWarnings || ...
+                 ~o.checkConditionsDifferenceDone(true) || ...
+                  o.repeatedOperationAlert('New conditions diffeence');
+        end
+
+        function ok = checkRepeatedGrandAverage(o)
+            ok = ~WTAppConfig().DangerWarnings || ...
+                 ~o.checkGrandAverageDone(true) || ...
+                  o.repeatedOperationAlert('New grand average');
         end
 
         function notify(o, title, fmt, varargin)

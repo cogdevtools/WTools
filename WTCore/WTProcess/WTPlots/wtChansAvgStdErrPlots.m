@@ -17,11 +17,13 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillati
         WTValidations.mustBeLTE(length(conditionsToPlot), 2); 
     end
     
-    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.LogarithmicTransform;
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
+    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
+    evokFlag = waveletTransformPrms.EvokedOscillations;
 
     if interactive
-        [fileNames, ~, measure] = WTPlotsGUI.selectFilesToPlot(true, true, 2);
+        [fileNames, ~, measure] = WTPlotsGUI.selectFilesToPlot(evokFlag, true, true, 2);
         if isempty(fileNames)
             return
         end

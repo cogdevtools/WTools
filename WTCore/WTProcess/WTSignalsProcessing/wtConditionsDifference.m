@@ -3,7 +3,8 @@ function success = wtConditionsDifference(subjects)
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkChopAndBaselineCorrectionDone()
+    if ~wtProject.checkChopAndBaselineCorrectionDone() || ...
+        ~wtProject.checkRepeatedConditionsDifference()
         return
     end
 
@@ -42,7 +43,7 @@ function success = wtConditionsDifference(subjects)
     condsGrandPrms = wtProject.Config.ConditionsGrand;
     condiff = condsGrandPrms.ConditionsDiff;
     if isempty(condiff)
-        wtProject.notifyWrn([], 'User selected no conditions differences');
+        wtProject.notifyWrn([], 'User selected no conditions differences!');
         return
     end
 
@@ -207,11 +208,21 @@ function success = setDifferencePrms()
 
     condsGrandPrms = copy(wtProject.Config.ConditionsGrand);
     differencePrms = copy(wtProject.Config.Difference);
-    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.LogarithmicTransform;
-    wtEvok = wtProject.Config.WaveletTransform.EvokedOscillations;
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
 
-    if ~WTDifferenceGUI.defineDifferenceParams(differencePrms, condsGrandPrms, logFlag, wtEvok)
+    logFlag = differencePrms.LogarithmicTransform;
+    evokFlag = differencePrms.EvokedOscillations;
+
+    if waveletTransformPrms.exist()
+        logFlag = waveletTransformPrms.LogarithmicTransform;
+        evokFlag = waveletTransformPrms.EvokedOscillations;
+    end
+    if baselineChopPrms.exist()
+        logFlag = baselineChopPrms.LogarithmicTransform;
+    end
+
+    if ~WTDifferenceGUI.defineDifferenceParams(differencePrms, condsGrandPrms, logFlag, evokFlag)
         return
     end
 

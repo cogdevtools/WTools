@@ -1,5 +1,6 @@
 {
     "ShowSplashScreen" : true,
+    "DangerWarnings": true,
     "PlotsColorMap": "parula",
     "DefaultStdLogLevel": "INFO", 
     "ProjectLogLevel": "INFO",

@@ -7,8 +7,8 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
     properties
         Condition1(1,1) uint8 {mustBeFinite}
         Condition2(1,1) uint8 {mustBeFinite}
-        ConditionDiff(1,1) uint8 {mustBeFinite}
-        LogDiff(1,1) uint8 {WTValidations.mustBeZeroOrOne}
+        ConditionsDiff(1,1) uint8 {mustBeFinite}
+        LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne}
         EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne}
     end
 
@@ -21,8 +21,8 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
         function default(o) 
             o.Condition1 = 1;
             o.Condition2 = 1;
-            o.ConditionDiff = 1;
-            o.LogDiff = 0;
+            o.ConditionsDiff = 1;
+            o.LogarithmicTransform = 0;
             o.EvokedOscillations = 0;
         end
 
@@ -35,8 +35,8 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
                 if length(cells) >= 5
                     o.Condition1 = cells{1};
                     o.Condition2 = cells{2};
-                    o.ConditionDiff = cells{3};
-                    o.LogDiff = cells{4};
+                    o.ConditionsDiff = cells{3};
+                    o.LogarithmicTransform = cells{4};
                     o.EvokedOscillations = cells{5};
                 else 
                     o.default()
@@ -50,7 +50,7 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function success = persist(o)
-            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.Condition1, o.Condition2, o.ConditionDiff, o.LogDiff, o.EvokedOscillations);
+            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.Condition1, o.Condition2, o.ConditionsDiff, o.LogarithmicTransform, o.EvokedOscillations);
             success = ~isempty(txt) && o.write(txt);
         end
     end

@@ -8,6 +8,7 @@ function [success, pathsContext] = wtInit
         wtoolsRootDir = fileparts(mfilename('fullpath'));
         pathsContext = path();
         addpath(genpath(wtoolsRootDir));
+        rehash();
     catch me
         try
             wtLog = WTLog();
@@ -21,6 +22,7 @@ function [success, pathsContext] = wtInit
         end
         if ~isempty(pathsContext)
             path(pathsContext);
+            rehash();
         end
         success = false;
     end

@@ -219,7 +219,7 @@ classdef WTConfig < matlab.mixin.Copyable
             o.TwoDimensionalScalpMapPlots = WT2DScalpMapPlotsCfg(ioProc);
             o.ThreeDimensionalScalpMapPlots = WT3DScalpMapPlotsCfg(ioProc);
         end
-        
+
         function name = getName(o) 
             name = WTIOUtils.getPathTail(o.IOProc.RootDir);
         end

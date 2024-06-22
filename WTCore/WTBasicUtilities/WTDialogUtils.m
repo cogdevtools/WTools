@@ -29,7 +29,10 @@ classdef WTDialogUtils
             % The \ must be replaced before the other chars but after \n 
             msg = regexprep(msg, { '\\n',   '\\',   '\{' , '\}' , '\^'  }, ...
                                  { newline, '\\\\', '\\{', '\\}', '\\^' });
-            msg = [ fontNameFmt fontSizeFmt  msg ];
+            % Unfortunately tex formatting count as part of the text hence affecting how the msg is 
+            % broken into lines and displayed. To workaround that, I added a newline after the tex 
+            % command and after the end of the actual message (to re-center it vertically).
+            msg = [ fontNameFmt fontSizeFmt newline msg newline ];
         end
 
     end

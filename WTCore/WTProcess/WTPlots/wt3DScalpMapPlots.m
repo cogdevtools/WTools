@@ -36,11 +36,13 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         meshFile = [];
     end
 
-    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.LogarithmicTransform;
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
+    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
+    evokFlag = waveletTransformPrms.EvokedOscillations;
 
     if interactive
-        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(false, false, -1);
+        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(evokFlag, false, false, -1);
         if isempty(fileNames)
             return
         end

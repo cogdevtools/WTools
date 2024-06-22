@@ -32,6 +32,7 @@ classdef WTEEGLabUtils
 
                 try
                     addpath(eeglabRoot);
+                    rehash();
                     WTEval.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeglab nogui');
                     found = true;
                 catch me

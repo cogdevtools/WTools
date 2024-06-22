@@ -78,7 +78,7 @@ classdef WTProcessUtils
            
             if any(ismember(conditions, conditionsGrandPrms.ConditionsDiff))
                 differencePrms = wtProject.Config.Difference;
-                if logical(differencePrms.LogDiff) ~= logFlag
+                if logical(differencePrms.LogarithmicTransform) ~= logFlag
                     wtProject.notifyWrn([], ['The [Difference] paramaters are not up to date.\n' ...
                         'Run [Difference] again before plotting.'])
                     diffConsistency = 0;

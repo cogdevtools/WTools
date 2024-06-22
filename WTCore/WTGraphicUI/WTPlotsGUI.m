@@ -2,12 +2,12 @@ classdef WTPlotsGUI
 
     methods(Static)
         % subject = [] when the grand average directory is selected instead of a specific subject dir
-        function [fileNames, filesPath, fileType, subject] = selectFilesToPlot(perSubject, averageOnly, maxFilesNum)
+        function [fileNames, filesPath, fileType, subject] = selectFilesToPlot(evokedOscillations, perSubject, averageOnly, maxFilesNum)
             wtProject = WTProject();
+            wtLog = WTLog();
             ioProc = wtProject.Config.IOProc;
             subject = [];
             
-            evokedOscillations = WTEEGLabUtils.eeglabYesNoDlg('Define plot type', 'Do you want to plot Evoked Oscillations?');
             [fileType, fileExt] = ioProc.getGrandAverageFileTypeAndExtension(perSubject, evokedOscillations);
             fileFilter = {  sprintf('*-%s%s', fileType, fileExt), 'All Files' };
 
@@ -22,7 +22,7 @@ classdef WTPlotsGUI
                 [fileNames, filesPath, ~] = WTDialogUtils.uiGetFiles(fileFilter, -1, maxFilesNum, title, ...
                     'MultiSelect', 'on', 'restrictToDirs', ['^' regexptranslate('escape', rootSelectionDir)], rootSelectionDir);
                 if isempty(fileNames) 
-                    wtProject.notifyWrn([], 'No files to plot selected');
+                    wtLog.warn('No files to plot selected');
                     return
                 end
 

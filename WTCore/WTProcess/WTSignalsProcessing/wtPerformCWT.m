@@ -3,7 +3,8 @@ function success = wtPerformCWT()
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkImportDone()
+    if ~wtProject.checkImportDone() || ...
+        ~wtProject.checkRepeatedWaveletAnalysis()
         return
     end
 
@@ -168,6 +169,7 @@ end
 function success = selectUpdateSubjectsGrand() 
     success = false;
     wtProject = WTProject();
+    wtLog = WTLog();
 
     subjectsGrand = copy(wtProject.Config.SubjectsGrand);
     subjectsList = wtProject.Config.Subjects.SubjectsList;
@@ -179,7 +181,7 @@ function success = selectUpdateSubjectsGrand()
 
     subjectsList = WTDialogUtils.stringsSelectDlg('Select subjects\nto transform:', subjectsList);
     if isempty(subjectsList)
-        wtProject.notifyWrn([],'No subjects selected');
+        wtLog.warn('User selected no subjects to process!'); 
         return
     end
 
@@ -208,7 +210,7 @@ function success = selectUpdateConditionsGrand()
 
     conditionsList = WTDialogUtils.stringsSelectDlg('Select conditions to\ntransform:', conditionsList);
     if isempty(conditionsList)
-        wtProject.notifyWrn([],'No conditions selected');
+        wtLog.warn('User selected no conditions to process!'); 
         return
     end
 
@@ -263,9 +265,21 @@ function success = setTransformPrms(timeRange, maxFreq, maxChans)
 
     waveletTransformParams = copy(wtProject.Config.WaveletTransform);
     baselineChopParams = wtProject.Config.BaselineChop;
-    bsLogEnabled = baselineChopParams.exist() && baselineChopParams.LogarithmicTransform;
+    logEnabled = true;
 
-    if ~WTTransformGUI.defineCWTParams(waveletTransformParams, timeRange, maxFreq, maxChans, ~bsLogEnabled)
+    if waveletTransformParams.exist()
+        logEnabled = false;
+
+        if baselineChopParams.exist() && ... 
+            waveletTransformParams.LogarithmicTransform && ...
+            ~baselineChopParams.LogarithmicTransform
+            wtProject.notifyErr([], 'Inconsistent Log10 flag in %s & %s configuration files', ...
+                waveletTransformParams.getFileName(), baselineChopParams.getFileName());
+            return
+        end
+    end
+
+    if ~WTTransformGUI.defineCWTParams(waveletTransformParams, timeRange, maxFreq, maxChans)
         return
     end
 

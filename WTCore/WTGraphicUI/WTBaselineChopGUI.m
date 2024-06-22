@@ -1,19 +1,18 @@
 classdef WTBaselineChopGUI
     
     methods(Static)
-        function success = defineBaselineChopParams(waveletTransformParams, baselineChopParams)
+        function success = defineBaselineChopParams(baselineChopParams, logFlag, evokFlag)
             success = false;
-
-            WTValidations.mustBeA(waveletTransformParams, ?WTWaveletTransformCfg);
             WTValidations.mustBeA(baselineChopParams, ?WTBaselineChopCfg);
 
-            waveletTransformParamsExist = waveletTransformParams.exist();
             baselineChopParamsExist = baselineChopParams.exist();
+            
+            % EvokedOscillations can not be set: it reflects previous choices (wavelet tansformation)
+            evokedOscillations = WTCodingUtils.ifThenElse(evokFlag, 1, 0);
+            enableEvok = 'off';
 
-            evokedOscillations = (waveletTransformParamsExist && waveletTransformParams.EvokedOscillations) || ...
-                (baselineChopParamsExist && baselineChopParams.EvokedOscillations);
-            logTransformedAlready = waveletTransformParamsExist && waveletTransformParams.LogarithmicTransform;
-            enableUV = WTCodingUtils.ifThenElse(logTransformedAlready, 'off', 'on');
+            % Log10 can be set only if data have not been already log transformed
+            enableLog = WTCodingUtils.ifThenElse(logFlag, 'off', 'on');
             enableBs = WTCodingUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
@@ -21,7 +20,7 @@ classdef WTBaselineChopGUI
                 num2str(baselineChopParams.ChopTimeMax), ...
                 num2str(baselineChopParams.BaselineTimeMin), ...
                 num2str(baselineChopParams.BaselineTimeMax), ...
-                WTCodingUtils.ifThenElse(logTransformedAlready, 1, baselineChopParams.LogarithmicTransform), ...
+                WTCodingUtils.ifThenElse(logFlag, 1, baselineChopParams.LogarithmicTransform), ...
                 baselineChopParams.NoBaselineCorrection, ...
                 evokedOscillations };
             
@@ -42,9 +41,9 @@ classdef WTBaselineChopGUI
                     { 'style' 'text'     'string' '' } ...
                     { 'style' 'text'     'string' '' } ...
                     { 'style' 'text'     'string' '' } ...
-                    { 'style' 'checkbox' 'value' answer{1,5} 'string' 'Log10-Transform' 'enable' enableUV } ...
+                    { 'style' 'checkbox' 'value' answer{1,5} 'string' 'Log10-Transform' 'enable' enableLog } ...
                     { 'style' 'checkbox' 'value' answer{1,6} 'string' 'No Baseline Correction', 'callback', cbEnableBs } ...
-                    { 'style' 'checkbox' 'value' answer{1,7} 'string' 'Evoked Oscillations' } };
+                    { 'style' 'checkbox' 'value' answer{1,7} 'string' 'Evoked Oscillations' 'enable'  enableEvok } };
             end
 
             geometry = { [1 0.5 0.5 0.5] [1 0.5 0.5 0.5] [1 1 1 1] 1 1 1 };

@@ -3,7 +3,8 @@ function success = wtBaselineChop()
     wtProject = WTProject();
     wtLog = WTLog();
 
-    if ~wtProject.checkWaveletAnalysisDone()
+    if ~wtProject.checkWaveletAnalysisDone() || ...
+        ~wtProject.checkRepeatedChopAndBaselineCorrection()
         return
     end
 
@@ -38,8 +39,16 @@ function success = wtBaselineChop()
     baselineChopParams = copy(baselineChopParams);
     
     while true
-        if interactive 
-            if ~WTBaselineChopGUI.defineBaselineChopParams(waveletTransformParams, baselineChopParams)
+        if interactive
+            logFlag = baselineChopParams.LogarithmicTransform;
+            evokFlag = baselineChopParams.EvokedOscillations;
+
+            if waveletTransformParams.exist() 
+                logFlag = waveletTransformParams.LogarithmicTransform;
+                evokFlag = waveletTransformParams.EvokedOscillations;
+            end
+
+            if ~WTBaselineChopGUI.defineBaselineChopParams(baselineChopParams, logFlag, evokFlag)
                 return
             end
         elseif ~baselineChopParams.validate()
