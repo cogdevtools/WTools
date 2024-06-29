@@ -39,10 +39,11 @@ classdef WTIOProcessor < handle
     end
 
     properties(Constant,Access=private,Hidden)
-        SystemEEPImportFileRe = '^.+_(?<subject>\d+)\.cnt$'
-        SystemEEGLabImportFileRe = '^([^0-9]|\d+[^0-9]+)*(?<subject>\d+)\.set$'
-        SystemEGIImportFileRe = '^(?<subject>\d+) .*\.mat$'
-        SystemBRVImportFileRe = '^(?<subject>\d+) .*\.mat$'
+        SystemEEPImportFileRe = '^(?<subject>\d+).*\.cnt$'
+        SystemEEGLabImportFileRe = '^(?<subject>\d+).*\.set$'
+        SystemEGIImportFileRe = '^(?<subject>\d+).*\.mat$'
+        SystemBRVImportFileRe = '^(?<subject>\d+).*\.mat$'
+
         AnyImportFileRe = [
             WTIOProcessor.SystemEEPImportFileRe '|' ...
             WTIOProcessor.SystemEEGLabImportFileRe '|' ...
@@ -276,7 +277,7 @@ classdef WTIOProcessor < handle
 
     methods
         function o = WTIOProcessor()
-            o.default()
+            o.default();
         end
 
         function success = setRootDir(o, rootDir, mustExist) 
@@ -315,7 +316,7 @@ classdef WTIOProcessor < handle
                 success = true;
             end
             if ~success
-                o.default()
+                o.default();
             end
         end
 

@@ -39,9 +39,9 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable
                     o.LogarithmicTransform = cells{4};
                     o.EvokedOscillations = cells{5};
                 else 
-                    o.default()
-                    WTLog().warn(['The difference parameters (%s) were set by a\n'...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    o.default();
+                    WTLog().warn(['The difference parameters (%s) were set by an \n'...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

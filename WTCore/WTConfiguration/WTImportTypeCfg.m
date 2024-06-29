@@ -36,9 +36,9 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable
                     o.BRVFlag = cells{3};
                     o.EEGLabFlag = cells{4};
                 else 
-                    o.default()
-                    WTLog().warn(['The import type format parameters (%s) were set by a\n'...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    o.default();
+                    WTLog().warn(['The import type format parameters (%s) were set by an \n'...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

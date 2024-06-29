@@ -14,7 +14,7 @@ classdef WTAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqCfg
         function o = WTAvgPlotsCfg(ioProc)
             o@WTConfigStorage(ioProc, 'xavr_cfg.m');
             o@WTTimeFreqCfg();
-            o.default()
+            o.default();
         end
 
         function default(o) 
@@ -41,8 +41,8 @@ classdef WTAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqCfg
                     o.validate();
                 else
                     o.default();
-                    WTLog().warn(['The  parameters for average plots (%s) were set by a\n' ...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    WTLog().warn(['The  parameters for average plots (%s) were set by an \n' ...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

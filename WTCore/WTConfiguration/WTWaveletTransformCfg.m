@@ -71,8 +71,8 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable
                     o.WaveletsCycles = cells{13};
                 else
                     o.data.waveletTransform = o.default();
-                    WTLog().warn(['The complex Morlet transformation parameters (%s) were set by a\n'...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    WTLog().warn(['The complex Morlet transformation parameters (%s) were set by an \n'...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

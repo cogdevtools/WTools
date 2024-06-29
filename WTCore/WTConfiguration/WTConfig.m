@@ -238,7 +238,7 @@ classdef WTConfig < matlab.mixin.Copyable
         end
 
         function success = new(o, rootDir)
-            o.default()
+            o.default();
             name = WTIOUtils.getPathTail(rootDir);
             o.Basic.FilesPrefix = name;
             success = o.IOProc.setRootDir(rootDir, false) && o.Basic.persist();

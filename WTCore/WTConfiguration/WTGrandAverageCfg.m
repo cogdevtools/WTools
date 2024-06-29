@@ -37,8 +37,8 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable
                     o.EvokedOscillations = cells{4};
                 else 
                     o.default()
-                    WTLog().warn(['The grand average parameters (%s) were set by a\n'...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    WTLog().warn(['The grand average parameters (%s) were set by an \n'...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

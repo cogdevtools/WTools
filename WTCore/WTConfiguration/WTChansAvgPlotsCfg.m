@@ -14,11 +14,11 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFr
         function o = WTChansAvgPlotsCfg(ioProc)
             o@WTConfigStorage(ioProc, 'chavr_cfg.m');
             o@WTTimeFreqCfg();
-            o.default()
+            o.default();
         end
 
         function default(o) 
-            default@WTTimeFreqCfg(o)
+            default@WTTimeFreqCfg(o);
             o.Scale = [-10.0 10.0];
             o.Contours = 0;
         end
@@ -38,9 +38,9 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFr
                     o.Contours = cells{6};
                     o.validate();
                 else
-                    o.default()
-                    WTLog().warn(['The parameters for channels average plots (%s) were set by a\n' ...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    o.default();
+                    WTLog().warn(['The parameters for channels average plots (%s) were set by an \n' ...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

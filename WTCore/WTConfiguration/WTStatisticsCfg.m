@@ -18,7 +18,7 @@ classdef WTStatisticsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqC
         end
 
         function default(o) 
-            default@WTTimeFreqCfg(o)
+            default@WTTimeFreqCfg(o);
             o.ChannelsList = [];
             o.IndividualFreqs = 0;
             o.EvokedOscillations = 0;
@@ -41,7 +41,7 @@ classdef WTStatisticsCfg < WTConfigStorage & matlab.mixin.Copyable & WTTimeFreqC
                     o.validate();
                 else 
                     o.default();
-                    WTLog().warn(['The statistics parameters (%s) were set by a previous\n'...
+                    WTLog().warn(['The statistics parameters (%s) were set by an \n'...
                         'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me

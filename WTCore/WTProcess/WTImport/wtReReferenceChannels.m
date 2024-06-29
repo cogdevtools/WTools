@@ -26,7 +26,7 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
                 EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, newRef ,'keepref','on');
             otherwise
                 wtLog.info('No channels re-referencing');
-                if system == WTIOProcessor.SystemEGI
+                if strcmp(system, WTIOProcessor.SystemEGI)
                     EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
                         { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
                         'delete', 1, 'delete', 1, 'delete', 1, 'delete', 129);

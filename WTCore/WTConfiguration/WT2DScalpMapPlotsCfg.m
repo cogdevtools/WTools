@@ -17,11 +17,11 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPace
             o@WTPacedTimeFreqCfg();
             o.AllowTimeResolution = true;
             o.AllowFreqResolution = true;
-            o.default()
+            o.default();
         end
 
         function default(o) 
-            default@WTPacedTimeFreqCfg(o)
+            default@WTPacedTimeFreqCfg(o);
             o.Scale = [];
         end
 
@@ -40,9 +40,9 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPace
                     o.ElectrodesLabel = cells{6};
                     o.validate();
                 else
-                    o.default()
-                    WTLog().warn(['The parameters for scalp map 2D plots (%s) were set by a\n' ...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    o.default();
+                    WTLog().warn(['The parameters for scalp map 2D plots (%s) were set by an \n' ...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

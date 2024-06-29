@@ -8,11 +8,11 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WT
         function o = WTChansAvgStdErrPlotsCfg(ioProc)
             o@WTConfigStorage(ioProc, 'chavrse_cfg.m');
             o@WTTimeFreqCfg();
-            o.default()
+            o.default();
         end
 
         function default(o) 
-            default@WTTimeFreqCfg(o)
+            default@WTTimeFreqCfg(o);
         end
 
         function success = load(o) 
@@ -28,9 +28,9 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WT
                     o.FreqMax = WTNumUtils.str2double(cells{4});
                     o.validate();
                 else
-                    o.default()
-                    WTLog().warn(['The parameters for channels average & standard error plots (%s) were set by a\n' ...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    o.default();
+                    WTLog().warn(['The parameters for channels average & standard error plots (%s) were set by an \n' ...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

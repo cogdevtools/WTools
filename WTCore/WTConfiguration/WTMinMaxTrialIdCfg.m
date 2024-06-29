@@ -34,7 +34,7 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable
                 else 
                     o.default();
                     WTLog().warn(['The min/max trial id parameters (%s) were inconsistent or set by a\n'...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

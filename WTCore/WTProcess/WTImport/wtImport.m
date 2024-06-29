@@ -34,6 +34,7 @@ function success = wtImport(forceCopy)
 
     if wtConvert() 
         basicPrms = wtProject.Config.Basic;
+        basicPrms.ImportDone = 1;
         basicPrms.WaveletAnalysisDone = 0;
         basicPrms.ChopAndBaselineCorrectionDone = 0;
         basicPrms.ConditionsDifferenceDone = 0;

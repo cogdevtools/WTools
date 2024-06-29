@@ -24,9 +24,15 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
                 return
             end 
             try
-                o.TriggerLatency = WTNumUtils.str2double(cells{1});
+                if length(cells) >= 1 
+                    o.TriggerLatency = WTNumUtils.str2double(cells{1});
+                else
+                    o.default();
+                    WTLog().err('EGI to EEGLab conversion (%s): wrong number of parameters! They''ll be reset', o.DataFileName); 
+                end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

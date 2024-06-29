@@ -14,11 +14,11 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPace
             o@WTPacedTimeFreqCfg();
             o.AllowTimeResolution = false;
             o.AllowFreqResolution = false;
-            o.default()
+            o.default();
         end
 
         function default(o) 
-            default@WTPacedTimeFreqCfg(o)
+            default@WTPacedTimeFreqCfg(o);
             o.Scale = [];
         end
 
@@ -34,9 +34,9 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPace
                     o.Scale = WTNumUtils.str2nums(cells{3});
                     o.validate();
                 else
-                    o.default()
-                    WTLog().warn(['The parameters for 3D scalp map plots (%s) were set by a\n' ...
-                        'previous incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
+                    o.default();
+                    WTLog().warn(['The parameters for 3D scalp map plots (%s) were set by an \n' ...
+                        'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);

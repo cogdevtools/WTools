@@ -35,8 +35,8 @@ classdef WTProject < WTClass
         function ok = repeatedOperationAlert(o, title)
             choice = WTDialogUtils.askDlg(title, ...
                 [ 'You have already performed this operation. Repeating it might produce inconsistent data and cause ', ...
-                  'unexpected errors. The processing parameters should keep the same at each step of the analysis, ' ...
-                  'across the whole set of data. As a safer option, consider creating a new project from scratch.\n\n' ... 
+                  'unexpected errors. The processing parameters should remain the same at each analysis step, ' ...
+                  'across the whole dataset. As a safer option, consider creating a new project from scratch.\n\n' ... 
                   'Check the tutorial for more details.' ], ...
                   {}, {'Continue', 'Abandon'}, 'Abandon');
             ok = strcmp(choice, 'Continue');
@@ -84,6 +84,7 @@ classdef WTProject < WTClass
                 return
             end
 
+            basicPrms = o.Config.Basic;
             subjectsPrms = o.Config.Subjects;
             conditionsPrms = o.Config.Conditions;
             channelsPrms = o.Config.Channels;
@@ -118,7 +119,10 @@ classdef WTProject < WTClass
                 end
                 return
             end
-
+            if ~basicPrms.ImportDone 
+                return
+            end
+            
             done = true;
         end
 
