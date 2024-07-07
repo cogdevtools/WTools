@@ -1,4 +1,19 @@
 
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTDifferenceGUI
     
     methods(Static)
@@ -7,8 +22,8 @@ classdef WTDifferenceGUI
             wtProject = WTProject();
             wtLog = WTLog();
 
-            WTValidations.mustBeA(differencePrms, ?WTDifferenceCfg)
-            WTValidations.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg)
+            WTValidations.mustBe(differencePrms, ?WTDifferenceCfg)
+            WTValidations.mustBe(conditionsGrandPrms, ?WTConditionsGrandCfg)
             
             conditions = conditionsGrandPrms.ConditionsList;
             nConditions = length(conditions);
@@ -95,19 +110,22 @@ classdef WTDifferenceGUI
                 
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Define differences to compute');
 
-                if ~isempty(answer)
-                    conditionsGrandPrms.ConditionsDiff = hUserData.Value.conditionsDiff;
-                    differencePrms.Condition1 = answer{1,1};
-                    differencePrms.Condition2 = answer{1,2};
-                    differencePrms.ConditionsDiff = answer{1,3};
-                    differencePrms.LogarithmicTransform = answer{1,4};
-                    differencePrms.EvokedOscillations = answer{1,5};
-                    success = true;
+                if isempty(answer)
+                    wtLog.dbg('User quitted difference configuration dialog');
+                    return
                 end
+
+                success = all([ ...
+                    WTTryExec(@()set(conditionsGrandPrms, 'ConditionsDiff', hUserData.Value.conditionsDiff)).logWrn().displayWrn('Review parameter', 'Invalid Difference').run().Succeeded ...
+                    WTTryExec(@()set(differencePrms, 'Condition1', answer{1,1})).logWrn().displayWrn('Review parameter', 'Invalid Condition1 index').run().Succeeded ...
+                    WTTryExec(@()set(differencePrms, 'Condition2', answer{1,2})).logWrn().displayWrn('Review parameter', 'Invalid Condition2 index').run().Succeeded ... 
+                    WTTryExec(@()set(differencePrms, 'ConditionsDiff', answer{1,3})).logWrn().displayWrn('Review parameter', 'Invalid Difference index').run().Succeeded ... 
+                    WTTryExec(@()set(differencePrms, 'LogarithmicTransform', answer{1,4})).logWrn().displayWrn('Review parameter', 'Invalid LogarithmicTransform').run().Succeeded ...
+                    WTTryExec(@()set(differencePrms, 'EvokedOscillations', answer{1,5})).logWrn().displayWrn('Review parameter', 'Invalid EvokedOscillations').run().Succeeded ...
+                ]);
 
             catch me
                 wtLog.except(me);
-                return
             end
         end
     end

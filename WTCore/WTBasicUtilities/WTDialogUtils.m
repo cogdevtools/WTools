@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTDialogUtils 
 
     properties (Constant, Hidden, Access=public)
@@ -27,8 +42,8 @@ classdef WTDialogUtils
             msg = WTCodingUtils.ifThenElse(isempty(varargin), fmt, @()sprintf(fmt, varargin{:}));
             % Escape Tex control chars + replace \n with newline. Note that the order of char counts:
             % The \ must be replaced before the other chars but after \n 
-            msg = regexprep(msg, { '\\n',   '\\',   '\{' , '\}' , '\^'  }, ...
-                                 { newline, '\\\\', '\\{', '\\}', '\\^' });
+            msg = regexprep(msg, { '\\n',   '\\',   '\{' , '\}' , '\^', '_'  }, ...
+                                 { newline, '\\\\', '\\{', '\\}', '\\^', '\\_' });
             % Unfortunately tex formatting count as part of the text hence affecting how the msg is 
             % broken into lines and displayed. To workaround that, I added a newline after the tex 
             % command and after the end of the actual message (to re-center it vertically).
@@ -77,7 +92,7 @@ classdef WTDialogUtils
             argParser = inputParser();
             argParser.CaseSensitive = true;
             argParser.KeepUnmatched = true;
-            validateExcludeDirs = @(v)WTValidations.isALinearCellArrayOfString(v) || ischar(v);
+            validateExcludeDirs = @(v)WTValidations.isLinearCellArrayOfChar(v) || WTValidations.isChar(v);
             addParameter(argParser, 'excludeDirs', {}, validateExcludeDirs);
             argsToParse = WTCodingUtils.ifThenElse(mod(length(varargin), 2), @()varargin(1:end-1), @()varargin); 
             parse(argParser, argsToParse{:}); 
@@ -113,7 +128,7 @@ classdef WTDialogUtils
             argParser = inputParser();
             argParser.CaseSensitive = true;
             argParser.KeepUnmatched = true;
-            validateRestrictToDirs = @(v)WTValidations.isALinearCellArrayOfString(v) || ischar(v);
+            validateRestrictToDirs = @(v)WTValidations.isLinearCellArrayOfChar(v) || WTValidations.isChar(v);
             addParameter(argParser, 'restrictToDirs', {}, validateRestrictToDirs);
             argsToParse = WTCodingUtils.ifThenElse(mod(length(varargin), 2), @()varargin(1:end-1), @()varargin); 
             parse(argParser, argsToParse{:}); 
@@ -152,7 +167,7 @@ classdef WTDialogUtils
         end
 
         function [selection, indexes] = stringsSelectDlg(prompt, list, single, confirm, varargin)
-            WTValidations.mustBeALinearCellArrayOfNonEmptyString(list);
+            WTValidations.mustBeLinearCellArrayOfNonEmptyChar(list);
             confirm =  nargin > 3 && confirm;
             selection = list;
             indexes = WTCodingUtils.ifThenElse(length(list) == 1, 1, []);

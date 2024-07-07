@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTValidations
 
     methods(Static)
@@ -119,7 +134,7 @@ classdef WTValidations
         end 
 
         function is = isInt(v)
-            is = all(~isinf(v) & floor(v) == v);
+            is = isnumeric(v) && all(~isinf(v)) && all(floor(v) == v);
         end 
 
         function is = isValidProperRange(range)
@@ -135,31 +150,46 @@ classdef WTValidations
         end
 
         function is = isInRange(v, vMin, vMax, includeMin, includeMax)
-            is = isnumeric(v) && ...
+            is = isscalar(v) && isnumeric(v) && ...
                 (v > vMin || (v == vMin && includeMin)) && ...
                 (v < vMax || (v == vMax && includeMax));
         end
 
         function is = isZeroOrOne(v)
-            is = isnumeric(v) && (v == 0 || v == 1);
+            is = isscalar(v) && isnumeric(v) && (v == 0 || v == 1);
+        end
+
+        function is = isChar(v)
+            is = isa(v, 'char') && (isempty(v) || isvector(v));
+        end
+
+        function is = isString(v)
+            is = isscalar(v) && isa(v, 'string');
+        end
+
+        function is = isEmptyChar(v)
+            is = WTValidations.isChar(v) && isempty(v);
+        end
+
+        function is = isEmptyString(v)
+            is = WTValidations.isString(v) && v == "";
         end
 
         function is = isStrOrChar(v)
-            is = isa(v, 'string') || isa(v, 'char');
+            is = WTValidations.isString(v) || WTValidations.isChar(v);
         end
 
         function is = isEmptyStrOrChar(v)
-            is = (isa(v,'char') && isempty(v)) || ...
-                (isa(v, 'string') && v == "");
+            is = WTValidations.isEmptyChar(v) || WTValidations.isEmptyString(v);
         end
 
         % minLen and/or maxLen can be < 0 => ignore them
-        function is = isLinearArray(v, minLen, maxLen, allowEmpty)
+        function is = isLinearArray(v, minLen, maxLen, allowEmptyArray)
             is = ismatrix(v); 
             if ~is 
                 return
             end
-            is = nargin > 3 && allowEmpty && isempty(v);
+            is = nargin > 3 && allowEmptyArray && isempty(v);
             if is 
                 return
             end
@@ -176,12 +206,12 @@ classdef WTValidations
         end
 
         % minLen and/or maxLen can be < 0 => ignore them
-        function is = isLinearCellArray(v, minLen, maxLen, allowEmpty)
+        function is = isLinearCellArray(v, minLen, maxLen, allowEmptyArray)
             is = iscell(v); 
             if ~is
                 return
             end
-            is = nargin > 3 && allowEmpty && isempty(v);
+            is = nargin > 3 && allowEmptyArray && isempty(v);
             if is 
                 return
             end
@@ -198,34 +228,55 @@ classdef WTValidations
             is = maxLen < 0 || ne <= maxLen;
         end
 
-        function is = isALimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmpty)
-            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmpty) && ...
-                all(cellfun(@WTValidations.isStrOrChar, v));
+        function is = isLimitedLinearCellArrayOfChar(v, minLen, maxLen, allowEmptyArray)
+            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmptyArray) && ...
+                all(cellfun(@WTValidations.isChar, v));
         end
 
-        function is = isALinearCellArrayOfString(v)
+        function is = isLinearCellArrayOfChar(v)
             is = WTValidations.isLinearCellArray(v, 0, -1, 1) && ...
-                all(cellfun(@WTValidations.isStrOrChar, v));
+                all(cellfun(@WTValidations.isChar, v));
         end 
 
-        function is = isALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmpty)
-            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmpty) && ...
-                ~any(cellfun(@WTValidations.isEmptyStrOrChar, v));
+        function is = isLimitedLinearCellArrayOfNonEmptyChar(v, minLen, maxLen, allowEmptyArray)
+            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmptyArray) && ...
+                ~any(cellfun(@WTValidations.isEmptyChar, v));
         end
 
-        function is = isALinearCellArrayOfNonEmptyString(v)
+        function is = isLinearCellArrayOfNonEmptyChar(v)
             is = WTValidations.isLinearCellArray(v, 0, -1, 1) && ...
-               ~any(cellfun(@WTValidations.isEmptyStrOrChar, v));
+               ~any(cellfun(@WTValidations.isEmptyChar, v));
         end
 
-        function mustBeA(obj, metaClass)
+
+        function is = isLimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmptyArray)
+            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmptyArray) && ...
+                all(cellfun(@WTValidations.isString, v));
+        end
+
+        function is = isLinearCellArrayOfString(v)
+            is = WTValidations.isLinearCellArray(v, 0, -1, 1) && ...
+                all(cellfun(@WTValidations.isString, v));
+        end 
+
+        function is = isLimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmptyArray)
+            is = WTValidations.isLinearCellArray(v, minLen, maxLen, allowEmptyArray) && ...
+                ~any(cellfun(@WTValidations.isEmptyString, v));
+        end
+
+        function is = isLinearCellArrayOfNonEmptyString(v)
+            is = WTValidations.isLinearCellArray(v, 0, -1, 1) && ...
+               ~any(cellfun(@WTValidations.isEmptyString, v));
+        end
+
+        function mustBe(obj, metaClass)
             if ~WTValidations.isa(obj, metaClass)
                 WTException.badType('Expected ''%s'', got ''%s''', ...
                     metaClass.Name, class(obj)).throw();
             end
         end
 
-        function mustBeAnyOf(obj, varargin)
+        function mustBenyOf(obj, varargin)
             if ~WTValidations.isAnyOf(obj, varargin{:})
                 WTException.badType('Expected any of ''%s'', got ''%s''', ...
                     char(join(cellfun(@(x)x.Name, varargin))), class(obj)).throw();
@@ -258,21 +309,27 @@ classdef WTValidations
             end
         end
 
-        function mustBeGT(v, vMin, allowNaN)
+        function mustBeGT(v, vMin, allowNaN, allowInf)
             if nargin > 2 && allowNaN && isscalar(v) && isnan(v)
                 return
             end
             if ~isnumeric(v) || any(v <= vMin)
                 WTException.badValue(['Value must be numeric and > ' num2str(vMin)]).throw();
             end
+            if nargin > 3 && ~allowInf && any(isinf(v))
+                WTException.badValue(['Value must be finite']).throw();
+            end
         end
 
-        function mustBeGTE(v, vMin, allowNaN)
+        function mustBeGTE(v, vMin, allowNaN, allowInf)
             if nargin > 2 && allowNaN && isscalar(v) && isnan(v)
                 return
             end
             if ~isnumeric(v) || any(v < vMin)
                 WTException.badValue(['Value must be numeric and >= ' num2str(vMin)]).throw();
+            end
+            if nargin > 3 && ~allowInf && any(isinf(v))
+                WTException.badValue(['Value must be finite']).throw();
             end
         end
 
@@ -288,39 +345,75 @@ classdef WTValidations
             end
         end
 
-        function mustBeAStringOrChar(x)
+        function mustBeStringOrChar(x)
             if ~WTValidations.isStrOrChar(x)
                 WTException.badValue('Value must be a string or char array').throw();
             end
         end
 
-        function mustBeALimitedLinearArray(v, minLen, maxLen, allowEmpty)
-            if ~WTValidations.isLinearArray(v, minLen, maxLen, allowEmpty)
+        function mustBeNonEmptyChar(x)
+            if ~WTValidations.isChar(x) || isempty(x)
+                WTException.badValue('Value must be a non empty char array').throw();
+            end
+        end
+
+        function mustBeNonEmptyString(x)
+            if ~WTValidations.isString(x) || x == ""
+                WTException.badValue('Value must be a non empty string').throw();
+            end
+        end
+
+        function mustBeLimitedLinearArray(v, minLen, maxLen, allowEmptyArray)
+            if ~WTValidations.isLinearArray(v, minLen, maxLen, allowEmptyArray)
                 WTException.badValue('Value must be a linear array of the expected length').throw();
             end 
         end
 
-        function mustBeALimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmpty)
-            if ~WTValidations.isALimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmpty) 
-                WTException.badValue('Value must be a linear cell array of string or char and of the expected length').throw();
+        function mustBeLimitedLinearCellArrayOfChar(v, minLen, maxLen, allowEmptyArray)
+            if ~WTValidations.isLimitedLinearCellArrayOfChar(v, minLen, maxLen, allowEmptyArray) 
+                WTException.badValue('Value must be a linear cell array of char arrays and of the expected length').throw();
             end 
         end 
 
-        function mustBeALinearCellArrayOfString(v)
-            if ~WTValidations.isALinearCellArrayOfString(v)
-                WTException.badValue('Value must be a linear cell array of string or char').throw();
+        function mustBeLinearCellArrayOfChar(v)
+            if ~WTValidations.isLinearCellArrayOfChar(v)
+                WTException.badValue('Value must be a linear cell array of char arrays').throw();
             end 
         end 
 
-        function mustBeALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmpty)
-            if ~WTValidations.isALimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmpty)
-                WTException.badValue('Value must be a linear cell array of non empty string or char and of the expected length').throw();
+        function mustBeLimitedLinearCellArrayOfNonEmptyChar(v, minLen, maxLen, allowEmptyArray)
+            if ~WTValidations.isLimitedLinearCellArrayOfNonEmptyChar(v, minLen, maxLen, allowEmptyArray)
+                WTException.badValue('Value must be a linear cell array of non empty char arrays and of the expected length').throw();
             end
         end
 
-        function mustBeALinearCellArrayOfNonEmptyString(v)
-            if ~WTValidations.isALinearCellArrayOfNonEmptyString(v)
-                WTException.badValue('Value must be a linear cell array of non empty string or char').throw();
+        function mustBeLinearCellArrayOfNonEmptyChar(v)
+            if ~WTValidations.isLinearCellArrayOfNonEmptyChar(v)
+                WTException.badValue('Value must be a linear cell array of non empty char arrays').throw();
+            end
+        end
+
+        function mustBeLimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmptyArray)
+            if ~WTValidations.isLimitedLinearCellArrayOfString(v, minLen, maxLen, allowEmptyArray) 
+                WTException.badValue('Value must be a linear cell array of strings and of the expected length').throw();
+            end 
+        end 
+
+        function mustBeLinearCellArrayOfString(v)
+            if ~WTValidations.isLinearCellArrayOfString(v)
+                WTException.badValue('Value must be a linear cell array of strings').throw();
+            end 
+        end 
+
+        function mustBeLimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmptyArray)
+            if ~WTValidations.isLimitedLinearCellArrayOfNonEmptyString(v, minLen, maxLen, allowEmptyArray)
+                WTException.badValue('Value must be a linear cell array of non empty strings and of the expected length').throw();
+            end
+        end
+
+        function mustBeLinearCellArrayOfNonEmptyString(v)
+            if ~WTValidations.isLinearCellArrayOfNonEmptyString(v)
+                WTException.badValue('Value must be a linear cell array of non empty strings').throw();
             end
         end
     end

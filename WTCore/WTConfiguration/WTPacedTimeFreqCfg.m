@@ -1,4 +1,19 @@
-classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
 
     % When Time and Frequency contain only 1 value, then they represent a single point set.
     % When they contain 2 values they represent a range, when they contain 3 values they 
@@ -41,7 +56,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
                 value = WTNumUtils.strRange2nums(value, '[]');
             end
             nMaxValues = WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
-            WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
+            WTValidations.mustBeLimitedLinearArray(value, 1, nMaxValues, 1)
             o.Time = value;
         end
 
@@ -101,7 +116,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable
                 value = WTNumUtils.strRange2nums(value, '[]');
             end
             nMaxValues = WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
-            WTValidations.mustBeALimitedLinearArray(value, 1, nMaxValues, 1)
+            WTValidations.mustBeLimitedLinearArray(value, 1, nMaxValues, 1)
             o.Frequency = value;
         end
 

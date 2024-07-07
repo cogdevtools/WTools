@@ -1,11 +1,26 @@
-classdef WT2DScalpMapPlotsCfg < WTConfigStorage & matlab.mixin.Copyable & WTPacedTimeFreqCfg
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mixin.Copyable & matlab.mixin.SetGet
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
     end
 
     properties
-        Scale(1,:) single {WTValidations.mustBeALimitedLinearArray(Scale, 1, 2, 1)}
+        Scale(1,:) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
         Contours(1,1) uint8 {WTValidations.mustBeZeroOrOne}
         PeripheralElectrodes(1,1) uint8 {WTValidations.mustBeZeroOrOne}
         ElectrodesLabel(1,1) uint8 {WTValidations.mustBeZeroOrOne}

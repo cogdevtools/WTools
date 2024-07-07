@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();
@@ -10,32 +25,13 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
     if ~interactive 
         mustBeGreaterThanOrEqual(nargin, 3);
-        WTValidations.mustBeAStringOrChar(subject);
-        WTValidations.mustBeALimitedLinearCellArrayOfString(conditionsToPlot);
+        WTValidations.mustBeStringOrChar(subject);
+        WTValidations.mustBeLimitedLinearCellArrayOfChar(conditionsToPlot);
         subject = char(subject);
         conditionsToPlot = unique(conditionsToPlot);
     end
     
     ioProc = WTIOProcessor;
-    channelsPrms = wtProject.Config.Channels;
-
-    splineFile = fullfile(WTLayout.getDevicesDir(), channelsPrms.SplineFile);
-    if ~WTIOUtils.fileExist(splineFile)
-        wtProject.notifyErr([], 'Spline file not found: %s', splineFile);
-        return
-    end
-
-    [success, meshFile] = ioProc.getMeshFileFromSplineFile(splineFile);
-    if ~success 
-        wtProject.notifyErr([], 'Can''t get mesh file name from: %s', splineFile);
-        return
-    end
-
-    if ~WTIOUtils.fileExist(meshFile)
-        wtLog.warn('Mesh file ''%s'' not found: default one will be used instead', meshFile);
-        meshFile = [];
-    end
-
     waveletTransformPrms = wtProject.Config.WaveletTransform;
     baselineChopPrms = wtProject.Config.BaselineChop;
     logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
@@ -62,6 +58,25 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
  
+    channelsPrms = wtProject.Config.Channels;
+
+    splineFile = fullfile(WTLayout.getDevicesDir(), channelsPrms.SplineFile);
+    if ~WTIOUtils.fileExist(splineFile)
+        wtProject.notifyErr([], 'Spline file not found: %s', splineFile);
+        return
+    end
+
+    [success, meshFile] = ioProc.getMeshFileFromSplineFile(splineFile);
+    if ~success 
+        wtProject.notifyErr([], 'Can''t get mesh file name from: %s', splineFile);
+        return
+    end
+
+    if ~WTIOUtils.fileExist(meshFile)
+        wtLog.warn('Mesh file ''%s'' not found: default one will be used instead', meshFile);
+        meshFile = [];
+    end
+
     basicPrms = wtProject.Config.Basic;
     conditionsGrandPrms = wtProject.Config.ConditionsGrand;
     conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
@@ -199,10 +214,18 @@ function success = set3DScalpMapPlotsParams(logFlag)
     success = false;
     wtProject = WTProject();
     plotsPrms = copy(wtProject.Config.ThreeDimensionalScalpMapPlots);
+    channelsPrms = copy(wtProject.Config.Channels);
 
-    if ~WTPlotsGUI.define3DScalpMapPlotsSettings(plotsPrms, logFlag)
+    if ~WTPlotsGUI.define3DScalpMapPlotsSettings(plotsPrms, channelsPrms, logFlag)
         return
     end
+    
+    if ~channelsPrms.persist()
+        wtProject.notifyErr([], 'Failed to save channels params');
+        return
+    end
+
+    wtProject.Config.Channels = channelsPrms;
     
     if ~plotsPrms.persist()
         wtProject.notifyErr([], 'Failed to save 3D scalp map plots params');

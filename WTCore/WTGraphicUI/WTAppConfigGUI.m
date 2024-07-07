@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTAppConfigGUI
 
     methods(Static)
@@ -86,24 +101,24 @@ classdef WTAppConfigGUI
                     return 
                 end
 
-                try
-                    wtAppConfig.PlotsColorMap = colorMaps{answer{1,3}};
-                    wtAppConfig.ShowSplashScreen = answer{1,1};
-                    wtAppConfig.DangerWarnings = answer{1,2};
-                    wtAppConfig.ProjectLog = answer{1,4};
-                    wtAppConfig.ProjectLogLevel = answer{1,5};
-                    wtAppConfig.MuteStdLog = answer{1,6};
-                    wtAppConfig.ColorizedLog = answer{1,7};
-                    wtAppConfig.DefaultStdLogLevel = answer{1,8};
-                    anyChange = ~wtAppConfigCrnt.equalTo(wtAppConfig);
-                    success = true;
-                catch me
-                    wtLog.except(me);
-                end
+                success = all([ ...
+                    WTTryExec(@()set(wtAppConfig, 'PlotsColorMap', colorMaps{answer{1,3}})).logWrn().displayWrn('Review parameter', 'Invalid PlotsColorMap').run().Succeeded ...
+                    WTTryExec(@()set(wtAppConfig, 'ShowSplashScreen', answer{1,1})).logWrn().displayWrn('Review parameter', 'Invalid ShowSplashScreen').run().Succeeded ... 
+                    WTTryExec(@()set(wtAppConfig, 'DangerWarnings', answer{1,2})).logWrn().displayWrn('Review parameter', 'Invalid DangerWarnings').run().Succeeded ... 
+                    WTTryExec(@()set(wtAppConfig, 'ProjectLog', answer{1,4})).logWrn().displayWrn('Review parameter', 'Invalid ProjectLog').run().Succeeded ... 
+                    WTTryExec(@()set(wtAppConfig, 'ProjectLogLevel', answer{1,5})).logWrn().displayWrn('Review parameter', 'Invalid ProjectLogLevel').run().Succeeded ... 
+                    WTTryExec(@()set(wtAppConfig, 'MuteStdLog', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid MuteStdLog').run().Succeeded ... 
+                    WTTryExec(@()set(wtAppConfig, 'ColorizedLog', answer{1,7})).logWrn().displayWrn('Review parameter', 'Invalid ColorizedLog').run().Succeeded ... 
+                    WTTryExec(@()set(wtAppConfig, 'DefaultStdLogLevel', answer{1,8})).logWrn().displayWrn('Review parameter', 'Invalid DefaultStdLogLevel').run().Succeeded ... 
+                ]);
 
                 if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                elseif ~wtAppConfigCrnt.MuteStdLog && wtAppConfig.MuteStdLog && ...
+                    continue
+                end
+
+                anyChange = ~wtAppConfigCrnt.equalTo(wtAppConfig);
+
+                if ~wtAppConfigCrnt.MuteStdLog && wtAppConfig.MuteStdLog && ...
                        ~WTEEGLabUtils.eeglabYesNoDlg('Confirm application configuration', ...
                             'Muting standard log might hide important information! Continue?')
                     success = false;

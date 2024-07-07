@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 function success = wtSelectUpdateChannels(system)
     success = false;
     wtProject = WTProject();
@@ -5,8 +20,10 @@ function success = wtSelectUpdateChannels(system)
     ioProc = wtProject.Config.IOProc;
     channelsPrms = copy(wtProject.Config.Channels);
 
-    fileExt = ['*.' WTIOProcessor.getSystemChansLocationFileExtension(system)];
-    selectionFlt = fullfile(ioProc.ImportDir, fileExt);
+    fileExtentions = WTIOProcessor.getSystemChansLocationFileExtension(system);
+    selectionFlt = cellfun(@(e)['*' e], fileExtentions, 'UniformOutput', false);
+    selectionFlt = {char(join(selectionFlt, ';')) selectionFlt{:}}';
+    
     [chanLocFile, ~, ~] = WTDialogUtils.uiGetFiles(selectionFlt, -1, -1, 'Select channels location file', ...
         'MultiSelect', 'off', 'restrictToDirs', ['^' regexptranslate('escape', WTLayout.getDevicesDir()) ], ...
         WTLayout.getDevicesDir());
@@ -15,18 +32,8 @@ function success = wtSelectUpdateChannels(system)
         return
     end
 
-    selectionFlt = fullfile(ioProc.ImportDir, ioProc.SplineFileTypeFlt);
-    [splineFile, ~, ~] = WTDialogUtils.uiGetFiles(selectionFlt, -1, -1, 'Select spline file', ...
-        'MultiSelect', 'off', 'restrictToDirs', ['^' regexptranslate('escape', WTLayout.getDevicesDir()) ], ...
-        WTLayout.getDevicesDir());
-    if isempty(splineFile) 
-        wtLog.warn('No spline file selected');
-        return
-    end
-
     channelsPrms.ChannelsLocationFile = chanLocFile{1};
     channelsPrms.ChannelsLocationFileType = 'autodetect';
-    channelsPrms.SplineFile = splineFile{1};
     channelsLabels = {};
     
     if ~WTEEGLabUtils.eeglabYesNoDlg('Cutting channels', 'Would you like to cut some channels?')
@@ -96,6 +103,11 @@ function success = wtSelectUpdateChannels(system)
         end
     end 
 
+    if ~channelsPrms.validate()
+        wtProject.notifyErr([], 'Failed to validate channels parameters!');
+        return
+    end
+
     if ~channelsPrms.persist()
         wtProject.notifyErr([], 'Failed to save channels parameters!');
         return
@@ -115,7 +127,4 @@ function chansLabels = getChannelsLabels(system, chanLocFile)
     end
 
     chansLabels = cellfun(@(x)(x.Label), channelsLoc, 'UniformOutput', false);
-    % The following applies to GSN-HydroCel-129.sfp but should not affect the other systems, so it's safe to filter...
-    % In the future fix this code so the filter applies only to the specific set of channels.
-    chansLabels = chansLabels(~cellfun(@isempty, regexp(chansLabels, '^(?!Fid).+$', 'match')));
 end 

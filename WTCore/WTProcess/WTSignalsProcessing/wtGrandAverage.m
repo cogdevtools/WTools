@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 function success = wtGrandAverage(subjects, conditions)
     success = false;
     wtProject = WTProject();
@@ -24,9 +39,9 @@ function success = wtGrandAverage(subjects, conditions)
     if ~interactive
         if nargin < 2 
             WTException.missinArg('Subjects and conditions lists must be provided when project is non-interactive').throw();
-        elseif ~WTValidations.isALinearCellArrayOfNonEmptyString(subjects)
+        elseif ~WTValidations.isLinearCellArrayOfNonEmptyChar(subjects)
             WTException.badArg('Bad argument type or value: subjects').throw();
-        elseif ~WTValidations.isALinearCellArrayOfNonEmptyString(conditions)
+        elseif ~WTValidations.isLinearCellArrayOfNonEmptyChar(conditions)
             WTException.badArg('Bad argument type or value: conditions').throw();
         end
         if empty(subjects) 

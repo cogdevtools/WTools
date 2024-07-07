@@ -1,11 +1,30 @@
-classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.SetGet
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
     end
 
     properties
-        TriggerLatency(1,1) single {mustBeFinite, WTValidations.mustBeGTE(TriggerLatency, 0)}
+        TriggerLatency(1,1) single
+    end
+
+    properties (Access = private)
+        GuardedSet logical
     end
 
     methods
@@ -15,7 +34,16 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function default(o) 
+            o.GuardedSet = false;
             o.TriggerLatency = 0;
+            o.GuardedSet = true;
+        end
+
+        function set.TriggerLatency(o, latency)
+            if o.GuardedSet
+                WTValidations.mustBeGT(latency, 0, false, false);
+            end
+            o.TriggerLatency = latency;
         end
 
         function success = load(o) 

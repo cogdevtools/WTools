@@ -1,11 +1,26 @@
 
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTTransformGUI
     
     methods(Static)
         function success = defineCWTParams(waveletTransformPrms, timeRange, maxFreq, maxChans)
             success = false;
 
-            WTValidations.mustBeA(waveletTransformPrms, ?WTWaveletTransformCfg)
+            WTValidations.mustBe(waveletTransformPrms, ?WTWaveletTransformCfg)
 
             if ~WTValidations.isValidProperRange(timeRange)
                 WTException.badArg('Bad argument type or value: timeRange').throw();
@@ -16,6 +31,8 @@ classdef WTTransformGUI
             if ~WTValidations.isScalarInt(maxFreq) || maxFreq <= 0 
                 WTException.badArg('Bad argument type or value: maxFreq').throw();
             end
+
+            wtLog = WTLog();
 
             answer = { ...
                 num2str(waveletTransformPrms.TimeMin), ...
@@ -106,6 +123,7 @@ classdef WTTransformGUI
                 answer = WTEEGLabUtils.eeglabInputMask( 'geometry', geometry, 'uilist', params, 'title', 'Set wavelet transformation params');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted wavelet transform configuration dialog');
                     return % quit on cancel button
                 end
                 

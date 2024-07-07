@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTConfigUtils
 
     methods(Static, Access=private)
@@ -54,7 +69,7 @@ classdef WTConfigUtils
             end
 
             try
-                WTValidations.mustBeALimitedLinearArray(params.Domain, 2, -1, 0);
+                WTValidations.mustBeLimitedLinearArray(params.Domain, 2, -1, 0);
 
                 if isempty(params.Domain) 
                     wtProject.notifyErr([],'Empty domain for range %s, %s', ...
@@ -122,7 +137,7 @@ classdef WTConfigUtils
     methods(Static)
 
         function [success] = adjustTimeFreqDomains(params, data)
-            WTValidations.mustBeA(params, ?WTTimeFreqCfg);
+            WTValidations.mustBe(params, ?WTTimeFreqCfg);
             params.validate(true);
             objType = class(params);
 
@@ -173,7 +188,7 @@ classdef WTConfigUtils
         end
 
         function [success] = adjustPacedTimeFreqDomains(params, data)
-            WTValidations.mustBeA(params, ?WTPacedTimeFreqCfg);
+            WTValidations.mustBe(params, ?WTPacedTimeFreqCfg);
             params.validate(true);
             objType = class(params);
            

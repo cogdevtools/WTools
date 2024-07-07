@@ -1,4 +1,19 @@
-classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable 
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.SetGet
 
     properties(Constant,Access=public)
         ReReferenceNone         = 0
@@ -15,13 +30,17 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
         FldCutChannels          = 'CutChannels'
     end
 
+    properties (Access = private)
+        GuardedSet logical
+    end
+
     properties
         ChannelsLocationFile char
         ChannelsLocationFileType char
         SplineFile char
         ReReference uint8 {WTValidations.mustBeInRange(ReReference,0,2,1,1)} = 0
-        NewChannelsReference cell {WTValidations.mustBeALinearCellArrayOfString} = {}
-        CutChannels cell {WTValidations.mustBeALinearCellArrayOfString} = {}
+        NewChannelsReference cell {WTValidations.mustBeLinearCellArrayOfChar} = {}
+        CutChannels cell {WTValidations.mustBeLinearCellArrayOfChar} = {}
     end
 
     methods
@@ -31,12 +50,14 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
         end
 
         function default(o) 
+            o.GuardedSet = false;
             o.ChannelsLocationFile = [];
             o.ChannelsLocationFileType = 'autodetect';
             o.SplineFile = [];
             o.ReReference = 0;
             o.NewChannelsReference = { '' };
             o.CutChannels = { };
+            o.GuardedSet = true;
         end
 
         function success = load(o) 
@@ -50,15 +71,17 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
                 return
             end
             try
-                WTValidations.mustBeALimitedLinearCellArrayOfString(chnsLocFile, 1, 1, 0);
-                WTValidations.mustBeALimitedLinearCellArrayOfString(fileTyp, 1, 1, 0);
-                WTValidations.mustBeALimitedLinearCellArrayOfString(splnFile, 1, 1, 0);
+                WTValidations.mustBeLimitedLinearCellArrayOfChar(chnsLocFile, 1, 1, 0);
+                WTValidations.mustBeLimitedLinearCellArrayOfChar(fileTyp, 1, 1, 0);
+                WTValidations.mustBeLimitedLinearCellArrayOfChar(splnFile, 1, 1, 0);
                 o.ChannelsLocationFile = chnsLocFile{1};
                 o.ChannelsLocationFileType = fileTyp{1};
-                o.SplineFile = splnFile{1};
                 o.ReReference = reRef{1};
                 o.NewChannelsReference = newRefChns;
                 o.CutChannels = cutChns;
+                o.GuardedSet = false; % SplineFile could be empty
+                o.SplineFile = splnFile{1};
+                o.GuardedSet = true;
                 o.validate(true);
             catch me
                 WTLog().except(me);
@@ -66,23 +89,33 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable
             end 
         end
 
+        function set.ChannelsLocationFile(o, value)
+            if o.GuardedSet
+                WTValidations.mustBeNonEmptyChar(value);
+            end
+            o.ChannelsLocationFile = value;
+        end
+
+        function set.ChannelsLocationFileType(o, value)
+            if o.GuardedSet
+                WTValidations.mustBeNonEmptyChar(value);
+            end
+            o.ChannelsLocationFileType = value;
+        end
+
+        function set.SplineFile(o, value)
+            if o.GuardedSet
+                WTValidations.mustBeNonEmptyChar(value);
+            end
+            o.SplineFile = value;
+        end
+
         function success = validate(o, throwExcpt) 
             throwExcpt = nargin > 1 && throwExcpt; 
             success = true;
 
-            if isempty(o.ChannelsLocationFile) 
-                WTCodingUtils.throwOrLog(WTException.badValue('Empty channel location file'), ~throwExcpt);
-                success = false;
-            end
-            if isempty(o.ChannelsLocationFileType) 
-                WTCodingUtils.throwOrLog(WTException.badValue('Empty channel location file type'), ~throwExcpt);
-                success = false;
-            end
-            if isempty(o.SplineFile) 
-                WTCodingUtils.throwOrLog(WTException.badValue('Empty spline file'), ~throwExcpt);
-                success = false;
-            end
             chansIntersect = intersect(o.CutChannels, o.NewChannelsReference);
+
             if ~isempty(chansIntersect)
                 WTCodingUtils.throwOrLog(WTException.badValue('Reference channels list contains cut channel(s): %s', ...
                     char(join(chansIntersect))), ~throwExcpt);

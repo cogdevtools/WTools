@@ -1,6 +1,8 @@
+% 2024 Eugenio Parise, Luca Filippin
+%
 % Credits: a modified version of the tfanalisys.m function from (ERPWAVELAB)
 % ---------------------------------------------------------------------------
-% Copyright (C) Morten M¯rup and Technical University of Denmark, 
+% Copyright (C) Morten Mørup and Technical University of Denmark, 
 % September 2006
 %                                          
 % This program is free software; you can redistribute it and/or modify
@@ -10,7 +12,7 @@
 %
 % This program is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 % GNU General Public License for more details.
 %
 % You should have received a copy of the GNU General Public License
@@ -31,8 +33,8 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
     wtProject = WTProject();
     wtLog = WTLog();
    
-    WTValidations.mustBeA(cwtParams, ?WTWaveletTransformCfg);
-    if ~WTValidations.isALinearCellArrayOfString(selection)
+    WTValidations.mustBe(cwtParams, ?WTWaveletTransformCfg);
+    if ~WTValidations.isLinearCellArrayOfChar(selection)
         WTException.badArgType('expected cell array of strings, got %s', class(selection)).throw();
     end 
 

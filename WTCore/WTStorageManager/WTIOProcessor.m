@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTIOProcessor < handle
 
     properties(Constant,Access=private)
@@ -26,6 +41,9 @@ classdef WTIOProcessor < handle
         SystemEEGLab = 'EEGLab'
         SystemBRV    = 'BRV'
 
+        ChansLocationCEDFileExt = '.ced'
+        ChansLocationSFPFileExt = '.sfp'
+        ChansLocationELPFileExt = '.elp'
         SplineFileExt = '.spl'
         SplineFileTypeFlt = ['*' WTIOProcessor.SplineFileExt]
         MeshFileExt = '.mat'
@@ -188,16 +206,16 @@ classdef WTIOProcessor < handle
             end
         end
 
-        function extension = getSystemChansLocationFileExtension(system) 
+        function extensions = getSystemChansLocationFileExtension(system) 
             switch system
                 case WTIOProcessor.SystemEEP
-                    extension = 'ced';
+                    extensions = {WTIOProcessor.ChansLocationCEDFileExt};
                 case WTIOProcessor.SystemEEGLab
-                    extension = 'sfp';
+                    extensions = {WTIOProcessor.ChansLocationSFPFileExt, WTIOProcessor.ChansLocationELPFileExt};
                 case WTIOProcessor.SystemEGI
-                    extension = 'sfp';
+                    extensions = {WTIOProcessor.ChansLocationSFPFileExt};
                 case WTIOProcessor.SystemBRV
-                    extension = 'sfp';
+                    extensions = {WTIOProcessor.ChansLocationSFPFileExt, WTIOProcessor.ChansLocationELPFileExt};
                 otherwise
                     WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
@@ -236,24 +254,41 @@ classdef WTIOProcessor < handle
             chansLocations = {};
 
             try
+                [~,~,fileExt] = fileparts(fileName);
                 fullPath = fullfile(WTLayout.getDevicesDir(), fileName);
+                removeTypesRe = '';
+                removeChansRe = '';
 
-                if strcmp(system, WTIOProcessor.SystemEGI) || ...
-                   strcmp(system, WTIOProcessor.SystemEEGLab) || ...
-                   strcmp(system, WTIOProcessor.SystemBRV)
-                    [l, x, y, z] = textread(fullPath,'%s %n %n %n','delimiter', '\t');
-                elseif strcmp(system, WTIOProcessor.SystemEEP)
-                    [~, l, ~, ~, x, y, z, ~, ~, ~, ~, ~] = textread(fullPath, ...
-                        '%s %s %s %s %n %n %n %s %s %s %s %s', 'delimiter', '\t', 'headerlines', 1);
-                    l = cat(1,l, {'VEOG';'HEOG';'DIGI'});
-                else
-                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
+                switch fileExt
+                    case WTIOProcessor.ChansLocationSFPFileExt
+                        [chLabel, x, y, z] = textread(fullPath,'%s %n %n %n');
+                        if strcmp(system, WTIOProcessor.SystemEGI)
+                            removeChansRe = '^Fid.+$';
+                        end
+                    case WTIOProcessor.ChansLocationELPFileExt
+                        [chType, chLabel, x, y, z] = textread(fullPath,'%s %s %n %n %n', 'headerlines', 1);
+                        removeTypesRe ='^EOG|FID$';
+                    case WTIOProcessor.ChansLocationCEDFileExt
+                        [~, chLabel, ~, ~, x, y, z, ~, ~, ~, ~, ~] = textread(fullPath, ...
+                            '%s %s %s %s %n %n %n %s %s %s %s %s', 'headerlines', 1);
+                        removeChansRe = '^VEOG|HEOG|DIGI$'; % just in case...
+                    otherwise
+                        WTException.badArg('Unknown channel location file extension: %s', fileExt).throw();
                 end
 
-                chansLocations = cell(1, length(l));
-                for i = 1:length(l)
-                    chansLocations{i} = struct('Label', l{i}, 'Location', [x(i) y(i) z(i)]);
+                chansLocations = cell(1, length(chLabel));
+                nRemoved = 0;
+
+                for i = 1:length(chLabel)
+                    if (~isempty(removeTypesRe) && any(regexp(chType{i}, removeTypesRe))) || ...
+                       (~isempty(removeChansRe) && any(regexp(chLabel{i}, removeChansRe)))
+                        nRemoved = nRemoved + 1;
+                        continue
+                    end
+                    chansLocations{i-nRemoved} = struct('Label', chLabel{i}, 'Location', [x(i) y(i) z(i)]);
                 end
+
+                chansLocations = chansLocations(1:end-nRemoved);
                 success = true;
             catch me
                 WTLog().except(me);

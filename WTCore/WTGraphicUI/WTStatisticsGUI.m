@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTStatisticsGUI
 
     methods(Static)
@@ -6,9 +21,9 @@ classdef WTStatisticsGUI
             success = false;
             subjectsList = {};
             conditionsList = {};
-            WTValidations.mustBeA(statsPrms, ?WTStatisticsCfg);
-            WTValidations.mustBeA(subjectsGrandPrms, ?WTSubjectsGrandCfg);
-            WTValidations.mustBeA(conditionsGrandPrms, ?WTConditionsGrandCfg);
+            WTValidations.mustBe(statsPrms, ?WTStatisticsCfg);
+            WTValidations.mustBe(subjectsGrandPrms, ?WTSubjectsGrandCfg);
+            WTValidations.mustBe(conditionsGrandPrms, ?WTConditionsGrandCfg);
             wtLog = WTLog();
 
             subjects = subjectsGrandPrms.SubjectsList;
@@ -66,25 +81,26 @@ classdef WTStatisticsGUI
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Set statistics parameters');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted statistics configuration dialog');
                     return 
                 end
 
-                try
-                    statsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
-                    statsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
-                    statsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
-                    statsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
-                    statsPrms.IndividualFreqs = answer{1,5};
-                    statsPrms.EvokedOscillations = answer{1,6};
-                    success = statsPrms.validate(); 
+                success = all([ ...
+                    WTTryExec(@()set(statsPrms, 'TimeMin', WTNumUtils.str2double(answer{1,1}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMin').run().Succeeded ...
+                    WTTryExec(@()set(statsPrms, 'TimeMax', WTNumUtils.str2double(answer{1,2}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMax').run().Succeeded ... 
+                    WTTryExec(@()set(statsPrms, 'FreqMin', WTNumUtils.str2double(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMin').run().Succeeded ... 
+                    WTTryExec(@()set(statsPrms, 'FreqMax', WTNumUtils.str2double(answer{1,4}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMax').run().Succeeded ...
+                    WTTryExec(@()set(statsPrms, 'IndividualFreqs', answer{1,5})).logWrn().displayWrn('Review parameter', 'Invalid IndividualFreqs').run().Succeeded ... 
+                    WTTryExec(@()set(statsPrms, 'EvokedOscillations', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid EvokedOscillations').run().Succeeded ... 
+                    WTTryExec(@()subjects(answer{1,7})).logWrn().displayWrn('Review parameter', 'Invalid Subjects selection').run().Succeeded ... 
+                    WTTryExec(@()conditions(answer{1,8})).logWrn().displayWrn('Review parameter', 'Invalid Conditions selection').run().Succeeded ... 
+                ]);
+
+                success = success && WTTryExec(@statsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+
+                if success
                     subjectsList = subjects(answer{1,7});
                     conditionsList = conditions(answer{1,8});
-                catch me
-                    wtLog.except(me);
-                end
-                 
-                if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
                 end
             end
         end

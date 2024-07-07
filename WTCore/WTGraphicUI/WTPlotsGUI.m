@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTPlotsGUI
 
     methods(Static)
@@ -42,7 +57,7 @@ classdef WTPlotsGUI
 
         function success = defineAvgPlotsSettings(plotsPrms, logFlag) 
             success = false;
-            WTValidations.mustBeA(plotsPrms, ?WTAvgPlotsCfg);
+            WTValidations.mustBe(plotsPrms, ?WTAvgPlotsCfg);
             wtLog = WTLog();
             
             if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
@@ -90,31 +105,27 @@ classdef WTPlotsGUI
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted average plots configuration dialog');
                     return 
                 end
+                
+                success = all([ ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMin', WTNumUtils.str2double(answer{1,1}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMin').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMax', WTNumUtils.str2double(answer{1,2}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMax').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMin', WTNumUtils.str2double(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMin').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMax', WTNumUtils.str2double(answer{1,4}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMax').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Scale', WTNumUtils.str2nums(answer{1,5}))).logWrn().displayWrn('Review parameter', 'Invalid Scale').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Contours', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid Contours').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'AllChannels', answer{1,7})).logWrn().displayWrn('Review parameter', 'Invalid AllChannels').run().Succeeded ... 
+                ]);
 
-                try
-                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
-                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,5});
-                    plotsPrms.Contours = answer{1,6};
-                    plotsPrms.AllChannels = answer{1,7};
-                    success = plotsPrms.validate(); 
-                catch me
-                    wtLog.except(me);
-                end
-                 
-                if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                end
+                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
         function success = defineAvgStdErrPlotsSettings(plotsPrms)
             success = false; 
-            WTValidations.mustBeA(plotsPrms, ?WTAvgStdErrPlotsCfg);
+            WTValidations.mustBe(plotsPrms, ?WTAvgStdErrPlotsCfg);
             wtLog = WTLog();
 
             answer = { ...
@@ -149,29 +160,25 @@ classdef WTPlotsGUI
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted average + std error plots configuration dialog');
                     return 
                 end
 
-                try
-                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
-                    plotsPrms.AllChannels = answer{1,5};
-                    success = plotsPrms.validate(); 
-                catch me
-                    wtLog.except(me);
-                end
-                
-                if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                end
+                success = all([ ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMin', WTNumUtils.str2double(answer{1,1}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMin').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMax', WTNumUtils.str2double(answer{1,2}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMax').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMin', WTNumUtils.str2double(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMin').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMax', WTNumUtils.str2double(answer{1,4}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMax').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'AllChannels', answer{1,5})).logWrn().displayWrn('Review parameter', 'Invalid AllChannels').run().Succeeded ... 
+                ]);
+
+                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
         function success = defineChansAvgPlotsSettings(plotsPrms, logFlag) 
             success = false;
-            WTValidations.mustBeA(plotsPrms, ?WTChansAvgPlotsCfg);
+            WTValidations.mustBe(plotsPrms, ?WTChansAvgPlotsCfg);
             wtLog = WTLog();
             
             if (abs(plotsPrms.Scale(1)) == abs(plotsPrms.Scale(2))) && ...
@@ -217,27 +224,22 @@ classdef WTPlotsGUI
                     return 
                 end
 
-                try
-                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
-                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,5});
-                    plotsPrms.Contours = answer{1,6};
-                    success = plotsPrms.validate(); 
-                catch me
-                    wtLog.except(me);
-                end
-                
-                if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                end
+                success = all([ ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMin', WTNumUtils.str2double(answer{1,1}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMin').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMax', WTNumUtils.str2double(answer{1,2}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMax').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMin', WTNumUtils.str2double(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMin').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMax', WTNumUtils.str2double(answer{1,4}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMax').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Scale', WTNumUtils.str2nums(answer{1,5}))).logWrn().displayWrn('Review parameter', 'Invalid Scale').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Contours', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid Contours').run().Succeeded ... 
+                ]);
+
+                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
         function success = defineChansAvgStdErrPlotsSettings(plotsPrms)
             success = false; 
-            WTValidations.mustBeA(plotsPrms, ?WTChansAvgStdErrPlotsCfg);
+            WTValidations.mustBe(plotsPrms, ?WTChansAvgStdErrPlotsCfg);
             wtLog = WTLog();
 
             answer = { ...
@@ -267,28 +269,24 @@ classdef WTPlotsGUI
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted channels average + std error plots configuration dialog');
                     return 
                 end
 
-                try
-                    plotsPrms.TimeMin = WTNumUtils.str2double(answer{1,1});
-                    plotsPrms.TimeMax = WTNumUtils.str2double(answer{1,2});
-                    plotsPrms.FreqMin = WTNumUtils.str2double(answer{1,3});
-                    plotsPrms.FreqMax = WTNumUtils.str2double(answer{1,4});
-                    success = plotsPrms.validate(); 
-                catch me
-                    wtLog.except(me);
-                end
-                
-                if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                end
+                success = all([ ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMin', WTNumUtils.str2double(answer{1,1}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMin').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'TimeMax', WTNumUtils.str2double(answer{1,2}))).logWrn().displayWrn('Review parameter', 'Invalid TimeMax').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMin', WTNumUtils.str2double(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMin').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'FreqMax', WTNumUtils.str2double(answer{1,4}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMax').run().Succeeded ...
+                ]);
+
+                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
         function success = define2DScalpMapPlotsSettings(plotsPrms, logFlag, maxSerieLength)
             success = false; 
-            WTValidations.mustBeA(plotsPrms, ?WT2DScalpMapPlotsCfg);
+            WTValidations.mustBe(plotsPrms, ?WT2DScalpMapPlotsCfg);
             maxSerieLength = WTCodingUtils.ifThenElse(nargin > 2, @()maxSerieLength, 0);
             wtLog = WTLog();
             
@@ -343,24 +341,20 @@ classdef WTPlotsGUI
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted 2D scalp map plots configuration dialog');
                     return 
                 end
 
-                try
-                    plotsPrms.Time = answer{1,1};
-                    plotsPrms.Frequency =answer{1,2};
-                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,3});
-                    plotsPrms.PeripheralElectrodes = answer{1,4};
-                    plotsPrms.Contours = answer{1,5};
-                    plotsPrms.ElectrodesLabel = answer{1,6};
-                    success = plotsPrms.validate(); 
-                catch me
-                    wtLog.except(me);
-                end
-
-                if ~success
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                end
+                success = all([ ...
+                    WTTryExec(@()set(plotsPrms, 'Time', answer{1,1})).logWrn().displayWrn('Review parameter', 'Invalid Time').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Frequency', answer{1,2})).logWrn().displayWrn('Review parameter', 'Invalid Frequency').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'Scale', WTNumUtils.str2nums(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid Scale').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'PeripheralElectrodes', answer{1,4})).logWrn().displayWrn('Review parameter', 'Invalid PeripheralElectrodes').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Contours', answer{1,5})).logWrn().displayWrn('Review parameter', 'Invalid Contours').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'ElectrodesLabel', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid ElectrodesLabel').run().Succeeded ...
+                ]);
+                
+                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
 
                 if maxSerieLength > 0 && ~isempty(plotsPrms.TimeResolution) 
                     n = length(plotsPrms.TimeMin : plotsPrms.TimeResolution : plotsPrms.TimeMax);
@@ -390,9 +384,10 @@ classdef WTPlotsGUI
             success = true;
         end
 
-        function success = define3DScalpMapPlotsSettings(plotsPrms, logFlag)
+        function success = define3DScalpMapPlotsSettings(plotsPrms, channelsPrms, logFlag)
             success = false; 
-            WTValidations.mustBeA(plotsPrms, ?WT3DScalpMapPlotsCfg);
+            WTValidations.mustBe(plotsPrms, ?WT3DScalpMapPlotsCfg);
+            ioProc = WTProject().Config.IOProc;
             wtLog = WTLog();
             
             if isempty(plotsPrms.Scale) || ...
@@ -401,47 +396,67 @@ classdef WTPlotsGUI
                 plotsPrms.Scale = WTCodingUtils.ifThenElse(logFlag, [-10.0 10.0], [-0.5 0.5]);
             end  
 
+            % Historically the spline file was stored into the channels params, so here we keep that...
             answer = { ...
                 sprintf(WTConfigFormatter.FmtArray, num2str(plotsPrms.Time)) ...
                 sprintf(WTConfigFormatter.FmtArray, num2str(plotsPrms.Frequency)) ...
                 sprintf(WTConfigFormatter.FmtArray, num2str(plotsPrms.Scale)) ...
+                channelsPrms.SplineFile, ...
             };
 
             scaleLabel = WTCodingUtils.ifThenElse(logFlag, 'Scale (% change)', 'Scale (mV)');
             
+            function splineFile = selectSplineFile()
+                [splineFile, ~, ~] = WTDialogUtils.uiGetFiles(ioProc.SplineFileTypeFlt, -1, -1, 'Select spline file', ...
+                    'MultiSelect', 'off', 'restrictToDirs', ['^' regexptranslate('escape', WTLayout.getDevicesDir()) ], ...
+                    WTLayout.getDevicesDir());
+            end
+
+            userData = struct();
+            userData.selectSplineFile = @selectSplineFile;
+            
+            cbSetSpline = [
+                'h = findobj(gcbf, ''tag'', ''spline'');' ...
+                'v = get(h, ''userdata'').selectSplineFile();' ...
+                'if ~isempty(v)' ...
+                '   set(h, ''string'', v);' ...
+                'end' ...
+            ];
+
             function params = setParameters(answer) 
                 params = { ...
-                    { 'style' 'text'     'string' 'Time (ms): From - To     ' } ...
-                    { 'style' 'edit'     'string'  answer{1,1} } ...
-                    { 'style' 'text'     'string' 'Frequency (Hz): From - To' } ...
-                    { 'style' 'edit'     'string'  answer{1,2} } ...
-                    { 'style' 'text'     'string'  scaleLabel } ...
-                    { 'style' 'edit'     'string'  answer{1,3} } ...
+                    { 'style' 'text'       'string' 'Time (ms): From - To     ' } ...
+                    { 'style' 'edit'       'string'  answer{1,1} } ...
+                    { 'style' 'text'       'string' 'Frequency (Hz): From - To' } ...
+                    { 'style' 'edit'       'string'  answer{1,2} } ...
+                    { 'style' 'text'       'string'  scaleLabel } ...
+                    { 'style' 'edit'       'string'  answer{1,3} } ...
+                    { 'style' 'text'       'string' '' } ...
+                    { 'style' 'text'       'string' 'Spline reference' } ...
+                    { 'style' 'pushbutton' 'string' 'Set' 'callback' cbSetSpline } ...
+                    { 'style' 'edit'       'string'  answer{1,4} 'tag' 'spline' 'enable' 'off' 'userdata' userData } ...
                 };
             end
             
-            geometry = { [1 1] [1 1] [1 1] };
+            geometry = { [1 1] [1 1] [1 1] 1 1 [0.15 0.85] };
 
             while ~success
                 parameters = setParameters(answer);
                 answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', parameters, 'title', 'Set plots parameters');
                 
                 if isempty(answer)
+                    wtLog.dbg('User quitted 3D scalp map plots configuration dialog');
                     return 
                 end
 
-                try
-                    plotsPrms.Time = answer{1,1};
-                    plotsPrms.Frequency = answer{1,2};
-                    plotsPrms.Scale = WTNumUtils.str2nums(answer{1,3});
-                    success = plotsPrms.validate(); 
-                catch me
-                    wtLog.except(me);
-                end
+                success = all([ ...
+                    WTTryExec(@()set(plotsPrms, 'Time', answer{1,1})).logWrn().displayWrn('Review parameter', 'Invalid Time').run().Succeeded ...
+                    WTTryExec(@()set(plotsPrms, 'Frequency', answer{1,2})).logWrn().displayWrn('Review parameter', 'Invalid Frequency').run().Succeeded ... 
+                    WTTryExec(@()set(plotsPrms, 'Scale', WTNumUtils.str2nums(answer{1,3}))).logWrn().displayWrn('Review parameter', 'Invalid Scale').run().Succeeded ... 
+                    WTTryExec(@()set(channelsPrms, 'SplineFile', answer{1,4})).logWrn().displayWrn('Review parameter', 'Invalid SplineFile').run().Succeeded ...
+                ]);
 
-                if ~success 
-                    WTDialogUtils.wrnDlg('Review parameter', 'Invalid parameters: check the log for details');
-                end
+                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
     end

@@ -1,4 +1,19 @@
-classdef WTAppConfig < WTClass & matlab.mixin.Copyable
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+classdef WTAppConfig < WTClass & matlab.mixin.Copyable & matlab.mixin.SetGet
 
     properties(Constant)
         ClassUUID = 'c6848e73-fb3c-48c6-a542-695ac2225339'
@@ -76,7 +91,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         end
 
         function copyFrom(o, oo)
-            WTValidations.mustBeA(oo, ?WTAppConfig);
+            WTValidations.mustBe(oo, ?WTAppConfig);
             o.ShowSplashScreen = oo.ShowSplashScreen;
             o.DangerWarnings = oo.DangerWarnings;
             o.DefaultStdLogLevel = oo.DefaultStdLogLevel;
@@ -88,12 +103,12 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable
         end 
 
         function copyTo(o, oo)
-            WTValidations.mustBeA(oo, ?WTAppConfig); 
+            WTValidations.mustBe(oo, ?WTAppConfig); 
             oo.copyFrom(o)
         end
 
         function same = equalTo(o, oo)
-            WTValidations.mustBeA(oo, ?WTAppConfig); 
+            WTValidations.mustBe(oo, ?WTAppConfig); 
             same = o.ShowSplashScreen == oo.ShowSplashScreen && ...
                 o.DangerWarnings == oo.DangerWarnings && ...
                 o.DefaultStdLogLevel == oo.DefaultStdLogLevel && ...

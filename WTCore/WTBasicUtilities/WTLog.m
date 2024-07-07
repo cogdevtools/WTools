@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 classdef WTLog < WTClass
 
     properties(Constant)
@@ -43,7 +58,12 @@ classdef WTLog < WTClass
         LogLevelStr char
     end 
 
-    methods (Static, Access=private)         
+    methods (Static, Access=private)
+        function is = isLogLevel(level)
+            is = isscalar(level) && isnumeric(level) && floor(level) == level && ...
+                 level >= WTLog.LevelErr && level <= WTLog.LevelDbg;
+        end
+
         function [module,func,line] = stackInfo(level) 
             stack = dbstack('-completenames');
             if level > length(stack)
@@ -223,7 +243,7 @@ classdef WTLog < WTClass
         end
 
         function o = set.UsrLogLevel(o, level)
-            if level >= WTLog.LevelErr && level <= WTLog.LevelDbg
+            if WTLog.isLogLevel(level)
                 o.UsrLogLevel = level;
             end
         end
@@ -233,7 +253,7 @@ classdef WTLog < WTClass
         end
         
         function o = set.StdLogLevel(o, level)
-            if level >= WTLog.LevelErr && level <= WTLog.LevelDbg
+            if WTLog.isLogLevel(level)
                 o.StdLogLevel = level;
             end
         end
@@ -251,9 +271,19 @@ classdef WTLog < WTClass
             level = WTLog.LevelStrs{o.LogLevel};
         end
 
-        function o = except(o, excp, rethrow) 
-            msg = strrep(getReport(excp, 'extended'), '%', '%%');
-            o.msg(2, WTLog.LevelErr, '%s\n', msg);
+        function o = except(o, excp, rethrow, level, extendedReport) 
+            rethrow = nargin > 2 && islogical(rethrow) && any(rethrow);
+            stdStream = 1;
+            if nargin < 4 || ~WTLog.isLogLevel(level)
+                level = WTLog.LevelErr;
+                stdStream = 2;
+            end
+            reportType = 'extended';
+            if nargin > 4 && islogical(extendedReport) && ~any(extendedReport)
+                reportType = 'basic';
+            end
+            msg = strrep(getReport(excp, reportType), '%', '%%');
+            o.msg(stdStream, level, '%s', msg);
             if nargin > 2 && rethrow
                 excp.rethrow();
             end
@@ -276,6 +306,9 @@ classdef WTLog < WTClass
         end
 
         function o = log(o, level, fmt, varargin) 
+            if ~WTLog.isLogLevel(level)
+                level = WTLog.LevelInf
+            end
             switch level
                 case WTLog.LevelErr
                     o.err(fmt, varargin{:});
@@ -285,8 +318,6 @@ classdef WTLog < WTClass
                     o.info(fmt, varargin{:});
                 case WTLog.LevelDbg
                     o.dbg(fmt, varargin{:});
-                otherwise
-                    o.info(fmt, varargin{:});
             end
         end
 

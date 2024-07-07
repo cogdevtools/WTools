@@ -1,3 +1,18 @@
+% Copyright (C) 2024 Eugenio Parise, Luca Filippin
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 function success = wtEGIToEEGLab()
     success = false;
     wtProject = WTProject();
@@ -49,12 +64,8 @@ function success = wtEGIToEEGLab()
          return
     end
 
-    [success, EGI2EEGLabPrms] = autoSetTriggerLatency(subjectFileNames{1});
-    if ~success 
-        return
-    end
-
     samplingPrms = wtProject.Config.Sampling;
+    EGI2EEGLabPrms = wtProject.Config.EGIToEEGLab;
 
     for sbj = 1:nSubjects 
         subject = subjects{sbj};
@@ -190,25 +201,6 @@ function success = setTriggerLatency()
 
     wtProject.Config.EGIToEEGLab = EGI2EEGLabPrms;
     success = true;
-end
-
-function [success, EGI2EEGLabPrms] = autoSetTriggerLatency(subjFileName)
-    wtProject = WTProject();
-    ioProc = wtProject.Config.IOProc;
-    EGI2EEGLabPrms = copy(wtProject.Config.EGIToEEGLab);
-    samplingPrms = wtProject.Config.Sampling;
-
-    if EGI2EEGLabPrms.TriggerLatency > 0
-        success = true;
-        return
-    end
-    % Set trigger latency from the exported .mat file (automatic time lock to the stimulus onset).
-    [success, eciTCPIP] = ioProc.loadImport(WTIOProcessor.SystemEGI, subjFileName, 'ECI_TCPIP_55513');
-    if ~success 
-        wtProject.notifyErr([], 'Failed to read ECI_TCPIP_55513 from %s', subjFileName);
-        return
-    end
-    EGI2EEGLabPrms.TriggerLatency = cell2mat(eciTCPIP(4,1))*(1000/samplingPrms.SamplingRate);
 end
 
 function success = setMinMaxTrialId()
