@@ -17,8 +17,8 @@ classdef WTEpochsAndFreqFiltersCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
 
     properties
         EpochLimits(1,:) single {mustBeFinite, WTValidations.mustBeLimitedLinearArray(EpochLimits, 2, 2, 1)}
-        LowPassFilter single {WTValidations.mustBeGTE(LowPassFilter, 0)}
-        HighPassFilter single {WTValidations.mustBeGT(HighPassFilter, 0)}
+        LowPassFilter single {WTValidations.mustBeGTE(LowPassFilter,0,1,0)} = NaN
+        HighPassFilter single {WTValidations.mustBeGT(HighPassFilter,0,1,0)} = NaN
     end
 
     methods

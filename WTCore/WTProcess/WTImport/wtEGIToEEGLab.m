@@ -246,9 +246,9 @@ function [success, dataOut] = filterAndRenameDataFields(subjFileName)
 
         dataOut = struct();
         allTrials = minMaxTrialIdPrms.allTrials();
-        minTrial = minMaxTrialIdPrms.MinTrialId;
-        maxTrial = minMaxTrialIdPrms.MaxTrialId;
-
+        minTrial = WTCodingUtils.ifThenElse(isnan(minMaxTrialIdPrms.MinTrialId), 0, minMaxTrialIdPrms.MinTrialId);
+        maxTrial = WTCodingUtils.ifThenElse(isnan(minMaxTrialIdPrms.MaxTrialId), inf, minMaxTrialIdPrms.MaxTrialId);
+        
         % fields should be normally ordered and we keep the same order
         dataFields = fieldnames(data);
         % find the <condition>_Segment<#> fields

@@ -102,6 +102,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
 
     plotsPrms = wtProject.Config.AveragePlots;
     timeRes = data.tim(2) - data.tim(1); 
+    freqRes = data.Fa(2) - data.Fa(1);
     downsampleFactor = WTCodingUtils.ifThenElse(timeRes <= 1, 4, @()WTCodingUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
@@ -148,6 +149,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         prms.timeIdxs = timeIdxs;
         prms.freqIdxs = freqIdxs;
         prms.timeRes = timeRes;
+        prms.freqRes = freqRes;
         prms.downsampleFactor = downsampleFactor;
         prms.channelsToPlotIdxs = channelsToPlotIdxs;
         prms.plotsPrms = copy(plotsPrms);
@@ -344,7 +346,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         if plotsPrms.Contours
             timePace = prms.downsampleFactor * prms.timeRes;
             contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
-                    plotsPrms.FreqMin:plotsPrms.FreqMax, ...
+                    plotsPrms.FreqMin:prms.freqRes:plotsPrms.FreqMax, ...
                     squeeze(prms.WT(subPlotIdx, prms.freqIdxs, prms.timeIdxs)), 'k');
         end
 

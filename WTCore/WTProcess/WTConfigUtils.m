@@ -19,8 +19,8 @@ classdef WTConfigUtils
 
         % Adjust 'edge' to the closest value in the ORDERED vector 'values'.
         function adjEdge = adjustEdge(edge, values)
-            edgeL = values(find(values <= edge, 1, 'last'));
-            edgeR = values(find(values >= edge, 1, 'first'));
+            edgeL = WTNumUtils.cast(values(find(values <= edge, 1, 'last')), 'like', edge);
+            edgeR = WTNumUtils.cast(values(find(values >= edge, 1, 'first')), 'like', edge);
             if isempty(edgeL)
                 adjEdge = edgeR;
             elseif isempty(edgeR)
@@ -112,21 +112,21 @@ classdef WTConfigUtils
                 end
 
                 if hasResolution 
-                    minResolution = params.Domain(2) - vMin;
+                    minResolution = WTNumUtils.cast(params.Domain(2), 'like', vMin) - vMin;
                     adjResolution = floor(params.Resolution / minResolution) * minResolution;
 
                     if params.Resolution < minResolution
                         wtLog.warn('Param %s corrected to minimum value %s %s (was %s < minimum value)', ... 
                             params.NameResolution, num2str(minResolution), params.Dimension, num2str(params.Resolution));
-                        params.Resolution = minResolution;
+                        params.Resolution = WTNumUtils.cast(minResolution, 'like', params.Resolution);
                     elseif params.Resolution ~= adjResolution
                         wtLog.warn('Param %s adjusted to closest value %s %s (was %s)', ... 
                             params.NameResolution, num2str(adjResolution), params.Dimension, num2str(params.Resolution));
-                        params.Resolution = adjResolution;
+                        params.Resolution = WTNumUtils.cast(adjResolution, 'like', params.Resolution);
                     end
                 end
             catch me
-                wtLog.except(me)
+                wtLog.except(me);
                 wtProject.notifyErr([], 'Failed to adjust range params due to unexpected error');
                 return
             end

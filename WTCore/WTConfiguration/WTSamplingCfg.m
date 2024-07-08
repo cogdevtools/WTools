@@ -20,7 +20,7 @@ classdef WTSamplingCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.
     end
 
     properties
-        SamplingRate single {mustBeFinite, WTValidations.mustBeGT(SamplingRate, 0)}
+        SamplingRate single {WTValidations.mustBeGT(SamplingRate,0,0,0)} = 1
     end
 
     methods

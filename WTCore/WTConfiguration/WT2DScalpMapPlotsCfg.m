@@ -21,9 +21,9 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
 
     properties
         Scale(1,:) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
-        Contours(1,1) uint8 {WTValidations.mustBeZeroOrOne}
-        PeripheralElectrodes(1,1) uint8 {WTValidations.mustBeZeroOrOne}
-        ElectrodesLabel(1,1) uint8 {WTValidations.mustBeZeroOrOne}
+        Contours(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        PeripheralElectrodes(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        ElectrodesLabel(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods

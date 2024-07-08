@@ -96,7 +96,7 @@ classdef WTStatisticsGUI
                     WTTryExec(@()conditions(answer{1,8})).logWrn().displayWrn('Review parameter', 'Invalid Conditions selection').run().Succeeded ... 
                 ]);
 
-                success = success && WTTryExec(@statsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()statsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
 
                 if success
                     subjectsList = subjects(answer{1,7});

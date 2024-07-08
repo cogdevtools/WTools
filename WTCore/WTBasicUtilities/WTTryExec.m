@@ -59,7 +59,7 @@ classdef WTTryExec < handle
         end
 
         function display = displayException(o, displayFunct) 
-            display = @(me, title, fmt, varargin) displayFunct(title, [fmt ': %s'], varargin{:}, getReport(me, 'basic', 'hyperlinks', 'off'));
+            display = @(me, title, fmt, varargin) displayFunct(title, [fmt ': %s'], varargin{:}, WTStringUtils.htmlToCharArray(me.message));
         end
 
         function exec(o)

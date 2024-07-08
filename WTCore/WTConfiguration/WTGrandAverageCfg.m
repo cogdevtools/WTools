@@ -20,10 +20,10 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
     end
 
     properties
-        UseAllSubjects(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        PerSubjectAverage(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
+        UseAllSubjects(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        PerSubjectAverage(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
     methods

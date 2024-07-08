@@ -24,9 +24,9 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
         ChopTimeMax(1,1) single
         BaselineTimeMin(1,1) single
         BaselineTimeMax(1,1) single
-        LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        NoBaselineCorrection(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        EvokedOscillations(1,1) uint8  {WTValidations.mustBeZeroOrOne} = 0
+        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        NoBaselineCorrection(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        EvokedOscillations(1,1) int8  {WTValidations.mustBeZeroOrOne} = 0
     end
     methods
         function o = WTBaselineChopCfg(ioProc)

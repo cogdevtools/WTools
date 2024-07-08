@@ -38,7 +38,7 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.
         ChannelsLocationFile char
         ChannelsLocationFileType char
         SplineFile char
-        ReReference uint8 {WTValidations.mustBeInRange(ReReference,0,2,1,1)} = 0
+        ReReference int8 {WTValidations.mustBeInRange(ReReference,0,2,1,1)} = 0
         NewChannelsReference cell {WTValidations.mustBeLinearCellArrayOfChar} = {}
         CutChannels cell {WTValidations.mustBeLinearCellArrayOfChar} = {}
     end

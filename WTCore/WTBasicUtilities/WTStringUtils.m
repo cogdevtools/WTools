@@ -16,6 +16,8 @@
 classdef WTStringUtils
 
     methods(Static)
+        % Convert the input or its content into char arrays, possibly in a recursive way. The input can be
+        % strings, string arrays or cell arrays.  String arrays are converted into cell arrays.
         function c = convertStrToChar(v, recursively)
             if iscell(v)
                 if nargin > 1 && recursively
@@ -60,6 +62,16 @@ classdef WTStringUtils
                 lines{i} = char(join(subItems, separator));
             end
             lines{1} = [ header lines{1} ];
+        end
+
+        % Convert a possible html char array into text (remove hyperlinks). If the conversion failse, it returns
+        % the input.
+        function result = htmlToCharArray(html)
+            try
+                result = convertStringsToChars(extractHTMLText(htmlTree(html)));
+            catch
+                result = html;
+            end
         end
     end
 end

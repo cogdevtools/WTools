@@ -20,8 +20,8 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.m
     end
 
     properties
-        MinTrialId int32 {WTValidations.mustBeGTE(MinTrialId, 0, 1)}
-        MaxTrialId int32 {WTValidations.mustBeGTE(MaxTrialId, 0, 1)}
+        MinTrialId int32 {WTValidations.mustBeGTE(MinTrialId,0,1,0)}
+        MaxTrialId int32 {WTValidations.mustBeGTE(MaxTrialId,0,1,0)}
     end
 
     methods

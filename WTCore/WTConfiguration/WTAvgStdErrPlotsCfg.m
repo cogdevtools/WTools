@@ -20,7 +20,7 @@ classdef WTAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Co
     end
 
     properties
-        AllChannels(1,1) uint8 {WTValidations.mustBeZeroOrOne}
+        AllChannels(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
 
@@ -33,6 +33,7 @@ classdef WTAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Co
 
         function default(o) 
             default@WTTimeFreqCfg(o);
+            o.AllChannels = 1;
         end
 
         function success = load(o) 

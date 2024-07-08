@@ -34,10 +34,10 @@ classdef WTPlotUtils
         % size is a constant.
         function positions = getFiguresPositions(nFigures, whRatio, rWidth, rWidthOffs, relative)
             WTValidations.mustBeInt(nFigures);
-            WTValidations.mustBeGTE(nFigures, 1, false);
-            WTValidations.mustBeGT(whRatio, 0);
-            WTValidations.mustBeInRange(rWidth, 0, 1, false, true);
-            WTValidations.mustBeInRange(rWidthOffs, 0, 1, true, true);
+            WTValidations.mustBeGTE(nFigures,1,0,1);
+            WTValidations.mustBeGT(whRatio,0,0,0);
+            WTValidations.mustBeInRange(rWidth,0,1,0,1);
+            WTValidations.mustBeInRange(rWidthOffs,0,1,1,1);
             relative = nargin > 4 && relative;
 
             screenSize = get(groot, 'screensize');

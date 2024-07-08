@@ -20,11 +20,11 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
     end
 
     properties
-        Condition1(1,1) uint8 {mustBeFinite}
-        Condition2(1,1) uint8 {mustBeFinite}
-        ConditionsDiff(1,1) uint8 {mustBeFinite}
-        LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne}
-        EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne}
+        Condition1(1,1) int8 {WTValidations.mustBeGT(Condition1,0,0,0)} = 1
+        Condition2(1,1) int8 {WTValidations.mustBeGT(Condition2,0,0,0)} = 1
+        ConditionsDiff(1,1) int8 {WTValidations.mustBeGT(ConditionsDiff,0,0,0)} = 1
+        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods

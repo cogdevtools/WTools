@@ -17,6 +17,13 @@ classdef WTNumUtils
 
     methods(Static)
 
+        function casted = cast(value, varargin)
+            casted = cast(value, varargin{:});
+            if casted ~= value
+                WTException.badValue('Value can''t be casted without alteration').throw();
+            end
+        end
+
         function value = str2double(str, allowEmptyStr)
             allowEmptyStr = nargin > 1 && allowEmptyStr;
             if allowEmptyStr

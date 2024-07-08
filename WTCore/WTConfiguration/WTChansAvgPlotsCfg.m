@@ -20,9 +20,9 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
     end
 
     properties
-        Scale(1,2) single  
-        Contours(1,1) uint8 {WTValidations.mustBeZeroOrOne}
-        AllChannels(1,1) uint8 {WTValidations.mustBeZeroOrOne}
+        Scale(1,2) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
+        Contours(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        AllChannels(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods

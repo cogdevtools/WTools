@@ -99,6 +99,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
 
     plotsPrms = wtProject.Config.ChannelsAveragePlots;
     timeRes = data.tim(2) - data.tim(1); 
+    freqRes = data.Fa(2) - data.Fa(1);
     downsampleFactor = WTCodingUtils.ifThenElse(timeRes <= 1, 4, @()WTCodingUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : downsampleFactor : find(data.tim == plotsPrms.TimeMax);
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
@@ -169,7 +170,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
             if plotsPrms.Contours
                 timePace = downsampleFactor * timeRes;
                 contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
-                        plotsPrms.FreqMin:plotsPrms.FreqMax, ...
+                        plotsPrms.FreqMin:freqRes:plotsPrms.FreqMax, ...
                         squeeze(WTChansAvg(1, freqIdxs, timeIdxs)), 'k');
             end
 

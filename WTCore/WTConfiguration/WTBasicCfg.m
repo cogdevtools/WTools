@@ -28,11 +28,11 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.Set
     properties
         FilesPrefix char {mustBeNonempty} = 'UnnamedProject'
         SourceSystem char 
-        ImportDone uint8 {WTValidations.mustBeZeroOrOne} = 0
-        WaveletAnalysisDone uint8 {WTValidations.mustBeZeroOrOne} = 0
-        ChopAndBaselineCorrectionDone uint8 {WTValidations.mustBeZeroOrOne} = 0
-        ConditionsDifferenceDone uint8 {WTValidations.mustBeZeroOrOne} = 0
-        GrandAverageDone uint8 {WTValidations.mustBeZeroOrOne} = 0
+        ImportDone int8 {WTValidations.mustBeZeroOrOne} = 0
+        WaveletAnalysisDone int8 {WTValidations.mustBeZeroOrOne} = 0
+        ChopAndBaselineCorrectionDone int8 {WTValidations.mustBeZeroOrOne} = 0
+        ConditionsDifferenceDone int8 {WTValidations.mustBeZeroOrOne} = 0
+        GrandAverageDone int8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
     methods

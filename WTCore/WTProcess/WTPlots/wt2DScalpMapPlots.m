@@ -143,8 +143,9 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         xLabel = WTPlotUtils.getXLabelParams(logFlag);
         channelAnnotationHeight = 0.05;
         colorMap = WTPlotUtils.getPlotsColorMap(); 
+        serialPlots = ~isempty(plotsPrms.TimeResolution) || ~isempty(plotsPrms.FreqResolution);
 
-        if nSubPlots > 1
+        if serialPlots
             % Create struct to store all the useful params used here and by the callbacks
             prms = struct();
             prms.whSubPlotRatio = 1;
@@ -192,7 +193,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 data.WT = mean(data.WT(:,freqIdxs,:), 2);
             end
            
-            if nSubPlots == 1
+            if ~serialPlots
                 WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                         data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
                         plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
@@ -261,7 +262,7 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 hFigure.UserData.OpenSubPlots = [];
                 hFigure.UserData.Annotation = hWhichSubPlotAnnotation;
                 hFigure.UserData.SubPlotsPolys = cellfun(@(x)[ x(1), x(1)+x(3), x(1)+x(3), x(1); x(2), x(2), x(2)+x(4), x(2)+x(4) ], ...
-                    get([subPlotTiles{:}], 'position'), 'uniformoutput', false);
+                    cellfun(@(v)get(v,'position'), subPlotTiles, 'uniformoutput', false), 'uniformoutput', false);
                 % Set callbacks
                 hFigure.CloseRequestFcn = {@WTPlotUtils.parentObjectCloseRequestCb, 'OpenSubPlots'};
                 hFigure.WindowButtonDownFcn = {@mainPlotOnButtonDownCb, prms};

@@ -18,8 +18,8 @@ classdef WTTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
     properties
         TimeMin(1,1) single
         TimeMax(1,1) single
-        FreqMin(1,1) uint32
-        FreqMax(1,1) uint32
+        FreqMin(1,1) int32 {WTValidations.mustBeGT(FreqMin,0,0,0)} = 1
+        FreqMax(1,1) int32 {WTValidations.mustBeGT(FreqMax,0,0,0)} = 1
     end
 
     methods
@@ -30,8 +30,8 @@ classdef WTTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
         function default(o) 
             o.TimeMin = 0;
             o.TimeMax = 0;
-            o.FreqMin = 0;
-            o.FreqMax = 0;
+            o.FreqMin = 1;
+            o.FreqMax = 1;
         end
 
         function success = validate(o, throwExcpt)

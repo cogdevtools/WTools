@@ -20,7 +20,7 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mix
     end
 
     properties
-        TriggerLatency(1,1) single
+        TriggerLatency(1,1) single {mustBeFinite}
     end
 
     properties (Access = private)

@@ -119,7 +119,7 @@ classdef WTPlotsGUI
                     WTTryExec(@()set(plotsPrms, 'AllChannels', answer{1,7})).logWrn().displayWrn('Review parameter', 'Invalid AllChannels').run().Succeeded ... 
                 ]);
 
-                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()plotsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
@@ -172,7 +172,7 @@ classdef WTPlotsGUI
                     WTTryExec(@()set(plotsPrms, 'AllChannels', answer{1,5})).logWrn().displayWrn('Review parameter', 'Invalid AllChannels').run().Succeeded ... 
                 ]);
 
-                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()plotsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
@@ -233,7 +233,7 @@ classdef WTPlotsGUI
                     WTTryExec(@()set(plotsPrms, 'Contours', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid Contours').run().Succeeded ... 
                 ]);
 
-                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()plotsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
@@ -280,7 +280,7 @@ classdef WTPlotsGUI
                     WTTryExec(@()set(plotsPrms, 'FreqMax', WTNumUtils.str2double(answer{1,4}))).logWrn().displayWrn('Review parameter', 'Invalid FreqMax').run().Succeeded ...
                 ]);
 
-                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()plotsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
 
@@ -354,7 +354,7 @@ classdef WTPlotsGUI
                     WTTryExec(@()set(plotsPrms, 'ElectrodesLabel', answer{1,6})).logWrn().displayWrn('Review parameter', 'Invalid ElectrodesLabel').run().Succeeded ...
                 ]);
                 
-                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()plotsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
 
                 if maxSerieLength > 0 && ~isempty(plotsPrms.TimeResolution) 
                     n = length(plotsPrms.TimeMin : plotsPrms.TimeResolution : plotsPrms.TimeMax);
@@ -456,7 +456,7 @@ classdef WTPlotsGUI
                     WTTryExec(@()set(channelsPrms, 'SplineFile', answer{1,4})).logWrn().displayWrn('Review parameter', 'Invalid SplineFile').run().Succeeded ...
                 ]);
 
-                success = success && WTTryExec(@plotsPrms.validate).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                success = success && WTTryExec(@()plotsPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
         end
     end

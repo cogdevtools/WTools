@@ -14,7 +14,6 @@
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
-
     % When Time and Frequency contain only 1 value, then they represent a single point set.
     % When they contain 2 values they represent a range, when they contain 3 values they 
     % represent a range of paced values, where the pace is the middle value.
@@ -34,9 +33,72 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
         FreqString
     end
 
+    properties (Access = private)
+        GuardedSet logical = true;
+    end
+
     properties (GetAccess = public, SetAccess = protected)
         AllowTimeResolution logical
         AllowFreqResolution logical
+    end
+
+    methods(Access = private)
+        function success = validateTime(o, time, throwExcpt) 
+            if ~o.GuardedSet
+                success = true;
+                return
+            end
+
+            throwExcpt = nargin > 1 && throwExcpt; 
+            success = false;
+            nTime = numel(time);
+
+            if nTime == 0 
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Time should contain between 1 and %d values', ...
+                    WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2)), ~throwExcpt);
+                return
+            end
+            if nTime == 2 && time(1) >= time(2)
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Time(2) <= Time(1)'), ~throwExcpt);
+                return
+            end
+            if nTime == 3 && isempty(time(1):time(2):time(3))
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Time defines an empty time serie'), ~throwExcpt);
+                return
+            end
+            success = true;
+        end
+
+        function success = validateFrequency(o, freq, throwExcpt)
+            if ~o.GuardedSet
+                success = true;
+                return
+            end
+
+            throwExcpt = nargin > 1 && throwExcpt; 
+            success = false;
+            nFreq = numel(freq);
+
+            if nFreq == 0
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency should contain between 1 and %d values', ... 
+                    WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2)), ~throwExcpt);
+                return
+            end
+
+            if freq(1) <= 0 
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency(1) cannot be <= 0'), ~throwExcpt);
+                return
+            end
+            if nFreq == 2 && freq(1) >= freq(2)
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency(2) <= Frequency(1)'), ~throwExcpt);
+                return
+            end
+            if nFreq == 3 && isempty(freq(1):freq(2):freq(3))
+                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency defines an empty time serie'), ~throwExcpt);
+                return
+            end
+            success = true;
+        end
     end
 
     methods
@@ -47,8 +109,10 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
         end
 
         function default(o) 
+            o.GuardedSet = false;
             o.Time = [];
             o.Frequency = [];
+            o.GuardedSet = true;
         end
 
         function set.Time(o, value)
@@ -57,6 +121,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
             end
             nMaxValues = WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2);
             WTValidations.mustBeLimitedLinearArray(value, 1, nMaxValues, 1)
+            o.validateTime(value, true);
             o.Time = value;
         end
 
@@ -78,7 +143,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
                 WTException.unsupported('Time resolution is not supported').throw();
             end
             nTime = length(o.Time);
-            WTValidations.mustBeGTE(nTime, 2)
+            WTValidations.mustBeGTE(nTime, 2, 0, 0)
             if nTime > 2
                 o.Time(2) = value;
             else
@@ -117,6 +182,8 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
             end
             nMaxValues = WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2);
             WTValidations.mustBeLimitedLinearArray(value, 1, nMaxValues, 1)
+            WTValidations.mustBeGT(value, 0, 0, 0);
+            o.validateFrequency(value, true);
             o.Frequency = value;
         end
 
@@ -138,7 +205,7 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
                 WTException.unsupported('Frequency resolution is not supported').throw();
             end
             nFreq = length(o.Frequency);
-            WTValidations.mustBeGTE(nFreq, 2)
+            WTValidations.mustBeGTE(nFreq, 2, 0, 0)
             if nFreq > 2
                 o.Frequency(2) = value;
             else
@@ -173,47 +240,11 @@ classdef WTPacedTimeFreqCfg < matlab.mixin.Copyable & matlab.mixin.SetGet
 
         function success = validate(o, throwExcpt)
             throwExcpt = nargin > 1 && throwExcpt; 
-            success = false;
-
-            nTime = numel(o.Time);
-            nFreq = numel(o.Frequency);
-
-            if nTime == 0 
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Time should contain between 1 and %d values', ...
-                    WTCodingUtils.ifThenElse(o.AllowTimeResolution, 3, 2)), ~throwExcpt);
-                return
-            end
-            if nFreq == 0
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency should contain between 1 and %d values', ... 
-                    WTCodingUtils.ifThenElse(o.AllowFreqResolution, 3, 2)), ~throwExcpt);
-                return
-            end
-            if nTime == 3 && nFreq == 3 
+            success = o.validateTime(o.Time, throwExcpt) && o.validateFrequency(o.Frequency, throwExcpt);
+            if success && numel(o.Time) == 3 && numel(o.Frequency) == 3
                 WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency & Time cannot both have 3 values (i.e. both define series)'), ~throwExcpt);
-                return
+                success = false;
             end
-            if nTime == 2 && o.Time(1) >= o.Time(2)
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Time(2) <= Time(1)'), ~throwExcpt);
-                return
-            end
-            if nTime == 3 && isempty(o.Time(1):o.Time(2):o.Time(3))
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Time defines an empty time serie'), ~throwExcpt);
-                return
-            end
-            if o.Frequency(1) == 0 
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency(1) cannot be 0'), ~throwExcpt);
-                return
-            end
-            if nFreq == 2 && o.Frequency(1) >= o.Frequency(2)
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency(2) <= Frequency(1)'), ~throwExcpt);
-                return
-            end
-            if nFreq == 3 && isempty(o.Frequency(1):o.Frequency(2):o.Frequency(3))
-                WTCodingUtils.throwOrLog(WTException.badValue('Field Frequency defines an empty time serie'), ~throwExcpt);
-                return
-            end
-
-            success = true;
         end
     end
 end

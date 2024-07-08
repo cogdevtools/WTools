@@ -20,10 +20,10 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
     end
 
     properties
-        EEPFlag(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        EGIFlag(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        BRVFlag(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        EEGLabFlag(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
+        EEPFlag(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        EGIFlag(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        BRVFlag(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        EEGLabFlag(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
     methods

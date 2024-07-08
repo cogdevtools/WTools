@@ -20,9 +20,9 @@ classdef WTStatisticsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyab
     end
 
     properties
-        ChannelsList(1,:) uint32
-        IndividualFreqs(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
+        ChannelsList(1,:) int32 {WTValidations.mustBeGT(ChannelsList,0,0,0)}
+        IndividualFreqs(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
     methods

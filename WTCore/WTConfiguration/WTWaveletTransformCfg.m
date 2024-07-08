@@ -22,17 +22,17 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable & matla
     properties
         TimeMin(1,1) int32
         TimeMax(1,1) int32
-        TimeRes(1,1) uint32 
-        FreqMin(1,1) uint32 {WTValidations.mustBeGT(FreqMin,0)} = 1
-        FreqMax(1,1) uint32 {WTValidations.mustBeGT(FreqMax,0)} = 1
-        FreqRes(1,1) uint32 {WTValidations.mustBeGT(FreqRes,0)} = 1
-        EdgePadding(1,1) uint32
-        ChannelsList(1,:) uint32
-        EpochsList(1,:) uint32
-        LogarithmicTransform(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        EvokedOscillations(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        NormalizedWavelets(1,1) uint8 {WTValidations.mustBeZeroOrOne} = 0
-        WaveletsCycles(1,1) uint8 {WTValidations.mustBeInRange(WaveletsCycles,2,15,1,1)} = 7
+        TimeRes(1,1) int32 {WTValidations.mustBeGT(TimeRes,0,0,0)} = 1
+        FreqMin(1,1) int32 {WTValidations.mustBeGT(FreqMin,0,0,0)} = 1
+        FreqMax(1,1) int32 {WTValidations.mustBeGT(FreqMax,0,0,0)} = 1
+        FreqRes(1,1) int32 {WTValidations.mustBeGT(FreqRes,0,0,0)} = 1
+        EdgePadding(1,1) int32 {WTValidations.mustBeGTE(EdgePadding,0,0,0)} 
+        ChannelsList(1,:) int32 {WTValidations.mustBeGT(ChannelsList,0,0,0)} 
+        EpochsList(1,:) int32 {WTValidations.mustBeGT(EpochsList,0,0,0)}
+        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        NormalizedWavelets(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        WaveletsCycles(1,1) int8 {WTValidations.mustBeInRange(WaveletsCycles,2,15,1,1)} = 7
     end
     methods
         function o = WTWaveletTransformCfg(ioProc)
