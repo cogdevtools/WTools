@@ -13,7 +13,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function copiedCount = wtCopyData() 
+function copiedCount = wtCopyImport() 
     copiedCount = 0;
     wtProject = WTProject();
     ioProc = wtProject.Config.IOProc;
@@ -47,6 +47,10 @@ function copiedCount = wtCopyData()
         wtLog.info('User selected system ''%s''', system);
     end
 
+    [~, subjects] = ioProc.enumImportFiles(system); 
+    subjecsMap = WTCodingUtils.ifThenElse(isempty(subjects), @()containers.Map(), ...
+        @()containers.Map(subjects, ones(1, length(subjects))));
+
     while true
         fileExt = ['*.' WTIOProcessor.getSystemImportFileExtension(system)];
         fileFilter = {fileExt, sprintf('%s (%s)', system, fileExt)};
@@ -65,13 +69,29 @@ function copiedCount = wtCopyData()
             srcFile = char(srcFileCell);
             srcPath = fullfile(srcDir, srcFile);
 
-            if isempty(ioProc.getSubjectsFromImportFiles(system, srcFile))
-                wtLog.err('Not a valid %s file name: %s', system, srcFile);
+            [dstFile, ~] = ioProc.getImportFile(srcFile);
+            if WTIOUtils.fileExist(dstFile) && ~WTEEGLabUtils.eeglabYesNoDlg('Overwrite', ...
+                    'It looks like file ''%s'' has been already imported. Overwrite?', srcFile)
+                wtLog.warn('File ''%s'' skipped by user as already imported', srcPath);
+                continue
+            end
+
+            subj = ioProc.getSubjectsFromImportFiles(system, srcFile);
+
+            if isempty(subj)
+                wtLog.err('Not a valid %s file name: ''%s''', system, srcFile);
                 notCopiedFiles = [notCopiedFiles srcPath];
                 continue
             end 
 
-            srcPath = fullfile(srcDir, srcFile);
+            subj = char(subj{1});
+
+            if subjecsMap.isKey(subj)
+                wtLog.err('A file related to subject ''%s'' has already been copied. Rejected %s file: ''%s''', subj, system, srcFile);
+                notCopiedFiles = [notCopiedFiles srcPath];
+                continue
+            end
+
             filesToCopy = {srcPath};
             extraImportFiles = WTIOProcessor.getSystemExtraImportFiles(system, srcFile);
     
@@ -87,11 +107,14 @@ function copiedCount = wtCopyData()
                 filesToCopy = [filesToCopy extraDataPath];
             end
             
-            if length(filesToCopy) < length(extraImportFiles)+1 
+            if length(filesToCopy) < length(extraImportFiles)+1
+                wtLog.warn('File ''%s'' skipped as missing auxiliary file(s)', srcPath); 
+                notCopiedFiles = [notCopiedFiles srcPath];
                 continue
             end
 
             copyFailed = false;
+            copiedFiles = {};
 
             for file = filesToCopy
                 [copied, msg, ~] = copyfile(file{1}, importDir, 'f');
@@ -102,14 +125,21 @@ function copiedCount = wtCopyData()
                     break
                 end
 
-                copiedCount = copiedCount + 1;
+                copiedFiles(end+1) = file;
             end
 
             if copyFailed
                 wtLog.err('File ''%s'' (and/or an auxiliary file, if any) could not be copied successfully', srcPath);
                 notCopiedFiles = [notCopiedFiles srcPath];
+
+                for file = copiedFiles
+                    wtLog.info('Removing file ''%s'' because failed to copy all the auxiliaries', srcPath);
+                    delete(file{1});
+                end
             else
                 wtLog.info('File ''%s'' copied successfully', srcPath);
+                copiedCount = copiedCount + 1;
+                subjecsMap(subj) = 1;
             end
         end
 

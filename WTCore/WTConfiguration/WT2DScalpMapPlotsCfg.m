@@ -53,7 +53,7 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
                     o.PeripheralElectrodes = cells{4};
                     o.Contours = cells{5};
                     o.ElectrodesLabel = cells{6};
-                    o.validate();
+                    success = o.validate();
                 else
                     o.default();
                     WTLog().warn(['The parameters for scalp map 2D plots (%s) were set by an \n' ...
@@ -61,6 +61,7 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
                 end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

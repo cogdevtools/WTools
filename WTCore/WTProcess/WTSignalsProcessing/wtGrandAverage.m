@@ -30,7 +30,8 @@ function success = wtGrandAverage(subjects, conditions)
     if length(subjectsGrandPrms.SubjectsList) < 2 
         wtProject.notifyWrn([], ['To perform the grand average is meaningful when\n' ... 
             'there are at least 2 subjects. It''ll be performed\n'...
-            'anyway, but consider running the Subject Manager...']);
+            'anyway, but consider importing new subjects data or\n'...
+            'running the Subject Manager...']);
     end
 
     conditionsGrandPrms = wtProject.Config.ConditionsGrand;
@@ -108,7 +109,7 @@ function success = wtGrandAverage(subjects, conditions)
                 WTIOProcessor.WaveletsAnalisys_evWT, ...
                 WTIOProcessor.WaveletsAnalisys_avWT);
 
-    wtLog.info('Computing grand average...');
+    wtLog.info('Computing the grand average...');
     wtLog.pushStatus().contextOn();
 
     for cnd = 1:nConditions
@@ -138,11 +139,12 @@ function success = wtGrandAverage(subjects, conditions)
         end
 
         if grandAveragePrms.PerSubjectAverage
+            wtLog.info('Saving per subject average data: be patient, this may take quite a while...');
             dataToSave.SS = WT;
 
             [success, filePath] = ioProc.writeGrandAverage(conditions{cnd}, measure, true, '-struct', 'dataToSave');
             if ~success
-                wtProject.notifyErr([], 'Failed to save garnd average with per subject data to ''%s''', filePath);
+                wtProject.notifyErr([], 'Failed to save grand average with per subject data to ''%s''', filePath);
                 wtLog.popStatus();
                 return
             end

@@ -18,17 +18,23 @@ classdef WTImportGUI
     
     methods(Static)
         function [subjects, subjFileNames] = selectImportedSubjects(system) 
-            ioProc = WTProject().Config.IOProc;
+            wtProject = WTProject();
             wtLog = WTLog();
-            subjects = [];
 
+            ioProc = wtProject.Config.IOProc;
+            subjectsParams = wtProject.Config.Subjects;
+
+            subjects = [];
             subjFileNames = ioProc.enumImportFiles(system);
+
             if isempty(subjFileNames) 
                 WTEEGLabUtils.eeglabMsgDlg('Warning', 'No import files found');
                 return
             end
 
-            subjFileNames = WTDialogUtils.stringsSelectDlg('Select files/subjects', subjFileNames, false, true);
+            preSelectedIdx = cellfun(@(x)find(strcmp(x, subjFileNames)), intersect(subjFileNames, subjectsParams.FilesList));
+             
+            subjFileNames = WTDialogUtils.stringsSelectDlg('Select files/subjects', subjFileNames, false, true, 'InitialValue', preSelectedIdx);
             if isempty(subjFileNames) 
                 wtLog.warn('No subject selected as no import files have been selected');
                 return
@@ -39,6 +45,25 @@ classdef WTImportGUI
                 wtLog.warn('No subject numbers could be found');
                 return
             end
+        end
+    
+
+        function conditions = selectImportedConditions(system, anyImportedFile) 
+            wtProject = WTProject();
+            wtLog = WTLog();
+            conditions = {};
+
+            ioProc = wtProject.Config.IOProc;
+            conditionsPrms = wtProject.Config.Conditions;
+
+            [success, conditions, ~] = ioProc.getConditionsFromImport(system, anyImportedFile);
+            if ~success
+                wtLog.err('Failed to get conditions from imported file ''%s''', anyImportedFile);
+                return
+            end
+
+            preSelectedIdx = cellfun(@(x)find(strcmp(x, conditions)), intersect(conditions, conditionsPrms.ConditionsList));
+            conditions = WTDialogUtils.stringsSelectDlg('Select conditions', conditions, false, true,  'InitialValue', preSelectedIdx);
         end
     end
 end

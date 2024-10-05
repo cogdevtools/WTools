@@ -26,6 +26,23 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
         EEGLabFlag(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
+    methods(Access=private)
+        function sanitize(o)
+            if o.EEPFlag ~= 0
+                o.EEPFlag = 1;
+            end
+            if o.EGIFlag ~= 0
+                o.EGIFlag = 1;
+            end
+            if o.BRVFlag ~= 0
+                o.BRVFlag = 1;
+            end
+            if o.EEGLabFlag ~= 0
+                o.EEGLabFlag = 1;
+            end
+        end
+    end
+
     methods
         function o = WTImportTypeCfg(ioProc)
             o@WTConfigStorage(ioProc, 'import2eegl_cfg.m');
@@ -37,6 +54,17 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
             o.EGIFlag = 1;
             o.BRVFlag = 0;
             o.EEGLabFlag = 0;
+        end
+
+        function success = validate(o, throwExcpt)
+            throwExcpt = nargin > 1 && throwExcpt; 
+            success = false;
+            o.sanitize();
+            success = o.EEPFlag + o.EGIFlag + o.BRVFlag + o.EEGLabFlag == 1;
+            if ~success
+                WTCodingUtils.throwOrLog(WTException.incompatibleValues('More than one import type flag set'), ~throwExcpt);
+                return
+            end
         end
 
         function success = load(o) 
@@ -55,6 +83,8 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
                     WTLog().warn(['The import type format parameters (%s) were set by an \n'...
                         'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
+                o.sanitize();
+                o.validate(true);
             catch me
                 WTLog().except(me);
                 success = false;
@@ -62,8 +92,11 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
         end
 
         function success = persist(o)
-            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.EEPFlag, o.EGIFlag, o.BRVFlag, o.EEGLabFlag);
-            success = ~isempty(txt) && o.write(txt);
+            success = o.validate(false);
+            if success
+                txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.EEPFlag, o.EGIFlag, o.BRVFlag, o.EEGLabFlag);
+                success = ~isempty(txt) && o.write(txt);
+            end
         end
     end
 end

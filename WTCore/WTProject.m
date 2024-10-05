@@ -29,6 +29,29 @@ classdef WTProject < WTClass
         Interactive logical
     end
 
+    methods(Static, Access=private)
+        function ok = repeatedImportAlert(title)
+            choice = WTDialogUtils.askDlg(title, ...
+                [ 'You have already performed an import. The import parameters cannot be changed as the ', ...
+                  'imported data must be consistent across subjects to perform the analysis. If you need to ' ...
+                  'change such parameters consider creating a new project from scratch. After the import the '...
+                  'the whole analysis has to be carried out again.\n\n' ... 
+                  'Check the tutorial for more details.' ], ...
+                  {}, {'Continue', 'Abandon'}, 'Abandon');
+            ok = strcmp(choice, 'Continue');
+        end
+
+        function ok = repeatedProcessingAlert(title)
+            choice = WTDialogUtils.askDlg(title, ...
+                [ 'You have already performed this operation. Repeating it might produce inconsistent data and cause ', ...
+                  'unexpected errors. The processing parameters should remain the same at each analysis step, ' ...
+                  'across the whole dataset. As a safer option, consider creating a new project from scratch.\n\n' ... 
+                  'Check the tutorial for more details.' ], ...
+                  {}, {'Continue', 'Abandon'}, 'Abandon');
+            ok = strcmp(choice, 'Continue');
+        end
+    end
+
     methods (Access=private)
         function msg = getContextMsg(o, fmt, varargin)
             msg = WTCodingUtils.ifThenElse(~isempty(o.Context), @()char(join(o.Context,':')), '');
@@ -45,16 +68,6 @@ classdef WTProject < WTClass
                 return
             end
             msg(1) = WTCodingUtils.ifThenElse(isempty(o.Context), upper(msg(1)), lower(msg(1)));
-        end
-
-        function ok = repeatedOperationAlert(o, title)
-            choice = WTDialogUtils.askDlg(title, ...
-                [ 'You have already performed this operation. Repeating it might produce inconsistent data and cause ', ...
-                  'unexpected errors. The processing parameters should remain the same at each analysis step, ' ...
-                  'across the whole dataset. As a safer option, consider creating a new project from scratch.\n\n' ... 
-                  'Check the tutorial for more details.' ], ...
-                  {}, {'Continue', 'Abandon'}, 'Abandon');
-            ok = strcmp(choice, 'Continue');
         end
     end
 
@@ -99,12 +112,12 @@ classdef WTProject < WTClass
                 return
             end
 
+            done = false;
             basicPrms = o.Config.Basic;
             subjectsPrms = o.Config.Subjects;
             conditionsPrms = o.Config.Conditions;
             channelsPrms = o.Config.Channels;
-            done = false;
-
+            
             if ~(subjectsPrms.exist() && ...
                 conditionsPrms.exist() && ...
                 channelsPrms.exist())
@@ -234,31 +247,31 @@ classdef WTProject < WTClass
         function ok = checkRepeatedImport(o)
             ok = ~WTAppConfig().DangerWarnings || ...
                  ~o.checkImportDone(true) || ...
-                  o.repeatedOperationAlert('New import');
+                 WTProject.repeatedImportAlert('New import');
         end
 
         function ok = checkRepeatedWaveletAnalysis(o)
             ok = ~WTAppConfig().DangerWarnings || ...
                  ~o.checkWaveletAnalysisDone(true, false) || ...
-                  o.repeatedOperationAlert('New wavelet analysis');
+                  WTProject.repeatedProcessingAlert('New wavelet analysis');
         end
 
         function ok = checkRepeatedChopAndBaselineCorrection(o)
             ok = ~WTAppConfig().DangerWarnings || ...
                  ~o.checkChopAndBaselineCorrectionDone(true) || ...
-                  o.repeatedOperationAlert('New chop and baseline correction');
+                 WTProject.repeatedProcessingAlert('New chop and baseline correction');
         end
 
         function ok = checkRepeatedConditionsDifference(o)
             ok = ~WTAppConfig().DangerWarnings || ...
                  ~o.checkConditionsDifferenceDone(true) || ...
-                  o.repeatedOperationAlert('New conditions diffeence');
+                 WTProject.repeatedProcessingAlert('New conditions diffeence');
         end
 
         function ok = checkRepeatedGrandAverage(o)
             ok = ~WTAppConfig().DangerWarnings || ...
                  ~o.checkGrandAverageDone(true) || ...
-                  o.repeatedOperationAlert('New grand average');
+                 WTProject.repeatedProcessingAlert('New grand average');
         end
 
         function notify(o, title, fmt, varargin)

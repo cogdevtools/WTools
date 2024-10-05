@@ -128,7 +128,8 @@ function varargout = wtools(varargin)
                 if showSplash && wtAppConfig.ShowSplashScreen       
                     wtSplash();
                 end
-                if ~WTEEGLabUtils.eeglabDep()
+                if ~WTEEGLabUtils.eeglabDep() || ...
+                   ~WTEEGLabUtils.eeglabVersionOk()
                     close = true;
                 end
                 wtLog.reset();
@@ -244,13 +245,13 @@ function varargout = wtools(varargin)
         updateApplicationStatus(hObject, handles, true);
         try
             wtNewProject();
-            updateProjectName(hObject, handles);
-            updateProjectDirectory(hObject, handles);
-            updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to create a new project');
         end
+        updateProjectName(hObject, handles);
+        updateProjectDirectory(hObject, handles);
+        updateTotalSubjects(hObject, handles);
         updateApplicationStatus(hObject, handles, false);
         wtLog.reset();
         unlock(hObject, handles);
@@ -270,13 +271,13 @@ function varargout = wtools(varargin)
         updateApplicationStatus(hObject, handles, true);
         try
             wtOpenProject();
-            updateProjectName(hObject, handles);
-            updateProjectDirectory(hObject, handles);
-            updateTotalSubjects(hObject, handles);
         catch me
             wtLog.except(me);
             wtProject.notifyErr([], 'Failed to open a project');
         end
+        updateProjectName(hObject, handles);
+        updateProjectDirectory(hObject, handles);
+        updateTotalSubjects(hObject, handles);
         updateApplicationStatus(hObject, handles, false);
         wtLog.reset();
         unlock(hObject, handles);
@@ -633,7 +634,7 @@ function varargout = wtools(varargin)
         % handles    empty - handles not created until after all CreateFcns called
         [success, handles] = lock(hObject, handles);
         if ~success
-            set(hObject, 'Value', wtLog.StdLogLevel);
+            set(hObject, 'Value', WTLog.StdLogLevel);
             guidata(hObject, handles);
             return
         end

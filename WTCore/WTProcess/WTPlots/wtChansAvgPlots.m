@@ -232,7 +232,22 @@ end
 function success = setChansAvgPlotsParams(logFlag)
     success = false;
     wtProject = WTProject();
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
     plotsPrms = copy(wtProject.Config.ChannelsAveragePlots);
+
+    if ~plotsPrms.exist() 
+        if waveletTransformPrms.exist()
+            plotsPrms.TimeMin = waveletTransformPrms.TimeMin;
+            plotsPrms.TimeMax = waveletTransformPrms.TimeMax;
+            plotsPrms.FreqMin = waveletTransformPrms.FreqMin;
+            plotsPrms.FreqMax = waveletTransformPrms.FreqMax;
+        end
+        if baselineChopPrms.exist()
+            plotsPrms.TimeMin = baselineChopPrms.ChopTimeMin;
+            plotsPrms.TimeMax = baselineChopPrms.ChopTimeMax;
+        end
+    end
 
     if ~WTPlotsGUI.defineChansAvgPlotsSettings(plotsPrms, logFlag)
         return

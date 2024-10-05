@@ -45,7 +45,7 @@ function success = wtNewProject
         if ~WTEEGLabUtils.eeglabYesNoDlg('Warning', ['Project directory already exists!\n' ...
             'Directory: %s\n' ...
             'Do you want to overwrite it?'], prjPath)
-            return;
+            return
         end            
     end
 

@@ -17,7 +17,6 @@ classdef WTEval
 
     methods(Static)
         function [success, varargout] = evalin(cmd, inBase) 
-            success = false;
             varargout = cell(1, nargout-1);
             workspace = 'caller';
             if nargin > 2 && inBase
@@ -27,6 +26,7 @@ classdef WTEval
                 [varargout{:}] = evalin(workspace, cmd); 
                 success = true;
             catch me
+                success = false;
                 WTLog().except(me);
             end
         end
@@ -34,18 +34,11 @@ classdef WTEval
         function varargout = evalcLog(level, ctx, cmd)
             varargout = cell(nargout,1);
             evalcCmd = sprintf('evalc(''%s'')', strrep(cmd, '''', ''''''));
-            wtLog = WTLog();
-
-            try
-                [log, varargout{:}] = evalin('caller', evalcCmd);
-            catch me
-                wtLog.except(me, false);
-                WTException.evalinErr('Failed to exec ''%s''', evalcCmd).throw();
-            end
-
+            [log, varargout{:}] = evalin('caller', evalcCmd);
             log = strip(log, 'right', newline);
         
             if ~isempty(log)
+                wtLog = WTLog();
                 wtLog.pushStatus();
                 if ~isempty(ctx)
                     wtLog.contextOn(ctx);
@@ -55,6 +48,12 @@ classdef WTEval
                 wtLog.log(level, log);
                 wtLog.popStatus();
             end
+        end
+
+        function varargout = evalcQuiet(cmd)
+            varargout = cell(nargout,1);
+            evalcCmd = sprintf('evalc(''%s'')', strrep(cmd, '''', ''''''));
+            [~, varargout{:}] = evalin('caller', evalcCmd);
         end
     end
 end

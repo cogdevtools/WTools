@@ -53,7 +53,7 @@ classdef WTAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyable
                     o.Scale = WTNumUtils.str2nums(cells{5});
                     o.Contours = cells{6};
                     o.AllChannels = cells{7};
-                    o.validate();
+                    success = o.validate();
                 else
                     o.default();
                     WTLog().warn(['The  parameters for average plots (%s) were set by an \n' ...
@@ -61,6 +61,7 @@ classdef WTAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyable
                 end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

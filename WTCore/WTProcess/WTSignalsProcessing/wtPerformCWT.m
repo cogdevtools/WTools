@@ -76,7 +76,7 @@ function success = wtPerformCWT()
             nEpochs = size(EEG.data, 3);
             adjEpochsList = waveletTransformParams.EpochsList(waveletTransformParams.EpochsList <= nEpochs);
     
-            % ROUND times to 0 in case they are in floating point format
+            % Round times to 0 in case they are in floating point format
             EEG.times = round(EEG.times);
                 
             if waveletTransformParams.EvokedOscillations
@@ -92,15 +92,15 @@ function success = wtPerformCWT()
                 % To avoid distortions the padding will be performed to the left and to the right of the epoch.
                 try
                     timeRes = EEG.times(2) - EEG.times(1); % find time resolution
-                catch % find time resolution and restore EEG.times when there is only one trial (e.g. for evoked oscillations).
+                catch % Find time resolution and restore EEG.times when there is only one trial (e.g. for evoked oscillations).
                     EEG.times = (EEG.xmin*1000) : (1000/EEG.srate) : ((EEG.xmax*1000)+(1000/EEG.srate));
                     timeRes = EEG.times(2) - EEG.times(1);
                 end
                 
-                pointsToAdd = floor(timeToAdd/timeRes); % number of points to add to the left and to the right
+                pointsToAdd = floor(timeToAdd/timeRes); % Number of points to add to the left and to the right
                 timeToAdd = pointsToAdd * timeRes;
 
-                leftEdge = EEG.data(:,1:pointsToAdd,:); % we double the edges of the actual signal...
+                leftEdge = EEG.data(:,1:pointsToAdd,:); % We double the edges of the actual signal...
                 leftEdge = leftEdge(:,end:-1:1,:);      % ... and revert them
                 rightEdge = EEG.data(:,end-pointsToAdd+1:end,:);
                 rightEdge = rightEdge(:,end:-1:1,:);
@@ -110,7 +110,7 @@ function success = wtPerformCWT()
                 EEGnew = cat(2, EEGnew, rightEdge);  % add to the right
                 EEG.data = EEGnew;
                 
-                % adjust other EEGlab variables accordingly (for consistency)
+                % Adjust other EEGlab variables accordingly (for consistency)
                 EEG.times = min(EEG.times)-timeToAdd : timeRes : max(EEG.times)+timeToAdd;
                 EEG.xmin = EEG.times(1)/1000;
                 EEG.xmax = EEG.times(end)/1000;
@@ -128,7 +128,7 @@ function success = wtPerformCWT()
             else % There is no edges padding
                 try
                     timeRes = EEG.times(2) - EEG.times(1); % find time resolution
-                catch % find time resolution and restore EEG.times when there is only one trial (e.g. for evoked oscillations).
+                catch % Find time resolution and restore EEG.times when there is only one trial (e.g. for evoked oscillations).
                     EEG.times = (EEG.xmin*1000) : (1000/EEG.srate) : ((EEG.xmax*1000)+(1000/EEG.srate));
                     timeRes = EEG.times(2) - EEG.times(1);
                 end
@@ -280,11 +280,8 @@ function success = setTransformPrms(timeRange, maxFreq, maxChans)
 
     waveletTransformParams = copy(wtProject.Config.WaveletTransform);
     baselineChopParams = wtProject.Config.BaselineChop;
-    logEnabled = true;
 
     if waveletTransformParams.exist()
-        logEnabled = false;
-
         if baselineChopParams.exist() && ... 
             waveletTransformParams.LogarithmicTransform && ...
             ~baselineChopParams.LogarithmicTransform
@@ -324,11 +321,11 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
         freq = double(scales(iFreq));
         sigmaT = double(waveletTransformParams.WaveletsCycles) / (2*freq*pi);
         
-        % use COMPLEX wavelet (sin and cos components) in a form that gives
+        % Use complex wavelet (sin and cos components) in a form that gives
         % the RMS strength of the signal at each frequency.
         time = -4/freq : 1/Fs : 4/freq;
         if waveletTransformParams.NormalizedWavelets
-            % generate wavelets with unit energy
+            % Generate wavelets with unit energy
             waveletScale = (1/sqrt(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
         else
             waveletScale = (1/(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));

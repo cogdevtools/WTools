@@ -411,7 +411,20 @@ end
 function success = set2DScalpMapPlotsParams(logFlag, maxNumSubPlots)
     success = false;
     wtProject = WTProject();
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
     plotsPrms = copy(wtProject.Config.TwoDimensionalScalpMapPlots);
+
+    if ~plotsPrms.exist()
+        if waveletTransformPrms.exist()
+            plotsPrms.Time = [waveletTransformPrms.TimeMin waveletTransformPrms.TimeMax];
+            freqResolution = (waveletTransformPrms.FreqMax - waveletTransformPrms.FreqMin) / 10;
+            plotsPrms.Frequency = [waveletTransformPrms.FreqMin freqResolution waveletTransformPrms.FreqMax];
+        end
+        if baselineChopPrms.exist()
+            plotsPrms.Time = [baselineChopPrms.ChopTimeMin baselineChopPrms.ChopTimeMax];
+        end
+    end
 
     if ~WTPlotsGUI.define2DScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
         return

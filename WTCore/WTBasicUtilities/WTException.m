@@ -30,7 +30,7 @@ classdef WTException < MException
         BadArgType          = 'BadArgType'
         BadArgValue         = 'BadArgValue'
         WorkspaceErr        = 'WorkspaceErr'
-        EvalinErr           = 'EvalinErr'
+        EvalErr             = 'EvalErr'
         NotExistingPath     = 'NotExistingPath'
         EEGLabDependency    = 'EEGLabDependency'
         Unsupported         = 'Unsupported'
@@ -112,8 +112,8 @@ classdef WTException < MException
             e = WTException(WTException.WorkspaceErr, msg, varargin{:});
         end
 
-        function e = evalinErr(msg, varargin)
-            e = WTException(WTException.EvalinErr, msg, varargin{:});
+        function e = evalErr(msg, varargin)
+            e = WTException(WTException.EvalErr, msg, varargin{:});
         end
 
         function e = notExistingPath(msg, varargin)

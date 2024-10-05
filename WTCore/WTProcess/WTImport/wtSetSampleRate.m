@@ -44,7 +44,7 @@ function [success, sampleRate] = readSampleRate(system, subjFileName)
     ioProc = wtProject.Config.IOProc;
     sampleRate = 0.;
 
-    [success, data] = ioProc.loadImport(system, subjFileName);
+    [success, data] = ioProc.loadImport(system, subjFileName, struct());
     if ~success 
         wtProject.notifyErr('Read sample rate', 'Failed to read data file: ''%s''', subjFileName)
         return
@@ -61,10 +61,10 @@ function [success, sampleRate] = readSampleRate(system, subjFileName)
         case WTIOProcessor.SystemEEGLab
             sampleRate = data.srate;
         case WTIOProcessor.SystemBRV
-            % TODO...
-            success = false;
+            % TODO: check that's correct!
+            sampleRate = data.srate;
         case WTIOProcessor.SystemEEP
-            % TODO...
-            success = false;
+            % TODO: check that's correct!
+            sampleRate = data.srate;
     end
 end

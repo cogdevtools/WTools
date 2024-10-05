@@ -12,7 +12,6 @@
 %
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 classdef WTConvertGUI
     
     methods (Static)
@@ -159,22 +158,8 @@ classdef WTConvertGUI
             success = false;
             wtLog = WTLog();
             
-            minId = minMaxTrialIdPrms.MinTrialId;
-            maxId = minMaxTrialIdPrms.MaxTrialId;
-
-            if isnan(minId)  
-                minId = '';
-            end
-            if isnan(maxId)
-                maxId = '';
-            end
-            if ~ischar(minId)
-                minId = num2str(minId);
-            end
-            if ~ischar(maxId)
-                maxId = num2str(maxId);
-            end
-
+            minId = num2str(minMaxTrialIdPrms.MinTrialId);
+            maxId = minMaxTrialIdPrms.MaxTrialIdStr();
             answer = { minId  maxId };
 
             function params = setParameters(answer) 
@@ -183,13 +168,11 @@ classdef WTConvertGUI
                     { 'style' 'edit' 'string' answer{1,1} } ...
                     { 'style' 'text' 'string' 'Max Trial ID:' } ...
                     { 'style' 'edit' 'string' answer{1,2} } ...
-                    { 'style' 'text' 'string' 'Enter nothing to process all available trials.' } ...
-                    { 'style' 'text' 'string' 'Enter only min or max to process trials above/below a trial ID.' } ...
-                    { 'style' 'text' 'string' 'Enter min/max positive integers to set the min/max trial ID to' } ...
-                    { 'style' 'text' 'string' 'process.' } };
+                    { 'style' 'text' 'string' 'If you don''t know the total #trials' } ...
+                    { 'style' 'text' 'string' 'use Inf as value for the max id.' } };
             end
 
-            geometry = { [1 0.5] [1 0.5] 1 1 1 1 };
+            geometry = { [1 0.5] [1 0.5] 1 1};
             
             while ~success
                 params = setParameters(answer);
@@ -205,11 +188,14 @@ classdef WTConvertGUI
                     WTTryExec(@()set(minMaxTrialIdPrms, 'MaxTrialId', WTNumUtils.str2double(answer{1,2}, true))).logWrn().displayWrn('Review parameter', 'Invalid MaxTrialId').run().Succeeded ... 
                 ]);
 
-                success = success && WTTryExec(@()minMaxTrialIdPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
+                if ~success
+                    continue
+                end
+
+                success = WTTryExec(@()minMaxTrialIdPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
                 
                 if ~success
-                    WTDialogUtils.wrnDlg('Review parameter',['Invalid min/max trials id. Allowed values for [min,max] are:\n\n- [<empty>, <empty>]\n' ...
-                        '- [int >= 0, <empty>]\n- [<empty>, int >= 0 ]\n- [min >= 0, max >= min]']);
+                    WTDialogUtils.wrnDlg('Review parameter',['Invalid min/max trials id. Allowed values: [min >= 1, max >= min]']);
                 end
             end
         end
@@ -253,6 +239,141 @@ classdef WTConvertGUI
 
                 success = success && WTTryExec(@()epochsAndFreqFilterPrms.validate(true)).logWrn().displayWrn('Review parameter', 'Validation failure').run().Succeeded; 
             end
+        end
+
+        function success = displayImportSettings(system)
+            success = false;
+            wtProject = WTProject();
+            wtLog = WTLog();
+
+            sampling = wtProject.Config.Sampling;
+            conditions = wtProject.Config.Conditions;
+            channels = wtProject.Config.Channels;
+
+            parameters = { ...
+                { 'style' 'text' 'string' 'Sampling rate (Hz)' } ...
+                { 'style' 'edit' 'string' num2str(sampling.SamplingRate) 'enable' 'off'} ...
+                { 'style' 'text' 'string' 'Conditions' } ...
+                { 'Style' 'listbox' 'string' conditions.ConditionsList 'value' 1 'enable' 'on'}, ...
+                { 'style' 'text' 'string' 'Channels locations' } ...
+                { 'style' 'edit' 'string' channels.ChannelsLocationFile 'enable' 'off'} ...
+            };
+
+            geometry = { [1 1] [1 1] [1 1] };
+            geomvert = [1 2 1];
+            
+            parameters(end+1) = {{ 'style' 'text' 'string' 'Channels re-referencing' }}; 
+
+            switch channels.ReReference
+                case WTChannelsCfg.ReReferenceNone
+                    parameters(end+1) = {{ 'style' 'edit' 'string' 'NONE' 'enable' 'off'}};
+                    geometry(end+1) = {[1 1]};
+                    geomvert(end+1) = 1;
+                case WTChannelsCfg.ReReferenceWithAverage
+                    parameters(end+1) = {{ 'style' 'edit' 'string' 'AVERAGE' 'enable' 'off'}};
+                    geometry(end+1) = {[1 1]};
+                    geomvert(end+1) = 1;
+                case WTChannelsCfg.ReReferenceWithChannels
+                    parameters(end+1) = {{ 'Style' 'listbox' 'string' channels.NewChannelsReference 'value' 1 'enable' 'off'}};
+                    geometry(end+1) = {[1 1]};
+                    geomvert(end+1) = 2;
+                otherwise
+                    wtProject.notifyErr([], 'Undefined channels re-referencing');
+                    return
+            end
+
+            parameters(end+1) = {{ 'style' 'text' 'string' 'Channels to cut' }}; 
+            parameters(end+1) = {{ 'Style' 'listbox' 'string' channels.CutChannels 'value' 1 'enable' 'on'}};
+            geometry(end+1) = {[1 1]};
+            geomvert(end+1) = 2;
+
+            switch system
+                case WTIOProcessor.SystemEEP
+                    fromEEP = wtProject.Config.EEPToEEGLab;
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Epoch limits' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromEEP.EpochLimits) 'enable' 'off'}};
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Low pass filter (Hz)' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromEEP.LowPassFilter) 'enable' 'off'}};
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'High pass filter (Hz)' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromEEP.HighPassFilter) 'enable' 'off'}};
+                    geometry(end+1:end+3) = {[1 1] [1 1] [1 1]};
+                    geomvert(end+1:end+3) = [1 1 1];
+                case WTIOProcessor.SystemBRV
+                    fromBRV = wtProject.Config.BRVToEEGLab;
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Epoch limits' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromBRV.EpochLimits) 'enable' 'off'}};
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Low pass filter (Hz)' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromBRV.LowPassFilter) 'enable' 'off'}};
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'High pass filter (Hz)' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromBRV.HighPassFilter) 'enable' 'off'}};
+                    geometry(end+1:end+3) = {[1 1] [1 1] [1 1]};
+                    geomvert(end+1:end+3) = [1 1 1];
+                case WTIOProcessor.SystemEGI
+                    fromEGI = wtProject.Config.EGIToEEGLab;
+                    minMaxTrialsPrms = wtProject.Config.MinMaxTrialId;
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Trigger latency (ms)' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(fromEGI.TriggerLatency) 'enable' 'off'}};
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Minimum trial id' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' num2str(minMaxTrialsPrms.MinTrialId) 'enable' 'off'}};
+                    parameters(end+1) = {{ 'style' 'text' 'string' 'Maximum trial id' }}; 
+                    parameters(end+1) = {{ 'style' 'edit' 'string' minMaxTrialsPrms.MaxTrialIdStr() 'enable' 'off'}};
+                    geometry(end+1:end+3) = {[1 1] [1 1] [1 1]};
+                    geomvert(end+1:end+3) = [1 1 1];
+                case WTIOProcessor.SystemEEGLab
+                    % Nothing to do...
+                otherwise
+                    wtProject.notifyErr([], 'Unknown source system: ''%s''', system);
+                    return
+            end
+            
+            answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'geomvert', geomvert, 'uilist', parameters, 'title', 'Confirm Import paramaters');
+
+            if isempty(answer)
+                wtLog.dbg('User quitted import settings confirmation dialog');
+                return
+            end
+
+            success = true;
+        end
+
+        function success = displayChannelsLayoutFromFile(fileName) 
+            success = false;
+            figures = {};
+            try
+                windowTitle = sprintf('Check channels layout: %s', WTIOUtils.getPathTail(fileName));
+                figures = { figure( 'NumberTitle', 'off', 'Name', windowTitle) }; 
+                WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
+                    [], fileName, 'style', 'blank', 'drawaxis', 'on', 'electrodes', 'labels', 'plotrad', 0.5);
+                success = true;
+            catch me
+                WTLog().except(me);
+            end
+            WTPlotUtils.waitUIs(figures);
+        end
+
+        function success = displayChannelsLayoutFromData(source, chanLocs, chanInfo) 
+            success = false;
+            figures = {};
+            try
+                windowTitle = 'Source: <Undefined>';
+                if ~isempty(source)
+                    windowTitle =  sprintf('Source: %s', source);
+                end
+                figures = { figure( 'NumberTitle', 'off', 'Name', windowTitle) };
+                if isempty(chanInfo) 
+                    WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
+                        [], chanLocs, 'style', 'blank', 'drawaxis', 'on', 'electrodes', ...
+                        'ptslabels', 'plotrad', 1);
+                else
+                    WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
+                        [], chanLocs, 'style', 'blank', 'drawaxis', 'on', 'electrodes', ...
+                        'ptslabels', 'plotrad', 1, 'chaninfo', chanInfo);
+                end
+                success = true;
+            catch me
+                WTLog().except(me);
+            end
+            WTPlotUtils.waitUIs(figures);
         end
     end
 end

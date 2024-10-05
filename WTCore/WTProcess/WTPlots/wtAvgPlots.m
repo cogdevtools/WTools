@@ -13,9 +13,11 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 %
+% Notes on the paramters:
 %     isempty(subject) => grand average
 %     isempty(conditionsToPlot) => all conditions
 %     isempty(channelsToPlot) => all channels
+
 function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
     wtProject = WTProject();
     wtLog = WTLog();
@@ -396,7 +398,22 @@ end
  function success = setAvgPlotsParams(logFlag)
     success = false;
     wtProject = WTProject();
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
     plotsPrms = copy(wtProject.Config.AveragePlots);
+
+    if ~plotsPrms.exist() 
+        if waveletTransformPrms.exist()
+            plotsPrms.TimeMin = waveletTransformPrms.TimeMin;
+            plotsPrms.TimeMax = waveletTransformPrms.TimeMax;
+            plotsPrms.FreqMin = waveletTransformPrms.FreqMin;
+            plotsPrms.FreqMax = waveletTransformPrms.FreqMax;
+        end
+        if baselineChopPrms.exist()
+            plotsPrms.TimeMin = baselineChopPrms.ChopTimeMin;
+            plotsPrms.TimeMax = baselineChopPrms.ChopTimeMax;
+        end
+    end
 
     if ~WTPlotsGUI.defineAvgPlotsSettings(plotsPrms, logFlag)
         return

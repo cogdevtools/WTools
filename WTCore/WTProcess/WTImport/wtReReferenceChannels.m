@@ -24,9 +24,13 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
 
     try
         switch channelsPrms.ReReference
+            case channelsPrms.ReReferenceNone
+                wtLog.info('No channels re-referencing selected');
+
             case channelsPrms.ReReferenceWithAverage
                 wtLog.info('Re-referencing with average');
-                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, []);
+                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false, 'pop_reref', EEG, []);
+
             case channelsPrms.ReReferenceWithChannels
                 wtLog.info('Re-referencing with selected channels');
                 channelsPrms.validate(true);
@@ -35,25 +39,21 @@ function [success, EEG] = wtReReferenceChannels(system, EEG)
                     actualChan = char(channelsPrms.NewChannelsReference(ch));
                     chanLabels = cat(1, {}, EEG.chanlocs(1,:).labels);
                     chanIdx = find(strcmp(chanLabels, actualChan));
-                    newRef = cat(1, newRef, chanIdx);         
+                    if ~isempty(chanIdx)
+                        newRef = cat(1, newRef, chanIdx);  
+                    else 
+                        wtLog.err('Cannot find channel ''%s'' for re-reference', actualChan);
+                        success = false;
+                        break
+                    end
                 end
-                
-                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_reref', EEG, newRef ,'keepref','on');
+                if success
+                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false, 'pop_reref', EEG, newRef, 'keepref', 'on');
+                end
+
             otherwise
-                wtLog.info('No channels re-referencing');
-                if strcmp(system, WTIOProcessor.SystemEGI)
-                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
-                        { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType }, ...
-                        'delete', 1, 'delete', 1, 'delete', 1, 'delete', 129);
-                else
-                    % Note: to be cheked !!!
-                    % - For EEP systems:
-                    %   the code below was placed before the "switch" originally
-                    % - For BRV systems:
-                    %   the code below was commented out originally
-                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_chanedit', EEG, 'load', ...
-                        { channelsPrms.ChannelsLocationFile, 'filetype', channelsPrms.ChannelsLocationFileType });
-                end
+                wtLog.err('Unexpected re-reference type: %d', channelsPrms.ReReference);
+                success = false;
         end
     catch me
         wtLog.except(me);

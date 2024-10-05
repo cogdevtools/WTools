@@ -60,6 +60,7 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
                 end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

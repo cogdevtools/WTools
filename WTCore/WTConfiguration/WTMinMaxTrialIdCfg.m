@@ -20,8 +20,8 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.m
     end
 
     properties
-        MinTrialId int32 {WTValidations.mustBeGTE(MinTrialId,0,1,0)}
-        MaxTrialId int32 {WTValidations.mustBeGTE(MaxTrialId,0,1,0)}
+        MinTrialId int32
+        MaxTrialId int32
     end
 
     methods
@@ -31,8 +31,22 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.m
         end
 
         function default(o) 
-            o.MinTrialId = NaN;
-            o.MaxTrialId = NaN;
+            o.MinTrialId = 1;
+            o.MaxTrialId = Inf;
+        end
+
+        function set.MinTrialId(o, value)
+            WTValidations.mustBeGTE(value,1,1,0);
+            o.MinTrialId = WTCodingUtils.ifThenElse(isnan(value), 1, value);
+        end
+
+        function set.MaxTrialId(o, value)
+            WTValidations.mustBeGTE(value,1,1,1);
+            o.MaxTrialId = WTCodingUtils.ifThenElse(isnan(value), Inf, value);
+        end
+
+        function value = MaxTrialIdStr(o)
+            value = WTCodingUtils.ifThenElse(o.MaxTrialId == int32(Inf), 'Inf', num2str(o.MaxTrialId));
         end
 
         function success = load(o) 
@@ -59,36 +73,20 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.m
         end
 
         function success = validate(o, throwExcpt) 
-            success = true;
+            success = false;
             throwExcpt = nargin > 1 && throwExcpt; 
 
-            if ~isnan(o.MinTrialId) && ~isnan(o.MaxTrialId)
-                if o.MaxTrialId < o.MinTrialId;
-                    WTCodingUtils.throwOrLog(WTException.badValue('Field MaxTrialId < MinTrialId'), ~throwExcpt);
-                    success = false;
-                end
-            end
-        end
-
-        function isAllTrials= allTrials(o)
-            isAllTrials = isnan(o.MinTrialId) && isnan(o.MaxTrialId);
-        end
-
-        function newObj = interpret(o)
-            newObj = copy(o);
-            if isnan(o.MinTrialId) && isnan(o.MaxTrialId) % all trials case
+            if o.MaxTrialId < o.MinTrialId
+                WTCodingUtils.throwOrLog(WTException.badValue('Field MaxTrialId < MinTrialId'), ~throwExcpt);
                 return
-            elseif isnan(o.MaxTrialId)
-                newObj.MaxTrialId = 1000000; % set an arbitrary large enough number
-            elseif isnan(o.MinTrialId)
-                newObj.MinTrialId = 0; % set a value < of the min possible trial = 1
             end
+            success = true;
         end
 
         function success = persist(o)
             txt = WTConfigFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, ....
                 WTConfigFormatter.FmtIntStr, o.MinTrialId, ...
-                WTConfigFormatter.FmtIntStr, o.MaxTrialId);
+                WTConfigFormatter.FmtStr, o.MaxTrialIdStr());
             success = ~isempty(txt) && o.write(txt);
         end
     end

@@ -19,7 +19,7 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.Set
         FldFileName = 'filename'
         FldSourceSystem = 'srcsys'
         FldImportDone = 'import'
-        FldWaveletAnalysisDone = 'analisys'
+        FldWaveletAnalysisDone = 'analysis'
         FldChopAndBaselineCorrectionDone = 'correction'
         FldConditionsDifferenceDone = 'difference'
         FldGrandAverageDone = 'average'
@@ -73,6 +73,7 @@ classdef WTBasicCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.Set
                 o.GrandAverageDone = grandAvg;
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

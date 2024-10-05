@@ -27,7 +27,7 @@ function success = wtImport(forceCopy)
     nCopied = 0;
 
     if forceCopy || WTEEGLabUtils.eeglabYesNoDlg('Import', 'Would you like to copy new source data files?')
-        nCopied = wtCopyData();
+        nCopied = wtCopyImport();
         if nCopied == 0 && ...
             ~WTEEGLabUtils.eeglabYesNoDlg('Import', 'No new files were copied. Continue with the import?')
             return
@@ -40,14 +40,14 @@ function success = wtImport(forceCopy)
             return
         end 
         if ~WTEEGLabUtils.eeglabYesNoDlg('Import', ...
-            ['After data conversion, you MUST repeat the entire analysis. Data will be re-processed.\n' ...
+            ['After data conversion, you MUST repeat the entire analysis. Data will be processed again.\n' ...
              'The parameters used in the previous analysis are saved and can be changed, but MUST be\n' ... 
              'the same for all subjects/conditions you intend to analyze. Continue?'])
             return
         end
     end
 
-    if wtConvert() 
+    if wtConvertImport() 
         basicPrms = wtProject.Config.Basic;
         basicPrms.ImportDone = 1;
         basicPrms.WaveletAnalysisDone = 0;

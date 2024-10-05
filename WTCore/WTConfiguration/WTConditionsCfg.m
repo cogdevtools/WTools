@@ -53,6 +53,7 @@ classdef WTConditionsCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
                 o.ConditionsDiff = diff;
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

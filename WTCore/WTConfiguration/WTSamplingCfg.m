@@ -25,7 +25,7 @@ classdef WTSamplingCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.
 
     methods
         function o = WTSamplingCfg(ioProc)
-            o@WTConfigStorage(ioProc, 'samplrate.m');
+            o@WTConfigStorage(ioProc, 'samplerate.m');
             o.default();
         end
 

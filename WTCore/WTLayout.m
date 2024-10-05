@@ -20,6 +20,8 @@ classdef WTLayout
         PicturesSubDir = 'WTPictures'
         CoreSubDir = 'WTCore'
         DevicesSubDir = 'WTDevices'
+        ChannelsLayoutsSubDir = 'WTChannelsLayouts'
+        SplinesSubDir = 'WTSplines'
     end
 
     methods (Static)
@@ -62,6 +64,24 @@ classdef WTLayout
             d = devicesDir;
         end
 
+        function d = getChannelsLayoutsDir() 
+            persistent channelsLayoutDir
+
+            if isempty(channelsLayoutDir)
+                channelsLayoutDir = fullfile(WTLayout.getDevicesDir(), WTLayout.ChannelsLayoutsSubDir);
+            end
+            d = channelsLayoutDir;
+        end
+
+        function d = getSplinesDir() 
+            persistent splinesDir
+
+            if isempty(splinesDir)
+                splinesDir = fullfile(WTLayout.getDevicesDir(), WTLayout.SplinesSubDir);
+            end
+            d = splinesDir;
+        end
+        
         function d = getAppConfigDir() 
             d = WTLayout.getResourcesDir();
         end

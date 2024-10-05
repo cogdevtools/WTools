@@ -31,7 +31,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         conditionsToPlot = unique(conditionsToPlot);
     end
     
-    ioProc = WTIOProcessor;
+    ioProc = wtProject.Config.IOProc;
     waveletTransformPrms = wtProject.Config.WaveletTransform;
     baselineChopPrms = wtProject.Config.BaselineChop;
     logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
@@ -42,39 +42,14 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         if isempty(fileNames)
             return
         end
+    else
+        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
+            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     grandAverage = isempty(subject);
     if grandAverage && ~wtProject.checkGrandAverageDone()
         return
-    end
-
-    if interactive
-        if ~set3DScalpMapPlotsParams(logFlag) 
-            return
-        end
-    else
-        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
-            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
-    end
- 
-    channelsPrms = wtProject.Config.Channels;
-
-    splineFile = fullfile(WTLayout.getDevicesDir(), channelsPrms.SplineFile);
-    if ~WTIOUtils.fileExist(splineFile)
-        wtProject.notifyErr([], 'Spline file not found: %s', splineFile);
-        return
-    end
-
-    [success, meshFile] = ioProc.getMeshFileFromSplineFile(splineFile);
-    if ~success 
-        wtProject.notifyErr([], 'Can''t get mesh file name from: %s', splineFile);
-        return
-    end
-
-    if ~WTIOUtils.fileExist(meshFile)
-        wtLog.warn('Mesh file ''%s'' not found: default one will be used instead', meshFile);
-        meshFile = [];
     end
 
     basicPrms = wtProject.Config.Basic;
@@ -111,11 +86,32 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
 
     [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
-    if ~success || ~WTConfigUtils.adjustPacedTimeFreqDomains(wtProject.Config.ThreeDimensionalScalpMapPlots, data) 
+    if ~success 
         return
     end
 
+    if interactive && ~set3DScalpMapPlotsParams(logFlag, data) 
+        return
+    end
+ 
     plotsPrms = wtProject.Config.ThreeDimensionalScalpMapPlots;
+    splineFile = ioProc.getSplineFile(plotsPrms.SplineFile, plotsPrms.SplineLocal);   
+    splineFileDev = ioProc.getSplineFile(plotsPrms.SplineFile, 0);  
+    
+    [success, meshFile] = ioProc.getMeshFileFromSplineFile(splineFileDev);
+    if ~success 
+        wtProject.notifyErr([], 'Can''t get mesh file name from: %s', splineFileDev);
+        return
+    end
+
+    if ~WTIOUtils.fileExist(meshFile)
+        wtLog.warn('Mesh file ''%s'' not found: default one will be used instead', meshFile);
+        meshFile = [];
+    end
+
+    if ~WTConfigUtils.adjustPacedTimeFreqDomains(plotsPrms, data) 
+        return
+    end
 
     if ~isempty(plotsPrms.TimeMax)
         timeIdxs = find(data.tim == plotsPrms.TimeMin) : find(data.tim == plotsPrms.TimeMax);
@@ -169,11 +165,11 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
             data.WT = mean(data.WT(:,freqIdxs,:), 2);
 
             if isempty(meshFile)
-                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, ...
+                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false, ...
                     'headplot', data.WT, splineFile, 'electrodes', 'off', ...
                     'maplimits', plotsPrms.Scale, 'cbar', 0);
             else
-                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false,  ...
+                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false,  ...
                     'headplot', data.WT, splineFile, 'meshfile', meshFile, ...
                     'electrodes', 'off', 'maplimits', plotsPrms.Scale, 'cbar', 0);
             end
@@ -210,22 +206,31 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     wtLog.info('Plotting done.');
 end
 
-function success = set3DScalpMapPlotsParams(logFlag)
+function success = set3DScalpMapPlotsParams(logFlag, data)
     success = false;
     wtProject = WTProject();
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
     plotsPrms = copy(wtProject.Config.ThreeDimensionalScalpMapPlots);
-    channelsPrms = copy(wtProject.Config.Channels);
 
-    if ~WTPlotsGUI.define3DScalpMapPlotsSettings(plotsPrms, channelsPrms, logFlag)
-        return
-    end
-    
-    if ~channelsPrms.persist()
-        wtProject.notifyErr([], 'Failed to save channels params');
-        return
+    if ~plotsPrms.exist() 
+        if waveletTransformPrms.exist()
+            plotsPrms.Time = [waveletTransformPrms.TimeMin waveletTransformPrms.TimeMax];
+            plotsPrms.Frequency = [waveletTransformPrms.FreqMin waveletTransformPrms.FreqMax];
+        end
+        if baselineChopPrms.exist()
+            plotsPrms.Time = [baselineChopPrms.ChopTimeMin baselineChopPrms.ChopTimeMax];
+        end
     end
 
-    wtProject.Config.Channels = channelsPrms;
+    while true
+        if ~WTPlotsGUI.define3DScalpMapPlotsSettings(plotsPrms, logFlag)
+            return
+        end
+        if checkUpdateSplineFile(plotsPrms, data)
+            break
+        end
+    end
     
     if ~plotsPrms.persist()
         wtProject.notifyErr([], 'Failed to save 3D scalp map plots params');
@@ -233,5 +238,130 @@ function success = set3DScalpMapPlotsParams(logFlag)
     end
 
     wtProject.Config.ThreeDimensionalScalpMapPlots = plotsPrms;
+    success = true;
+end
+
+function success = checkUpdateSplineFile(plotsPrms, data)
+    success = false;
+    wtProject = WTProject();
+    wtLog = WTLog();
+
+    ioProc = wtProject.Config.IOProc;
+    localSplineFile = ioProc.getSplineFile(plotsPrms.SplineFile, 1);
+    plotsPrms.SplineLocal = 0;
+
+    if WTIOUtils.fileExist(localSplineFile)
+        wtLog.info('Found local spline file, check skipped: %s', localSplineFile);
+        plotsPrms.SplineLocal = 1;
+        success = true;
+        return
+    end
+
+    [ok, spline] = ioProc.readSpline(plotsPrms.SplineFile, 0);
+    if ~ok 
+        wtProject.notifyErr([], 'Spline file not found:\n%s', ioProc.getSplineFile(plotsPrms.SplineFile, 0));
+        return
+    end
+
+    nChans = length(data.chanlocs);
+    electrodes = cellstr(spline.ElectrodeNames);
+    channels = {data.chanlocs.labels}';
+
+    wtLog.info('Checking channels against spline data...');
+    wtLog.contextOn().HeaderOn = false;
+   
+    if ~isfield(spline, 'indices')
+        wtLog.warn('> Spline data without ''indices'' field!')
+    end
+
+    diffEC = setdiff(electrodes, channels);
+
+    if ~isempty(diffEC)
+        wtLog.info('> Spline data with extra channels: %s', char(join(diffEC,', ')));
+    end
+
+    elMap = containers.Map(electrodes, 1:length(electrodes));
+    nChansMismatches = 0;
+    nChansMissing = 0;
+
+    for i = 1:nChans
+        chan = channels{i};
+
+        if ~elMap.isKey(chan)
+            wtLog.err('+ ''%s''\tchannel missing...', chan);
+            nChansMissing = nChansMissing + 1;
+            continue
+        elseif ~isfield(spline, 'indices')
+            continue 
+        end
+        idx = spline.indices(elMap(chan));
+        if idx == i
+            wtLog.info('+ ''%s''\tchannel found', chan);
+        else 
+            wtLog.warn('+ ''%s''\tchannel found, but index mismatch: expected %d, got %d', chan, i, idx);
+            nChansMismatches = nChansMismatches + 1;
+        end
+    end
+
+    nChansFound = nChans - nChansMissing;
+    wtLog.info('> Channels found = %d, index mismtaches = %d, channels missing = %d', ...
+        nChansFound, nChansMismatches, nChansMissing);
+    wtLog.contextOff().HeaderOn = true;
+
+    if nChansMissing == 0 && nChansMismatches == 0 && isempty(diffEC)
+        success = true;
+        return
+    elseif nChansFound == 0 
+        wtProject.notifyErr([], 'Spline electrodes and data channels are disjoint sets!');
+        return
+    elseif ~WTEEGLabUtils.eeglabYesNoDlg('Warning', ...
+            ['Spline check result:\n' ...
+             '    + Extra channels = %d\n' ...
+             '    + Channels found = %d\n' ...
+             '    + Index mismatches = %d\n'...
+             '    + Channels missing = %d (won''t be displayed)\n' ...
+             'Check the log for details.\nFix mismatches and continue?'], ... 
+            length(diffEC), nChansFound, nChansMismatches, nChansMissing)
+        return
+    end 
+
+    elMap = containers.Map(electrodes, 1:length(electrodes));
+    splineOut = spline;
+    n = 1;
+
+    for i = 1:length(channels)
+        if ~elMap.isKey(channels{i})
+            continue
+        end
+        j = elMap(channels{i});
+        splineOut.indices(n) = i;
+        splineOut.ElectrodeNames(n,:) = spline.ElectrodeNames(j,:);
+        splineOut.Xe(n) = spline.Xe(j);
+        splineOut.Ye(n) = spline.Xe(j);
+        splineOut.Ze(n) = spline.Xe(j);
+        splineOut.G(n,:) = spline.G(j,:);
+        splineOut.G(:,n) = spline.G(:,j);
+        splineOut.gx(:,n) = spline.gx(:,j); 
+        splineOut.newElect(n,:) = spline.newElect(j,:);
+        n = n+1;
+    end
+
+    splineOut.indices(n:end) = [];
+    splineOut.ElectrodeNames(n:end,:) = [];
+    splineOut.Xe(n:end) = [];
+    splineOut.Ye(n:end) = [];
+    splineOut.Ze(n:end) = [];
+    splineOut.G(n:end,:) = [];
+    splineOut.G(:,n:end) = [];
+    splineOut.gx(:,n:end) = [];
+    splineOut.newElect(n:end,:) = [];
+    splineOut.comment = [spline.comment ' (Modified by WTools)']; 
+
+    if ~ioProc.writeSpline(splineOut, plotsPrms.SplineFile)
+        wtProject.notifyErr([], 'Failed to save updated spline data file:\n%s', localSplineFile);
+        return
+    end
+
+    plotsPrms.SplineLocal = 1;
     success = true;
 end

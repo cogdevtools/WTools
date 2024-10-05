@@ -48,7 +48,7 @@ classdef WTAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Co
                     o.FreqMin = WTNumUtils.str2double(cells{3});
                     o.FreqMax = WTNumUtils.str2double(cells{4});
                     o.AllChannels = cells{5};
-                    o.validate();
+                    success = o.validate();
                 else
                     o.default();
                     WTLog().warn(['The  parameters for average & standard error plots (%s) were set by an \n' ...
@@ -56,6 +56,7 @@ classdef WTAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Co
                 end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

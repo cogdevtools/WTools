@@ -23,16 +23,25 @@ function success = wtEEGLabToEEGLab()
     end
 
     wtLog.pushStatus().contextOn('EEGLabToEEGLab');
+    ioProc = wtProject.Config.IOProc;
     interactive = wtProject.Interactive;
     system = WTIOProcessor.SystemEEGLab;
+    analysisStarted = ~isempty(ioProc.getImportedSubjects());
 
     if interactive  
-        [success, sbjFileNames] = wtSelectUpdateSubjects(system);
-        if ~success
+        [ok, sbjFileNames] = wtSelectUpdateSubjects(system);
+        if ~ok
             wtLog.popStatus();
             return
         end  
-        if ~wtSelectUpdateConditions(system, sbjFileNames{1}) || ~wtSelectUpdateChannels(system)
+        % We cannot change parameters once some data has already been imported & converted
+        if analysisStarted
+            if ~WTConvertGUI.displayImportSettings(system)
+                wtLog.popStatus();
+                return
+            end
+        elseif ~wtSelectUpdateConditions(system, sbjFileNames{1}) || ...
+            ~wtSelectUpdateChannels(system, sbjFileNames{1}, struct())
             wtLog.popStatus();
             return
         end
@@ -44,7 +53,6 @@ function success = wtEEGLabToEEGLab()
         end
     end
 
-    ioProc = wtProject.Config.IOProc;
     subjectsPrms = wtProject.Config.Subjects;
     subjects = subjectsPrms.ImportedSubjectsList;
     subjectFileNames = subjectsPrms.FilesList;
@@ -58,7 +66,7 @@ function success = wtEEGLabToEEGLab()
         return 
     end
 
-    if ~wtSetSampleRate(system, subjectFileNames{1})
+    if ~analysisStarted && ~wtSetSampleRate(system, subjectFileNames{1})
          return
     end
 
@@ -67,48 +75,64 @@ function success = wtEEGLabToEEGLab()
         subjFileName = subjectFileNames{sbj}; 
         wtLog.info('Processing import file ''%s''', subjFileName);
 
-        [success, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
-        if ~success 
+        [ok, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
+        if ~ok 
             wtProject.notifyErr([], 'Failed to run eeglab');  
             wtLog.popStatus();      
             return
         end
 
-        [success, EEG] = ioProc.loadImport(system, subjFileName);
-        if ~success 
+        [ok, EEG] = ioProc.loadImport(system, subjFileName, struct());
+        if ~ok 
             wtProject.notifyErr([], 'Failed to load import: ''%s''', ioProc.getImportFile(subjFileName));
             wtLog.popStatus();
             return   
         end
 
-        [success, ALLEEG, EEG, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'eeg_store', ALLEEG, EEG, 0);
-        if ~success 
+        [ok, ALLEEG, EEG, ~] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'eeg_store', ALLEEG, EEG, 0);
+        if ~ok 
             wtProject.notifyErr([], 'Failed to create store data in eeglab');
             wtLog.popStatus();
             return   
         end
 
-        [success, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
-            ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
-        if ~success 
+        [ok, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
+            ALLEEG, EEG, 0, 'setname', subject, 'gui', 'off');
+        if ~ok 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
             wtLog.popStatus();
             return   
         end
 
-        if ~isempty(channelsPrms.CutChannels)
-            wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
-            if ~success 
-                wtProject.notifyErr([], 'Failed cut channels');
+        % We perform channel editing only in case the user wanted to change the channel locations.
+        % EEGLab data are a special case, because data were already imported in EEGLab.
+        if isempty(channelsPrms.ChannelsLocationFile)
+            wtLog.info('User did not reset channels locations and accepted EEGLab guess at import');
+        else
+            wtLog.info('Performing channels locations reset');
+            chansLocFile = ioProc.getChannelsLocationsFile(channelsPrms.ChannelsLocationFile, channelsPrms.ChannelsLocationLocal);
+
+            [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_chanedit', EEG, 'load', ...
+                { chansLocFile, 'filetype', channelsPrms.ChannelsLocationFileType });
+            if ~ok 
+                wtProject.notifyErr([], 'Failed to edit channels');
                 wtLog.popStatus();
                 return   
             end
-            EEG.nbchan = size(EEG.data, 1);
         end
 
-        [success, EEG] = wtReReferenceChannels(system, EEG);
-        if ~success
+        if ~isempty(channelsPrms.CutChannels)
+            wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
+            [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            if ~ok 
+                wtProject.notifyErr([], 'Failed to cut channels');
+                wtLog.popStatus();
+                return   
+            end
+        end
+
+        [ok, EEG] = wtReReferenceChannels(system, EEG);
+        if ~ok
             wtProject.notifyErr([], 'Failed to perform channels re-reference for subject ''%s''', subject);
             wtLog.popStatus();
             return
@@ -118,8 +142,8 @@ function success = wtEEGLabToEEGLab()
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
             [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
             
-            [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
-            if ~success
+            [ok, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
+            if ~ok
                 wtProject.notifyErr([], 'Failed to save processed import for subject ''%s''', subject);
                 wtLog.popStatus();
                 return

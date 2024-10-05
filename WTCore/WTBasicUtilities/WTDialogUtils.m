@@ -187,5 +187,24 @@ classdef WTDialogUtils
             end 
             selection = list(indexes);
         end
+
+        function [selection, indexes] = stringsSelectLimitedDlg(prompt, list, minN, maxN, confirm, varargin)
+            selection = [];
+            args = varargin;
+
+            while isempty(selection)
+                [selection, indexes] = WTDialogUtils.stringsSelectDlg(prompt, list, false, confirm, args{:});
+                nSelected = length(selection);
+                if minN >= 0 && nSelected < minN 
+                    WTDialogUtils.wrnDlg('', 'You selected %d items: minimum %d are required. Retry...', nSelected, minN);
+                elseif maxN >= 0 && nSelected > maxN 
+                    WTDialogUtils.wrnDlg('', 'You selected %d items: maximum %d are allowed. Retry...', nSelected, maxN);
+                else
+                    break
+                end
+                args = [varargin {'InitialValue', indexes }];
+                selection = [];
+            end
+        end
     end
 end

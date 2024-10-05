@@ -28,6 +28,7 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
         NoBaselineCorrection(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) int8  {WTValidations.mustBeZeroOrOne} = 0
     end
+
     methods
         function o = WTBaselineChopCfg(ioProc)
             o@WTConfigStorage(ioProc, 'baseline_chop_cfg.m');
@@ -58,7 +59,7 @@ classdef WTBaselineChopCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
                     o.LogarithmicTransform = cells{5};
                     o.NoBaselineCorrection = cells{6};
                     o.EvokedOscillations = cells{7};
-                    o.validate(true);
+                    success = o.validate();
                     return
                 else
                     o.default();

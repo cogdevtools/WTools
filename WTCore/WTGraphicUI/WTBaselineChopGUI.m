@@ -19,9 +19,7 @@ classdef WTBaselineChopGUI
         function success = defineBaselineChopParams(baselineChopParams, logFlag, evokFlag)
             success = false;
             WTValidations.mustBe(baselineChopParams, ?WTBaselineChopCfg);
-
-            wtLog = WTLog();
-            baselineChopParamsExist = baselineChopParams.exist();
+            wtLog = WTLog();            
             
             % EvokedOscillations can not be set: it reflects previous choices (wavelet tansformation)
             evokedOscillations = WTCodingUtils.ifThenElse(evokFlag, 1, 0);
@@ -29,7 +27,7 @@ classdef WTBaselineChopGUI
 
             % Log10 can be set only if data have not been already log transformed
             enableLog = WTCodingUtils.ifThenElse(logFlag, 'off', 'on');
-            enableBs = WTCodingUtils.ifThenElse(baselineChopParamsExist && baselineChopParams.NoBaselineCorrection, 'off', 'on');
+            enableBs = WTCodingUtils.ifThenElse(baselineChopParams.NoBaselineCorrection, 'off', 'on');
 
             answer = { ...
                 num2str(baselineChopParams.ChopTimeMin), ...

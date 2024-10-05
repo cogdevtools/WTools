@@ -33,6 +33,13 @@ classdef WTTransformGUI
             end
 
             wtLog = WTLog();
+            
+            if ~waveletTransformPrms.exist()
+                waveletTransformPrms.TimeMin = timeRange(1);
+                waveletTransformPrms.TimeMax = timeRange(2);
+                waveletTransformPrms.FreqMin = 1;
+                waveletTransformPrms.FreqMax = min(100, maxFreq);
+            end
 
             answer = { ...
                 num2str(waveletTransformPrms.TimeMin), ...
@@ -149,7 +156,7 @@ classdef WTTransformGUI
                         continue;
                     end
                     freqMax = WTNumUtils.str2double(answer{1,5});
-                    if ~isIntBetween(freqMax, freqMin, maxFreq) 
+                    if ~isIntBetween(freqMax, freqMin+1, maxFreq)
                         warnDlg(sprintf('Bad max frequency value, got: %s', answer{1,5}));
                         continue;
                     end

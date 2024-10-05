@@ -17,10 +17,18 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
 
     properties(Constant,Access=private)
         FldDefaultAnswer = 'defaultanswer'
+        FldSplineFile    = 'SplineFile'
+        FldSplineLocal   = 'LocalSpline'
+    end
+
+    properties (Access = private)
+        GuardedSet logical
     end
 
     properties
         Scale(1,:) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
+        SplineFile char
+        SplineLocal int8 {WTValidations.mustBeZeroOrOne} = 0
     end
 
     methods
@@ -34,7 +42,18 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
 
         function default(o) 
             default@WTPacedTimeFreqCfg(o);
+            o.GuardedSet = false;
             o.Scale = [];
+            o.SplineFile = '';
+            o.SplineLocal = 0;
+            o.GuardedSet = true;
+        end
+
+        function set.SplineFile(o, value)
+            if o.GuardedSet
+                WTValidations.mustBeNonEmptyChar(value);
+            end
+            o.SplineFile = value;
         end
 
         function success = load(o) 
@@ -42,19 +61,25 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
             if ~success 
                 return
             end 
+
+            [splineSuccess, splineFile, splineLocal] = o.read(o.FldSplineFile, o.FldSplineLocal);
+
             try
-                if length(cells) >= 3
+                if splineSuccess && length(cells) >= 3  
                     o.Time = cells{1};
                     o.Frequency = cells{2};
                     o.Scale = WTNumUtils.str2nums(cells{3});
-                    o.validate();
-                else
+                    o.SplineFile = splineFile;
+                    o.SplineLocal = splineLocal;
+                    success = o.validate();
+                else 
                     o.default();
                     WTLog().warn(['The parameters for 3D scalp map plots (%s) were set by an \n' ...
                         'incompatible version of WTools, hence they have been reset...'], o.DataFileName); 
                 end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end
@@ -73,11 +98,14 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
         end
 
         function success = persist(o)
-            txt = WTConfigFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, ...
+            txt1 = WTConfigFormatter.genericCellsFieldArgs(o.FldDefaultAnswer, ...
                 WTConfigFormatter.FmtArrayStr, num2str(o.Time), ...
                 WTConfigFormatter.FmtArrayStr, num2str(o.Frequency), ...
                 WTConfigFormatter.FmtArrayStr, num2str(o.Scale));
-            success = ~isempty(txt) && o.write(txt);
+            txt2 = WTConfigFormatter.genericCellsFieldArgs(o.FldSplineFile, WTConfigFormatter.FmtStr, o.SplineFile);
+            txt3 = WTConfigFormatter.intField(o.FldSplineLocal, o.SplineLocal);
+            success = ~any(cellfun(@isempty,{txt1 txt2 txt3})) && ... 
+                      o.write(txt1,txt2,txt3);
         end
     end
 end

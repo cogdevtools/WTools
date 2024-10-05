@@ -13,19 +13,13 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function success = wtSelectUpdateConditions(system, anImportedFile) 
+function success = wtSelectUpdateConditions(system, anyImportedFile) 
+    success = false;
     wtProject = WTProject();
     wtLog = WTLog();
-    ioProc = wtProject.Config.IOProc;
+    
+    conditions = WTImportGUI.selectImportedConditions(system, anyImportedFile);
 
-    [success, conditions, ~] = ioProc.getConditionsFromImport(system, anImportedFile);
-    if ~success
-        wtLog.err('Failed to get conditions from imported file ''%s''', anImportedFile);
-        return
-    end
-
-    success = false;
-    conditions = WTDialogUtils.stringsSelectDlg('Select conditions', conditions, false, true);
     if isempty(conditions) 
         wtLog.warn('No conditions selected');
         return

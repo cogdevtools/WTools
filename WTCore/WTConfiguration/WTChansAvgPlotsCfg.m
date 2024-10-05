@@ -51,7 +51,7 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
                     o.FreqMax = WTNumUtils.str2double(cells{4});
                     o.Scale = WTNumUtils.str2nums(cells{5});
                     o.Contours = cells{6};
-                    o.validate();
+                    success = o.validate();
                 else
                     o.default();
                     WTLog().warn(['The parameters for channels average plots (%s) were set by an \n' ...
@@ -59,6 +59,7 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
                 end
             catch me
                 WTLog().except(me);
+                o.default();
                 success = false;
             end 
         end

@@ -40,7 +40,7 @@ classdef WTBRVToEEGLabCfg < WTConfigStorage & WTEpochsAndFreqFiltersCfg & matlab
                     o.EpochLimits = WTNumUtils.str2nums(cells{1});
                     o.HighPassFilter = WTNumUtils.str2double(cells{2}, true);
                     o.LowPassFilter = WTNumUtils.str2double(cells{3}, true);
-                    o.validate(true)
+                    success = o.validate();
                 else
                     o.default();
                     WTLog().err('BRV to EEGLab conversion (%s): wrong number of parameters! They''ll be reset', o.DataFileName); 

@@ -15,13 +15,33 @@
 
 classdef WTEEGLabUtils
 
+    properties (Constant)
+        MinEEGLabMajorVersionNum = 2019
+    end
+
     methods(Static)
+        % eeglabVersionOk assumes that eeglab is accessible and return true only if its version 
+        % is greater or equal to the minimum expected by WTools.
+        function versionOk = eeglabVersionOk(showDialog)
+            try
+                [~, versionMaj, ~] = WTEval.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeg_getversion');
+                versionOk = versionMaj >= WTEEGLabUtils.MinEEGLabMajorVersionNum;
+            catch me
+                wtLog.except(me);
+                wtLog.err('Cannot check eeglab version: it might be definitively too old...')
+            end
+            if ~versionOk && showDialog
+                WTDialogUtils.msgBox('', 'EEGLAB version is too old. Minimum required: %d',  WTEEGLabUtils.MinEEGLabMajorVersionNum);
+            end
+        end
+
         function found = eeglabDep(fileName)
+
             if nargin == 0
                 fileName = 'eeglab.m';
             end
             
-            found = WTIOUtils.fileExist(fileName);  
+            found = WTIOUtils.fileExist(fileName);
             if found
                 return
             end
@@ -49,7 +69,6 @@ classdef WTEEGLabUtils
                     addpath(eeglabRoot);
                     rehash();
                     WTEval.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeglab nogui');
-                    found = true;
                 catch me
                     wtLog.except(me);
                 end
@@ -62,28 +81,57 @@ classdef WTEEGLabUtils
 
         % When 'safeMode' is true, exceptions are trapped and the first parameter returned is 'success'
         function varargout = eeglabRun(logLevel, safeMode, varargin) 
-            varargout = cell(nargout,1);
+            if ~WTEEGLabUtils.eeglabDep() || ~WTEEGLabUtils.eeglabVersionOk()
+                WTException.eeglabDependency('Can''t find EEGLAB or wrong version').throw();
+            end
+
+            varargout = cell(nargout, 1);
             cmdArgOfs = WTCodingUtils.ifThenElse(safeMode, 2, 1);
-            wtLog = WTLog();
-            me = [];
             warnState = warning('off', 'all');
-            
+            varargout{1} = true;
+
             try
                 if nargin < 3 % no argument, just run eeglab by default
                     [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', 'eeglab(''nogui'')');
                 else
-                    cmdStr = sprintf('%s(varargin{2:length(varargin)});', varargin{1});
+                    cmdStr = sprintf('%s(varargin{2:end});', varargin{1});
                     [varargout{cmdArgOfs:end}] = WTEval.evalcLog(logLevel, 'EEGLAB', cmdStr);
                 end
+                warning(warnState);
             catch me
-                wtLog.err('Failed to run eeglab command...');
+                warning(warnState);
+                WTLog().except(me, false);
+                if ~safeMode
+                    WTException.evalErr('Failed to run eeglab command').throw();
+                end
+                varargout{1} = false;
+            end
+        end
+
+        function varargout = eeglabRunQuiet(safeMode, varargin) 
+            if ~WTEEGLabUtils.eeglabDep() || ~WTEEGLabUtils.eeglabVersionOk()
+                WTException.eeglabDependency('Can''t find EEGLAB or wrong version').throw();
             end
 
-            warning(warnState);
-            if safeMode 
-                varargout{1} = isempty(me);
-            elseif ~isempty(me)
-                wtLog.except(me, true);
+            varargout = cell(nargout, 1);
+            cmdArgOfs = WTCodingUtils.ifThenElse(safeMode, 2, 1);
+            warnState = warning('off', 'all');
+            varargout{1} = true;
+
+            try
+                if nargin < 2 % no argument, just run eeglab by default
+                    [varargout{cmdArgOfs:end}] = WTEval.evalcQuiet('eeglab(''nogui'')');
+                else
+                    cmdStr = sprintf('%s(varargin{2:end});', varargin{1});
+                    [varargout{cmdArgOfs:end}] = WTEval.evalcQuiet(cmdStr);
+                end
+                warning(warnState);
+            catch me
+                warning(warnState);
+                if ~safeMode
+                    me.rethrow();
+                end
+                varargout{1} = false;
             end
         end
 

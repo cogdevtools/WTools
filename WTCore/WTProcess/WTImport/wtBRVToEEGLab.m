@@ -23,19 +23,26 @@ function success = wtBRVToEEGLab()
     end
     
     wtLog.pushStatus().contextOn('BRVToEEGLab');
-
+    ioProc = wtProject.Config.IOProc;
     interactive = wtProject.Interactive;
     system = WTIOProcessor.SystemBRV;
+    analysisStarted = ~isempty(ioProc.getImportedSubjects());
 
     if interactive  
-        [success, sbjFileNames] = wtSelectUpdateSubjects(system);
-        if ~success
+        [ok, sbjFileNames] = wtSelectUpdateSubjects(system);
+        if ~ok
             wtLog.popStatus();
             return
         end  
-        if ~wtSelectUpdateConditions(system, sbjFileNames{1}) || ...
-           ~wtSelectUpdateChannels(system) || ... 
-           ~setEpochsLimitsAndFreqFilter()
+        % We cannot change parameters once some data has already been imported & converted
+        if analysisStarted
+            if ~WTConvertGUI.displayImportSettings(system)
+                wtLog.popStatus();
+                return
+            end
+        elseif ~wtSelectUpdateConditions(system, sbjFileNames{1}) || ...
+            ~wtSelectUpdateChannels(system, sbjFileNames{1}, struct()) || ... 
+            ~setEpochsLimitsAndFreqFilter()
             wtLog.popStatus();
             return
         end
@@ -52,7 +59,6 @@ function success = wtBRVToEEGLab()
         end
     end
 
-    ioProc = wtProject.Config.IOProc;
     subjectsPrms = wtProject.Config.Subjects;
     subjects = subjectsPrms.ImportedSubjectsList;
     subjectFileNames = subjectsPrms.FilesList;
@@ -68,7 +74,7 @@ function success = wtBRVToEEGLab()
         return 
     end
 
-    if ~wtSetSampleRate(system, subjectFileNames{1})
+    if ~analysisStarted && ~wtSetSampleRate(system, subjectFileNames{1})
          return
     end
 
@@ -77,45 +83,59 @@ function success = wtBRVToEEGLab()
         subjFileName = subjectFileNames{sbj}; 
         wtLog.info('Processing import file ''%s''', subjFileName);
 
-        [success, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
-        if ~success 
+        [ok, ALLEEG, ~, ~] =  WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true);
+        if ~ok 
             wtProject.notifyErr([], 'Failed to run eeglab');  
             wtLog.popStatus();      
             return
         end
 
-        [success, EEG] = ioProc.loadImport(system, subjFileName);
-        if ~success 
+        [ok, EEG] = ioProc.loadImport(system, subjFileName, struct());
+        if ~ok 
             wtProject.notifyErr([], 'Failed to load import: ''%s''', ioProc.getImportFile(subjFileName));
             wtLog.popStatus();
             return   
         end
 
-        [success, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
-            ALLEEG, EEG, 0, 'setname', subjects, 'gui', 'off');
-        if ~success 
+        [ok, ALLEEG, EEG, CURRENTSET] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_newset', ...
+            ALLEEG, EEG, 0, 'setname', subject, 'gui', 'off');
+        if ~ok 
             wtProject.notifyErr([], 'Failed to create new eeglab set');
             wtLog.popStatus();
             return   
         end
 
-        if ~isempty(channelsPrms.CutChannels)
-            wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
-            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
-            if ~success 
-                wtProject.notifyErr([], 'Failed cut channels');
+        if isempty(channelsPrms.ChannelsLocationFile)
+            wtLog.info('User did not reset channels locations and accepted EEGLab guess at import');
+        else
+            wtLog.info('Performing channels locations reset');
+            chansLocFile = ioProc.getChannelsLocationsFile(channelsPrms.ChannelsLocationFile, channelsPrms.ChannelsLocationLocal);
+
+            [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_chanedit', EEG, 'load', ...
+                { chansLocFile, 'filetype', channelsPrms.ChannelsLocationFileType });
+            if ~ok 
+                wtProject.notifyErr([], 'Failed to edit channels');
                 wtLog.popStatus();
                 return   
             end
-            EEG.nbchan = size(EEG.data, 1);
+        end
+
+        if ~isempty(channelsPrms.CutChannels)
+            wtLog.info('Cutting channels: %s', char(join(channelsPrms.CutChannels, ',')));
+            [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_select', EEG, 'nochannel', channelsPrms.CutChannels);
+            if ~ok 
+                wtProject.notifyErr([], 'Failed to cut channels');
+                wtLog.popStatus();
+                return   
+            end
         end
 
         % Apply HighPass and LowPass filters separately. This is a workaround because sometimes MATLAB 
         % does not find a good solution for BandPass filter.
         if ~isnan(BRVToEEGLabPrms.HighPassFilter)
-            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
+            [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_eegfilt', ...
                 EEG, BRVToEEGLabPrms.HighPassFilter, [], [], 0);
-            if ~success 
+            if ~ok 
                 wtProject.notifyErr([], 'Failed to apply high pass filter');
                 wtLog.popStatus();
                 return   
@@ -123,24 +143,24 @@ function success = wtBRVToEEGLab()
         end
 
         if ~isnan(BRVToEEGLabPrms.LowPassFilter)
-            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_eegfilt', ...
+            [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_eegfilt', ...
                 EEG, [], BRVToEEGLabPrms.LowPassFilter, [], 0);
-            if ~success 
+            if ~ok 
                 wtProject.notifyErr([], 'Failed to apply low pass filter');
                 wtLog.popStatus();
                 return   
             end
         end
 
-        [success, EEG] = wtReReferenceChannels(system, EEG);
-        if ~success
+        [ok, EEG] = wtReReferenceChannels(system, EEG);
+        if ~ok
             wtProject.notifyErr([], 'Failed to perform channels re-reference for subject ''%s''', subject);
             wtLog.popStatus();
             return
         end
 
-        [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_epoch', EEG, {}, epochLimits, 'epochinfo', 'yes');
-        if ~success
+        [ok, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_epoch', EEG, {}, epochLimits, 'epochinfo', 'yes');
+        if ~ok
             wtProject.notifyErr([], 'Failed to to apply epoch limits for subject ''%s''', subject);
             wtLog.popStatus();
             return
@@ -150,8 +170,8 @@ function success = wtBRVToEEGLab()
             % Not sure that the instruction below is useful as repeated just after writeProcessedImport...
             [ALLEEG, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_store', ALLEEG, EEG, CURRENTSET);
 
-            [success, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
-            if ~success
+            [ok, ~, EEG] = ioProc.writeProcessedImport(outFilesPrefix, subject, EEG);
+            if ~ok
                 wtProject.notifyErr([], 'Failed to save processed import for subject ''%s''', subject);
                 wtLog.popStatus();
                 return

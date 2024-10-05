@@ -317,7 +317,7 @@ classdef WTValidations
                 WTException.badValue(['Value must be numeric and > ' num2str(vMin)]).throw();
             end
             if nargin > 3 && ~allowInf && any(isinf(v))
-                WTException.badValue(['Value must be finite']).throw();
+                WTException.badValue('Value must be finite').throw();
             end
         end
 
@@ -329,7 +329,7 @@ classdef WTValidations
                 WTException.badValue(['Value must be numeric and >= ' num2str(vMin)]).throw();
             end
             if nargin > 3 && ~allowInf && any(isinf(v))
-                WTException.badValue(['Value must be finite']).throw();
+                WTException.badValue('Value must be finite').throw();
             end
         end
 

@@ -30,7 +30,7 @@ classdef WTProcessUtils
             updSbjs = false;
             updSbjsGrd = false;
 
-            sbjsAll = ioProc.getAnalysedSubjects();
+            sbjsAll = ioProc.getImportedSubjects();
             sbjsImpNew = intersect(sbjsImp, sbjsAll);
 
             if length(sbjsImpNew) ~= length(sbjsImp)
@@ -49,6 +49,7 @@ classdef WTProcessUtils
                 sbjsPrms.SubjectsList = sbjsSelNew;
                 updSbjs = true;
             end
+            
             if length(intersect(sbjsGrd, sbjsGrdNew)) ~= length(sbjsGrd)
                 wtLog.info('Subjects grand list will be sanitized. Pruned subjects: [%s]', ...
                     char(join(setdiff(sbjsGrd, sbjsGrdNew), ',')));

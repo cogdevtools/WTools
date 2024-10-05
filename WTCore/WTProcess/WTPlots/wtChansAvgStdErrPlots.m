@@ -200,7 +200,22 @@ end
 function success = setChansAvgStdErrPlotsParams()
     success = false;
     wtProject = WTProject();
+    waveletTransformPrms = wtProject.Config.WaveletTransform;
+    baselineChopPrms = wtProject.Config.BaselineChop;
     plotsPrms = copy(wtProject.Config.ChannelsAverageStdErrPlots);
+
+    if ~plotsPrms.exist() 
+        if waveletTransformPrms.exist()
+            plotsPrms.TimeMin = waveletTransformPrms.TimeMin;
+            plotsPrms.TimeMax = waveletTransformPrms.TimeMax;
+            plotsPrms.FreqMin = waveletTransformPrms.FreqMin;
+            plotsPrms.FreqMax = waveletTransformPrms.FreqMax;
+        end
+        if baselineChopPrms.exist()
+            plotsPrms.TimeMin = baselineChopPrms.ChopTimeMin;
+            plotsPrms.TimeMax = baselineChopPrms.ChopTimeMax;
+        end
+    end
 
     if ~WTPlotsGUI.defineChansAvgStdErrPlotsSettings(plotsPrms)
         return

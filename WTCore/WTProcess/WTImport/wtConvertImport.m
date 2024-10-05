@@ -13,7 +13,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function success = wtConvert()
+function success = wtConvertImport()
     success = false;
     wtProject = WTProject();
     ioProc = wtProject.Config.IOProc;
@@ -35,7 +35,7 @@ function success = wtConvert()
     end
 
     if ~importTypePrms.persist()
-        wtProject.notifyErr([], 'Failed to save convert to EEGLAB params');
+        wtProject.notifyErr([], 'Failed to save conversion to EEGLAB params');
         return
     end
 
@@ -49,5 +49,7 @@ function success = wtConvert()
         success = wtBRVToEEGLab();
     elseif importTypePrms.EEGLabFlag 
         success = wtEEGLabToEEGLab();
+    else
+        wtProject.notifyErr([], 'No import type flag set in import params: don''t know which conversion to perform!');
     end
 end

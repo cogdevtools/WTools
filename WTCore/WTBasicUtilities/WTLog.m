@@ -12,7 +12,6 @@
 %
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 classdef WTLog < WTClass
 
     properties(Constant)
@@ -284,7 +283,7 @@ classdef WTLog < WTClass
             end
             msg = strrep(getReport(excp, reportType), '%', '%%');
             o.msg(stdStream, level, '%s', msg);
-            if nargin > 2 && rethrow
+            if rethrow
                 excp.rethrow();
             end
         end

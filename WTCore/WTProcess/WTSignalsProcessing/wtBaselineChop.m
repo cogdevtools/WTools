@@ -61,6 +61,37 @@ function success = wtBaselineChop()
             if waveletTransformParams.exist() 
                 logFlag = waveletTransformParams.LogarithmicTransform;
                 evokFlag = waveletTransformParams.EvokedOscillations;
+
+                if ~baselineChopParams.exist()
+                    % Estimation of the segment to chop, based on Eugenio Parise suggestion
+                    segmentToChop = 2000 / waveletTransformParams.FreqMin; 
+                    maxSegmentToChop = (waveletTransformParams.TimeMax - waveletTransformParams.TimeMin) / 2;
+
+                    if segmentToChop < maxSegmentToChop
+                        baselineChopParams.ChopTimeMin = waveletTransformParams.TimeMin + segmentToChop;
+                        baselineChopParams.ChopTimeMax = waveletTransformParams.TimeMax - segmentToChop;
+                    else
+                        wtLog.warn('Chop segment estimation above data length: will be ignored!');
+                        baselineChopParams.ChopTimeMin = waveletTransformParams.TimeMin;
+                        baselineChopParams.ChopTimeMax = waveletTransformParams.TimeMax;
+                    end
+
+                    baselineChopParams.BaselineTimeMin = baselineChopParams.ChopTimeMin;
+                    baselineChopParams.BaselineTimeMax = baselineChopParams.ChopTimeMin;
+                    sampleRatePrms = wtProject.Config.Sampling;
+                    
+                     % Estimation of the baseline segment, based on Eugenio Parise suggestion (100 samples)
+                    if sampleRatePrms.exist()
+                        baselineTimeMax = baselineChopParams.BaselineTimeMin + (100*1000) / sampleRatePrms.SamplingRate;
+
+                        if baselineTimeMax < baselineChopParams.ChopTimeMax
+                            if baselineChopParams.BaselineTimeMin < 0 && baselineTimeMax > 0
+                                baselineChopParams.BaselineTimeMax = 0; % set the time 0 as max extension
+                            end
+                            baselineChopParams.BaselineTimeMax = baselineTimeMax;
+                        end
+                    end
+                end
             end
 
             if ~WTBaselineChopGUI.defineBaselineChopParams(baselineChopParams, logFlag, evokFlag)

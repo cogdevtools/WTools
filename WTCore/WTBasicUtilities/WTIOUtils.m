@@ -91,6 +91,15 @@ classdef WTIOUtils
             [status, ~] = mkdir(dirName);
         end
 
+        % As rmdir but suppress the warning 
+        function status = rmdir(dirName, withContent)
+            if nargin > 1 && withContent
+                [status, ~] = rmdir(dirName, 's');
+            else 
+                [status, ~] = rmdir(dirName);
+            end
+        end
+
         function response = fileExist(filePart, varargin)
             fileName = fullfile(filePart, varargin{:});
             response = exist(fileName, 'file');
@@ -181,7 +190,8 @@ classdef WTIOUtils
                     return
                 end
                 targetFile = fullfile(dirName, fileName);
-                args = [targetFile varargin];
+                args = { targetFile '-v7.3' '-nocompression' };
+                args = [ args varargin ];
                 args = WTStringUtils.quoteMany(args{:});
                 cmd = sprintf('save(%s)', char(join(args, ',')));
                 evalin('caller', cmd);

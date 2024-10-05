@@ -18,15 +18,7 @@ function [success, sbjFileNames] = wtSelectUpdateSubjects(system)
     wtProject = WTProject();
     wtLog = WTLog();
     subjectsParams = wtProject.Config.Subjects;
-    sbjFileNames = {};
-
-    if subjectsParams.exist()
-        if ~WTEEGLabUtils.eeglabYesNoDlg('Re-import subjects?', ['The subject configuration file already exists!\n' ...
-                'Do you want to import the subjects again?'])
-            return;
-        end            
-    end     
-    
+       
     [subjects, sbjFileNames] = WTImportGUI.selectImportedSubjects(system);
     if isempty(subjects) 
         wtLog.warn('No subjects to import selected');

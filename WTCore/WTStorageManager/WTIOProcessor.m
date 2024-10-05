@@ -18,6 +18,7 @@ classdef WTIOProcessor < handle
     properties(Constant,Access=private)
         LogSubDir        = 'Logs'
         ConfigSubDir     = 'Config'
+        SupportSubDir    = 'Support'
         ImportSubDir     = 'Import'
         WaveletsSubDir   = 'WaveletTransform'
         AnalysisSubDir   = 'Analysis'
@@ -73,6 +74,7 @@ classdef WTIOProcessor < handle
         RootDir char
         LogDir char
         ConfigDir char
+        SupportDir char
         ImportDir char
         AnalysisDir char
         GrandAvgDir char
@@ -132,6 +134,135 @@ classdef WTIOProcessor < handle
                     WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
             end
         end
+
+        % This function is extracted from EEGlab readlocs()
+        function fileType = getChannelsLocationsFileType(fileExt)
+            fileExt = fileExt(1,2:end);
+
+            switch lower(fileExt)
+                case {'loc' 'locs' 'eloc'}
+                    fileType = 'loc';
+                case 'xyz' 
+                    fileType = 'xyz'; 
+                case 'sph'
+                    fileType = 'sph';
+                case 'ced'
+                    fileType = 'chanedit';
+                case 'elp'
+                    % 2 options here: 'besa' 'polhemus'
+                    fileType = 'besa'; 
+                case 'asc'
+                    fileType = 'asc';
+                case 'dat'
+                    fileType = 'dat';
+                case 'elc'
+                    fileType = 'elc';
+                case 'eps'
+                    fileType = 'besa';
+                case 'sfp'
+                    fileType = 'sfp';
+                case 'tsv'
+                    fileType = 'tsv';
+                case 'mat'
+                    fileType = 'mat';
+                otherwise
+                    fileType =  ''; 
+            end
+        end
+
+        % filterAndRenameEGITrialFields() filter out data fields which do not refer to the list of 
+        % selected 'conditions' or 'trials' set. When 'conditions' is empty, all conditions are 
+        % selected. When 'trials' is empty, all trials are selected. 'trials' maybe a list of numbers
+        % or a struct with 2 fields Min and Max, in which case it represents a range.
+        function [success, dataOut] = filterAndRenameEGITrialFields(dataIn, conditions, trials)
+            wtLog = WTLog();
+            success = false;
+            dataOut = struct();
+        
+            wtLog.pushStatus().contextOn('EGIDataFieldsFilterAndRename');
+        
+            try
+                dataOut = struct(); 
+                % fields should be normally ordered and we keep the same order
+                dataFields = fieldnames(dataIn);
+                % find the <condition>_Segment<#> fields
+                reResult = regexp(dataFields, WTIOProcessor.EGIConditionSegmentFldRe, 'once', 'tokens');
+                selected = ~cellfun(@isempty, reResult); 
+                selectedIdxs = find(selected);
+                % extract conditions name
+                matches = reResult(selected);
+                cndSeg = cat(1, matches{:});  % {{'cnd'}, {'seg'}}
+                conditions = unique(cndSeg(:,1));
+                % create a counters for each condition
+                counters = cell2struct(repmat({zeros(1)}, 1, length(conditions)), conditions, 2);
+
+                for i = 1:length(selectedIdxs)
+                    fldIdx = selectedIdxs(i);
+                    cndName = reResult{fldIdx}{1};
+                    if ~isempty(conditions) && ~any(strcmp(cndName, conditions)) % ignore unselected conditions
+                        wtLog.dbg('Removed excluded condition field: %s', dataFields{fldIdx});
+                        continue
+                    end
+                    if ~isempty(trials) 
+                        segNum = WTNumUtils.str2double(reResult{fldIdx}{2});
+                        if (isstruct(trials) && (segNum < trials.Min || segNum > trials.Max)) || ...
+                           (~isstruct(trials) && isvector(trials) && any(trials == segNum)) % ignore unselected trials
+                            wtLog.dbg('Removed excluded trial field: %s', dataFields{fldIdx});
+                            continue
+                        end
+                    end
+                    newSegNum = counters.(cndName)+1;
+                    counters.(cndName) = newSegNum;
+                    newFieldName = [cndName '_Segment' num2str(newSegNum)];
+                    dataOut.(newFieldName) = dataIn.(dataFields{fldIdx});
+                    wtLog.dbg('Renamed data field %s => %s', dataFields{fldIdx}, newFieldName);
+                end
+        
+                invariantFields = dataFields(~selected);
+        
+                for i = 1:length(invariantFields)
+                    dataOut.(invariantFields{i}) = dataIn.(invariantFields{i});
+                    wtLog.dbg('Unaffected data field %s', invariantFields{i});
+                end
+        
+                success = true;
+            catch me
+                wtLog.except(me);
+                wtLog.err('Failed to perform trial ajustments');
+            end
+        
+            wtLog.popStatus();
+        end
+
+        function [success, EEG] = restoreEGICz(EEG) 
+            wtLog = WTLog();
+            success = false;
+
+            wtLog.info('Restoring Cz channel data to allow channels re-referencing...');
+
+            if ~isfield(EEG, 'chaninfo') || ...
+               ~isfield(EEG.chaninfo, 'nodatchans') || ...
+               ~isfield(EEG, 'chanlocs') || ...
+               ~isfield(EEG, 'urchanlocs')
+                wtLog.err('Cannot channels info details!');
+                return
+            end
+
+            noDataChans = EEG.chaninfo.nodatchans;
+            
+            if isempty(noDataChans) || ~strcmp(noDataChans(end).labels, 'Cz')
+                wtLog.err('Cannot find Cz channel location data!');
+                return
+            end
+
+            ref = zeros(1, size(EEG.data, 2), size(EEG.data, 3)); 
+            EEG.data = cat(1, EEG.data, ref);
+            EEG.nbchan = size(EEG.data, 1);
+            EEG.chanlocs(end+1) = EEG.chaninfo.nodatchans(end);
+            EEG.urchanlocs(end+1) = EEG.chaninfo.nodatchans(end);
+            EEG.chaninfo.nodatchans(end) = [];
+            [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'eeg_checkset', EEG);
+        end
     end
 
     methods(Static,Access=public)
@@ -173,15 +304,9 @@ classdef WTIOProcessor < handle
         end
 
         function [success, meshFile] = getMeshFileFromSplineFile(splineFile) 
-            meshFile = [];
-            lenSplineFile = length(splineFile);
-            lenSplineFileExt = length(WTIOProcessor.SplineFileExt);
-            success = lenSplineFile > lenSplineFileExt && ... 
-                endsWith(splineFile, WTIOProcessor.SplineFileExt);
-            if ~success 
-                return
-            end
-            meshFile = [splineFile(1:lenSplineFile - lenSplineFileExt) WTIOProcessor.MeshFileExt];
+            [~, fileName, fileExt] = fileparts(splineFile);
+            success = strcmp(fileExt, WTIOProcessor.SplineFileExt);
+            meshFile = WTCodingUtils.ifThenElse(success, @()fullfile(WTLayout.getSplinesDir(), [fileName WTIOProcessor.MeshFileExt]), []); 
         end
 
         function [wType, extension] = getGrandAverageFileTypeAndExtension(perSubject, evokedOscillation)
@@ -248,53 +373,6 @@ classdef WTIOProcessor < handle
                 conditions{i} = condition;
             end
         end
-
-        function [success, chansLocations] = readChannelsLocations(system, fileName)
-            success = false;
-            chansLocations = {};
-
-            try
-                [~,~,fileExt] = fileparts(fileName);
-                fullPath = fullfile(WTLayout.getDevicesDir(), fileName);
-                removeTypesRe = '';
-                removeChansRe = '';
-
-                switch fileExt
-                    case WTIOProcessor.ChansLocationSFPFileExt
-                        [chLabel, x, y, z] = textread(fullPath,'%s %n %n %n');
-                        if strcmp(system, WTIOProcessor.SystemEGI)
-                            removeChansRe = '^Fid.+$';
-                        end
-                    case WTIOProcessor.ChansLocationELPFileExt
-                        [chType, chLabel, x, y, z] = textread(fullPath,'%s %s %n %n %n', 'headerlines', 1);
-                        removeTypesRe ='^EOG|FID$';
-                    case WTIOProcessor.ChansLocationCEDFileExt
-                        [~, chLabel, ~, ~, x, y, z, ~, ~, ~, ~, ~] = textread(fullPath, ...
-                            '%s %s %s %s %n %n %n %s %s %s %s %s', 'headerlines', 1);
-                        removeChansRe = '^VEOG|HEOG|DIGI$'; % just in case...
-                    otherwise
-                        WTException.badArg('Unknown channel location file extension: %s', fileExt).throw();
-                end
-
-                chansLocations = cell(1, length(chLabel));
-                nRemoved = 0;
-
-                for i = 1:length(chLabel)
-                    if (~isempty(removeTypesRe) && any(regexp(chType{i}, removeTypesRe))) || ...
-                       (~isempty(removeChansRe) && any(regexp(chLabel{i}, removeChansRe)))
-                        nRemoved = nRemoved + 1;
-                        continue
-                    end
-                    chansLocations{i-nRemoved} = struct('Label', chLabel{i}, 'Location', [x(i) y(i) z(i)]);
-                end
-
-                chansLocations = chansLocations(1:end-nRemoved);
-                success = true;
-            catch me
-                WTLog().except(me);
-                return
-            end
-        end        
     end
 
     methods(Access=private)
@@ -302,11 +380,66 @@ classdef WTIOProcessor < handle
             o.RootDir = '';
             o.LogDir = '';
             o.ConfigDir = '';
+            o.SupportDir = '';
             o.ImportDir = '';
             o.AnalysisDir = '';
             o.GrandAvgDir = '';
             o.StatisticsDir = '';
             o.TemporaryDir = '';
+        end 
+
+        function [success, data] = loadEGIImport(o, fileToImport, sampleRate, triggerLatency, conditions, trials) 
+            wtLog = WTLog();
+            success = false;
+            data = [];
+            
+            wtLog.pushStatus().contextOn('LoadEGIImport');
+            wtLog.warn('Attempt to import data in EEGLab...');
+
+            try
+                [success, data] = WTEEGLabUtils.eeglabRunQuiet(true, 'pop_importegimat', ...
+                    fileToImport, sampleRate, triggerLatency);
+            catch
+            end
+        
+            if success
+                [success, data] = WTIOProcessor.restoreEGICz(data);
+                wtLog.popStatus();
+                return
+            end
+        
+            wtLog.warn('Attempt to import EGI data in EEGLab failed: retrying by fixing trials name...');
+        
+            [ok, data] = WTIOUtils.loadFrom(fileToImport, '-mat');
+            if ~ok 
+                wtLog.err('Cannot import EGI data in any way');
+                wtLog.popStatus();
+                return
+            end
+        
+            [ok, data] = WTIOProcessor.filterAndRenameEGITrialFields(data, conditions, trials);
+            if ~ok
+                wtLog.popStatus(); 
+                return
+            end
+                
+            tmpFile = o.getTemporaryFile('', ['_' WTIOUtils.getPathTail(fileToImport)]);
+            wtLog.info('Creating temporary file for adjusted import data: ''%s''', tmpFile);
+        
+            if ~WTIOUtils.saveTo([], tmpFile, '-struct', 'data')
+                wtLog.err('Failed to save temporary data file with trial ajustments (%s)', tmpFile);
+                wtLog.popStatus();
+                return
+            end
+        
+            [success, data] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'pop_importegimat', ...
+                tmpFile, sampleRate, triggerLatency);
+            
+            wtLog.info('Deleting temporary file created to adjust import data: ''%s''', tmpFile);
+            delete(tmpFile);
+
+            [success, data] =  WTIOProcessor.restoreEGICz(data);
+            wtLog.popStatus();
         end
     end
 
@@ -320,6 +453,7 @@ classdef WTIOProcessor < handle
             o.RootDir = WTIOUtils.getAbsPath(rootDir);
             o.LogDir = fullfile(o.RootDir, o.LogSubDir);
             o.ConfigDir = fullfile(o.RootDir, o.ConfigSubDir);
+            o.SupportDir = fullfile(o.RootDir, o.SupportSubDir);
             o.ImportDir = fullfile(o.RootDir, o.ImportSubDir);
             o.AnalysisDir = fullfile(o.RootDir, o.AnalysisSubDir);
             o.GrandAvgDir = fullfile(o.AnalysisDir, o.GrandAvgSubDir);
@@ -399,6 +533,56 @@ classdef WTIOProcessor < handle
             fullPath = fullfile(filePath, fileName);
         end  
 
+        function [fullPath, filePath, fileName] = getSupportFile(o, fileName, supportDir)
+            filePath = WTCodingUtils.ifThenElse(nargin > 2 && ~isempty(supportDir), supportDir, o.SupportDir);
+            fullPath = fullfile(filePath, fileName);
+        end
+
+        function [fullPath, filePath, fileName] = getChannelsLocationsFile(o, fileName, local)
+            if nargin > 2 && local
+                [~, fileName, fileExt] = fileparts(fileName);
+                fileName = [ fileName '.Modified' fileExt];
+            end
+            [fullPath, filePath, fileName] = o.getSupportFile(fileName, WTCodingUtils.ifThenElse(local, [], WTLayout.getChannelsLayoutsDir));
+        end
+
+        function [success, chansLocations] = readChannelsLocations(o, fileName, local)
+            fullPath = o.getChannelsLocationsFile(fileName, local);
+            [success, chansLocations] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'readlocs', fullPath, 'filetype', 'autodetect');
+        end
+
+        % Channels locations files can only be written in the project support dir
+        function success = writeChannelsLocations(o, chanLocs, fileName)
+            success = false;
+            fullPath = o.getChannelsLocationsFile(fileName, true);
+            [fileDir, ~, fileExt] = fileparts(fullPath);
+            if ~WTIOUtils.dirExist(fileDir) && ~WTIOUtils.mkdir(fileDir)
+                return
+            end
+            fileType = WTIOProcessor.getChannelsLocationsFileType(fileExt);
+            success = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'writelocs', chanLocs, fullPath, 'filetype', fileType);
+        end
+
+        function [fullPath, filePath, fileName] = getSplineFile(o, fileName, local)
+            if nargin > 2 && local
+                [~, fileName, fileExt] = fileparts(fileName);
+                fileName = [ fileName '.Modified' fileExt];
+            end
+            [fullPath, filePath, fileName] = o.getSupportFile(fileName, WTCodingUtils.ifThenElse(local, [], WTLayout.getSplinesDir));
+        end
+
+        function [success, spline] = readSpline(o, fileName, local)
+            fullPath = o.getSplineFile(fileName, local);
+            [success, spline] = WTIOUtils.loadFrom(fullPath, '-mat');
+        end
+
+        % Spline files can only be written in the project support dir
+        function success = writeSpline(o, spline, fileName)
+            success = false;
+            fullPath = o.getSplineFile(fileName, true);
+            success = WTIOUtils.saveTo([], fullPath, '-struct', 'spline');
+        end
+
         % In this case fileName can be either scalar or a cell array of strings
         function [subjects, sbjFiles] = getSubjectsFromImportFiles(o, system, varargin)
             fileNameFmtRe = WTIOProcessor.getSystemImportFileNameFmtRe(system);
@@ -454,46 +638,72 @@ classdef WTIOProcessor < handle
             fullPath = fullfile(filePath, fileName);
         end
 
-        function [success, varargout] = loadImport(o, system, fileName, varargin)
-            varargout = cell(1, nargout-1);
+        % loadImport() loads data from import source files. It takes as input the system type, the fileName
+        % and a struct (possibly empty depending on the system) which stores extra params necessary to the 
+        % import procedure. The structure must contain a field named after the 'system' which store a sub
+        % structure. For EGI system, such sub-structure should either be empty for a "raw" import (just 
+        % load the file as .mat) or have both the 2 fields SampleRate & TriggerLatency to run the eeglab import.
+        % In the latter case, the structure might have 2 extra optional fields 'Conditions' and 'Trials' to
+        % filter out some of the import data fields (check filterAndRenameEGITrialFields() for more details).
+        % For system other than EGI, at the moment there are no specific parameters, so 'params' is ignored.
+        function [success, data] = loadImport(o, system, fileName, params)
+            wtLog = WTLog();
+            success = false;
+            data = [];
+
             [fullPath, filePath] = o.getImportFile(fileName);
-           
+            params = WTCodingUtils.ifThenElse(isfield(params, system), @()getfield(params, system), struct());
+  
             switch system
                 case WTIOProcessor.SystemEGI
-                    [success, varargout{:}] = WTIOUtils.loadFrom(fullPath, '-mat', varargin{:});
+                    if isfield(params, 'SampleRate') && isfield(params, 'TriggerLatency')
+                        conditions = WTCodingUtils.ifThenElse(isfield(params, 'Conditions'), @()params.Conditions, []);
+                        trials =  WTCodingUtils.ifThenElse(isfield(params, 'Trials'), @()params.Trials, []);
+                        [success, data] = o.loadEGIImport(fullPath, params.SampleRate, params.TriggerLatency, conditions, trials);
+                    else
+                        [success, data] = WTIOUtils.loadFrom(fullPath, '-mat');
+                    end
                 case WTIOProcessor.SystemEEGLab
-                    [success, varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
+                    [success, data] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadset', 'filename', fileName, 'filepath', filePath);
                 case WTIOProcessor.SystemEEP
-                    [success, varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadeep', fullPath, 'triggerfile', 'on');
+                    [success, data] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadeep_v4', fullPath, 'triggerfile', 'on');
                 case WTIOProcessor.SystemBRV
-                    [success, varargout{:}] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadbva', fullPath);
+                    [success, data] = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, true, 'pop_loadbva', fullPath);
                 otherwise
-                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
+                    wtLog.err('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?'));
             end
         end
 
         function [success, conditions, data] = getConditionsFromImport(o, system, fileName)
+            wtLog = WTLog();
             conditions = {};
-            [success, data] = o.loadImport(system, fileName);
+
+            [success, data] = o.loadImport(system, fileName, struct());
             if ~success 
                 return
             end
-            switch system
-                case WTIOProcessor.SystemEGI
-                    fieldNames = fieldnames(data);
-                    result = regexp(fieldNames, o.EGIConditionSegmentFldRe, 'once', 'tokens');
-                    match = result(~cellfun(@isempty, result));
-                    cndSeg = cat(1, match{:});
-                    conditions = unique(cndSeg(:,1));
-                    success = ~isempty(conditions);
-                case WTIOProcessor.SystemEEGLab
-                    conditions = sort(unique({ data.event.type }));
-                case WTIOProcessor.SystemEEP
-                    WTException.unsupported('Unsupported system: %s', system).throw();
-                case WTIOProcessor.SystemBRV
-                    conditions = sort(unique({ data.event.type }));
-                otherwise
-                    WTException.badArg('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?')).throw();
+
+            try 
+                switch system
+                    case WTIOProcessor.SystemEGI
+                        fieldNames = fieldnames(data);
+                        result = regexp(fieldNames, o.EGIConditionSegmentFldRe, 'once', 'tokens');
+                        match = result(~cellfun(@isempty, result));
+                        cndSeg = cat(1, match{:});
+                        conditions = unique(cndSeg(:,1));
+                        success = ~isempty(conditions);
+                    case WTIOProcessor.SystemEEGLab
+                        conditions = sort(unique({ data.event.type }));
+                    case WTIOProcessor.SystemEEP
+                        wtLog.err('Unsupported system: %s', system);
+                    case WTIOProcessor.SystemBRV
+                        conditions = sort(unique({ data.event.type }));
+                    otherwise
+                        wtLog.err('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?'));
+                end
+            catch me
+                wtLog.excpet(me);
+                success = false;
             end
         end
 
@@ -530,19 +740,27 @@ classdef WTIOProcessor < handle
             end
         end
 
-        function [success, fullPath, EEG] = writeProcessedImport(o, filePrefix, subject,  EEG)
-            success = false;        
+        function [success, fullPath, EEG] = writeProcessedImport(o, filePrefix, subject, EEG)
+            success = false;
+            
+            [fullPath, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
+            dirExist = WTIOUtils.dirExist(filePath);
+
+            if ~dirExist && ~WTIOUtils.mkdir(filePath)
+                WTLog().err('Failed to make dir ''%s''', filePath);
+                return
+            end
+
             try
-                [fullPath, filePath, fileName] = o.getProcessedImportFile(filePrefix, subject);
-                success = WTIOUtils.mkdir(filePath);
-                if ~success
-                    WTLog().err('Failed to make dir ''%s''', filePath);
-                else
-                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
-                    EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_saveset', EEG,  'filename', fileName, 'filepath', filePath);
-                    success = true;
-                end
+                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'eeg_checkset', EEG);
+                EEG = WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'pop_saveset', EEG,  'filename', fileName, 'filepath', filePath);
+                success = true;
             catch me
+                if ~dirExist
+                    WTIOUtils.rmdir(filePath, true);
+                else
+                    delete(fullPath)
+                end
                 WTLog().except(me);
             end
         end
@@ -649,9 +867,10 @@ classdef WTIOProcessor < handle
             try
                 [fullPath, filePath, fileName] = o.getGrandAverageFile(condition, wType, perSubject);
                 if ~isempty(fullPath)
-                    argsName = [{filePath fileName} varargin];
-                    argsName = WTStringUtils.quoteMany(argsName{:});
-                    cmd = sprintf('WTIOUtils.saveTo(%s);', char(join(argsName, ',')));
+                    args = {filePath fileName};
+                    args = [args varargin];
+                    args = WTStringUtils.quoteMany(args{:});
+                    cmd = sprintf('WTIOUtils.saveTo(%s);', char(join(args, ',')));
                     evalin('caller', cmd);
                     success = true;
                 end
@@ -803,7 +1022,7 @@ classdef WTIOProcessor < handle
             subject = match.subject;
         end
 
-        function subjects = getAnalysedSubjects(o)
+        function subjects = getImportedSubjects(o)
             dirContent = dir(fullfile(o.AnalysisDir, '*'));
             subjects = cell(length(dirContent), 1);
             nValid = 0;
