@@ -4,7 +4,7 @@ WTools is a Matlab® based toolbox & EEGLab plugin for wavelet based time-freque
 It provides also a variety of plotting and data export utilities.
 
 ## Dependencies
-WTools requires [EEGLab](https://eeglab.org) to be installed. 
+WTools requires [EEGLab 2019](https://eeglab.org) to be installed. 
 
 ## Installation
 WTools can be used as a standalone application or can be copied in the plugins directory
