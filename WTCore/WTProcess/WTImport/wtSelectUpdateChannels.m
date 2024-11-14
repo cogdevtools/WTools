@@ -28,7 +28,7 @@ function success = wtSelectUpdateChannels(system, anySubjectFileName, importPara
     selectChanLocations = true;
     channelsLabels = {};
 
-    if isfield(EEG, 'chaninfo') && ~isempty(EEG.chaninfo.filename)
+    if isfield(EEG, 'chaninfo') && isfield(EEG.chaninfo, 'filename') && ~isempty(EEG.chaninfo.filename)
         wtProject.notifyWrn([], ['A channels locations file has been AUTOMATICALLY assigned by EEGLab to the data set.\n'...
             'It''s your responsibility to make sure that the channels locations correspond to the data.']);
 
@@ -166,10 +166,28 @@ function [success, chanLocsFile, local] = selectChannelLocationsFile(system, EEG
     ioProc = wtProject.Config.IOProc;
 
     numberOfChans = EEG.nbchan;
+
+    if numberOfChans == 0 
+        wtLog.error('Cannot determine number of data channels!');
+        return
+    end 
+
+    numberOfChansLocs = WTCodingUtils.ifThenElse(isfield(EEG, 'chanlocs'), @()length(EEG.chanlocs), 0);
+    canOnlyPruneManually = true;
+
+    if numberOfChansLocs == 0 
+        wtLog.info('No channel locations have been found in the data');
+    elseif numberOfChans ~= numberOfChansLocs 
+        wtLog.warn('Data with #channel-locations != #actual-channels (%d != %d): locations will be ignored', ...
+            numberOfChansLocs, numberOfChans);
+    else
+        canOnlyPruneManually = false;
+    end
+
     fileExtentions = WTIOProcessor.getSystemChansLocationFileExtension(system);
     selectionFlt = cellfun(@(e)['*' e], fileExtentions, 'UniformOutput', false);
     selectionFlt = {char(join(selectionFlt, ';')) selectionFlt{:}}';
-    
+
     while ~success
         chanLocsFile = [];
         local = false;
@@ -190,9 +208,10 @@ function [success, chanLocsFile, local] = selectChannelLocationsFile(system, EEG
             wtProject.notifyErr([], 'Failed to read channel locations file:\n%s', layoutFile);
             return
         end
-        
+
         if length(chanLocs) < numberOfChans
-            wtProject.notifyWrn('Channels layout', 'Number of channels %d <  expected %d.\nSelect another layout...', length(chanLocs), numberOfChans);
+            wtProject.notifyWrn('Channels layout', 'Number of channels %d <  expected %d.\nSelect another layout...', ...
+                length(chanLocs), numberOfChans);
             continue
         elseif length(chanLocs) == numberOfChans
             WTEEGLabUtils.eeglabMsgDlg('Info', 'The channels layout will be displayed for confirmation.\nClose the figure once inspected.');
@@ -209,24 +228,37 @@ function [success, chanLocsFile, local] = selectChannelLocationsFile(system, EEG
             chanLocsFile = layoutFile;
         elseif length(chanLocs) > numberOfChans
             wtProject.notifyWrn('Channels layout', 'Number of channels %d > expected %d.', length(chanLocs), numberOfChans);
-            
+
             if ~WTEEGLabUtils.eeglabYesNoDlg('Choice', 'Adjust current layout? Or select another...')
                 continue
             end
 
-            if isfield(EEG, 'chanlocs') && WTEEGLabUtils.eeglabYesNoDlg('Choice', ...
-                ['Check the new layout coverage of the current layout and, if feasible,\n'...
-                 'apply it by automatic sub-setting? Or prune extra channels manually...']);
+            pruneManually = true;
 
+            if canOnlyPruneManually 
+                if ~WTEEGLabUtils.eeglabYesNoDlg('Choice', ...
+                    ['As no previous valid channel locations have been found in the data, you\n' ...
+                     'can only prune manually the selected layout. Do you want to prune it?']);
+                    continue
+                end
+            elseif WTEEGLabUtils.eeglabYesNoDlg('Choice', ...
+                    ['Check the new layout coverage of the current layout and, if feasible,\n'...
+                     'apply it by automatic sub-setting? Or prune extra channels manually...']);
+
+                wtLog.info('User chose to adjust layout automatically by sub-setting');
                 [chanLocsDiff, chanLocsPruned] = diffChannelLocations(chanLocs, EEG.chanlocs);
-                
+                pruneManually = false;
+
                 if ~isempty(chanLocsDiff)
                     wtProject.notifyWrn('Channels layout', ...
                         'The selected layout covers only %d of %d channels\nand cannot be applied. Select another layout...', ...
                         length(chanLocsPruned), numberOfChans);
                     continue
                 end
-            else
+            end
+
+            if pruneManually
+                wtLog.info('User chose to prune the layou manually');
                 chanLocsPruned = pruneChannelsLocations(chanLocs, numberOfChans);
                 if isempty(chanLocsPruned)
                     wtLog.warn('User skipped channels locations pruning');
@@ -234,7 +266,8 @@ function [success, chanLocsFile, local] = selectChannelLocationsFile(system, EEG
                 end
             end
 
-            WTEEGLabUtils.eeglabMsgDlg('Info', 'The adjusted channels layout will be displayed for confirmation.\nClose the figure once inspected.');
+            WTEEGLabUtils.eeglabMsgDlg('Info', ...
+                'The adjusted channels layout will be displayed for confirmation.\nClose the figure once inspected.');
             [localLayoutFullPath, localLayoutFile] = ioProc.getChannelsLocationsFile(layoutFile, true);
 
             if ~WTConvertGUI.displayChannelsLayoutFromData(localLayoutFile, chanLocsPruned, [])
@@ -265,13 +298,13 @@ function [chanLocsDiff, chanLocsNewPruned] = diffChannelLocations(chanLocsNew, c
     chanLocsNewPruned = {};
     m = containers.Map();
 
-    labels = cat(1, {}, chanLocsNew(1,:).labels);
+    labels = WTCodingUtils.ifThenElse(isempty(chanLocsNew), @(){}, @()cat(1, {}, chanLocsNew(1,:).labels));
 
     for i = 1:length(labels)
         m(labels{i}) = i;
     end
     
-    labels = cat(1, {}, chanLocsCrnt(1,:).labels);
+    labels = WTCodingUtils.ifThenElse(isempty(chanLocsCrnt), @(){}, @()cat(1, {}, chanLocsCrnt(1,:).labels));
 
     for i = 1:length(labels)
         if ~m.isKey(labels{i})
