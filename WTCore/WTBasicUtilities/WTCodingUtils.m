@@ -38,7 +38,7 @@ classdef WTCodingUtils
         % ifThenElse() implements a one line test: thenSet & elseSet can be function handles or cell arrays. When
         % - function handle => ifThenElse returns thenSet() or  elseSet()
         % - cell arrays => ifThenElse returns thenSet{:} or  elseSet{:}
-        % If thenSet & elseSet are function handles or cell arrays and  have to be returned as such, then wrap them 
+        % If thenSet & elseSet are function handles or cell arrays and have to be returned as such, then wrap them 
         % into a function. For example, here below thenSet is a function and elseSet is a cell arrays:
         % - ifThenElse(condition, @()thenSet, @()elseSet)
         function varargout = ifThenElse(condition, thenSet, elseSet) 
