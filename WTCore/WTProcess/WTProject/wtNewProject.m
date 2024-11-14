@@ -36,17 +36,22 @@ function success = wtNewProject
     prjParentDir = WTDialogUtils.uiGetDir('.', 'Select the project parent directory...', ... 
         'excludeDirs', ['^' regexptranslate('escape', WTLayout.getToolsDir())]);
     
-        if ~ischar(prjParentDir)
+    if ~ischar(prjParentDir)
         return
     end
 
     prjPath = fullfile(prjParentDir, prjName);
     if  WTIOUtils.dirExist(prjPath)
         if ~WTEEGLabUtils.eeglabYesNoDlg('Warning', ['Project directory already exists!\n' ...
-            'Directory: %s\n' ...
-            'Do you want to overwrite it?'], prjPath)
+            '   Directory: %s\n' ...
+            '   Do you want to overwrite it?\n' ...
+            'THE CURRENT CONTENT OF THE DIRECTORY WILL BE LOST'], prjPath)
             return
-        end            
+        end 
+        if  ~WTIOUtils.rmdir(prjPath, true) 
+            wtProject.notifyErr([], 'Failed to remove existing project directory:\n%s', prjPath);
+            return
+        end
     end
 
     if ~wtProject.new(prjPath)
