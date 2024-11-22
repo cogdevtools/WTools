@@ -148,6 +148,9 @@ classdef WTProject < WTClass
                 return
             end
             if ~basicPrms.ImportDone 
+                if ~quiet
+                    o.notifyWrn('Data import check', 'The import has not been performed successufly yet.');
+                end
                 return
             end
 

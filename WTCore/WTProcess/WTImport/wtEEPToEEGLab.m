@@ -68,7 +68,8 @@ function success = wtEEPToEEGLab()
     channelsPrms = wtProject.Config.Channels;
     outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
     epochLimits = EEPToEEGLabPrms.EpochLimits / 1000;
-    
+    EEGRef = [];
+
     if nSubjects == 0 
         wtLog.warn('No subjects to process');
         wtLog.popStatus();
@@ -107,7 +108,9 @@ function success = wtEEPToEEGLab()
             return   
         end
 
-        if isempty(channelsPrms.ChannelsLocationFile)
+        resetChannelsLocations = ~isempty(channelsPrms.ChannelsLocationFile);
+
+        if ~resetChannelsLocations
             wtLog.info('User did not reset channels locations and accepted EEGLab guess at import');
         else
             wtLog.info('Performing channels locations reset');
@@ -120,6 +123,12 @@ function success = wtEEPToEEGLab()
                 wtLog.popStatus();
                 return   
             end
+        end
+
+        [success, EEGRef] = wtCrossCheckData(EEG, EEGRef, subjFileName, resetChannelsLocations);
+        if ~success 
+            wtLog.popStatus();
+            return
         end
 
         if ~isempty(channelsPrms.CutChannels)

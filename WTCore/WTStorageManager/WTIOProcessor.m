@@ -238,30 +238,47 @@ classdef WTIOProcessor < handle
             wtLog = WTLog();
             success = false;
 
+            wtLog.info('Checking if Cz channel has been removed...');
+            
+            if ~isfield(EEG,'chanlocs')
+                wtLog.err('Cannot get channels locations details!');
+                return
+            end
+
+            if any(strcmp({EEG.chanlocs.labels}, 'Cz'))
+                wtLog.info('Cz channel has not been removed: no need to restore it');
+                success = true;
+                return
+            end
+
             wtLog.info('Restoring Cz channel data to allow channels re-referencing...');
 
             if ~isfield(EEG, 'chaninfo') || ...
                ~isfield(EEG.chaninfo, 'nodatchans') || ...
-               ~isfield(EEG, 'chanlocs') || ...
                ~isfield(EEG, 'urchanlocs')
-                wtLog.err('Cannot channels info details!');
+                wtLog.err('Cannot get channels info details!');
                 return
             end
-
-            noDataChans = EEG.chaninfo.nodatchans;
             
-            if isempty(noDataChans) || ~strcmp(noDataChans(end).labels, 'Cz')
-                wtLog.err('Cannot find Cz channel location data!');
+            chanCzIdx = find(strcmp({EEG.chaninfo.nodatchans.labels}, 'Cz'));
+
+            if isempty(chanCzIdx) 
+                wtLog.err('Cannot find Cz within the removed channels location data!');
                 return
             end
 
+            wtLog.info('Generating 0 data Cz channel...');
             ref = zeros(1, size(EEG.data, 2), size(EEG.data, 3)); 
+            wtLog.info('Adding back Cz channel...');
             EEG.data = cat(1, EEG.data, ref);
             EEG.nbchan = size(EEG.data, 1);
-            EEG.chanlocs(end+1) = EEG.chaninfo.nodatchans(end);
-            EEG.urchanlocs(end+1) = EEG.chaninfo.nodatchans(end);
-            EEG.chaninfo.nodatchans(end) = [];
+            EEG.chanlocs(end+1) = EEG.chaninfo.nodatchans(chanCzIdx);
+            EEG.urchanlocs(end+1) = EEG.chaninfo.nodatchans(chanCzIdx);
+            EEG.chaninfo.nodatchans(chanCzIdx) = [];
             [success, EEG] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, true, 'eeg_checkset', EEG);
+            if ~success
+                wtLog.err('Failed to restore Cz channel!');
+            end
         end
     end
 
