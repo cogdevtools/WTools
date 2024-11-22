@@ -59,6 +59,7 @@ function success = wtEEGLabToEEGLab()
     nSubjects = length(subjects);
     channelsPrms = wtProject.Config.Channels;
     outFilesPrefix = wtProject.Config.Basic.FilesPrefix;
+    EEGRef = [];
 
     if nSubjects == 0 
         wtLog.warn('No subjects to process');
@@ -106,7 +107,9 @@ function success = wtEEGLabToEEGLab()
 
         % We perform channel editing only in case the user wanted to change the channel locations.
         % EEGLab data are a special case, because data were already imported in EEGLab.
-        if isempty(channelsPrms.ChannelsLocationFile)
+        resetChannelsLocations = ~isempty(channelsPrms.ChannelsLocationFile);
+
+        if ~resetChannelsLocations
             wtLog.info('User did not reset channels locations and accepted EEGLab guess at import');
         else
             wtLog.info('Performing channels locations reset');
@@ -119,6 +122,12 @@ function success = wtEEGLabToEEGLab()
                 wtLog.popStatus();
                 return   
             end
+        end
+
+        [success, EEGRef] = wtCrossCheckData(EEG, EEGRef, subjFileName, resetChannelsLocations);
+        if ~success 
+            wtLog.popStatus();
+            return
         end
 
         if ~isempty(channelsPrms.CutChannels)

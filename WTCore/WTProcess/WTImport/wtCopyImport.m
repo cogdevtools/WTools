@@ -71,13 +71,16 @@ function copiedCount = wtCopyImport()
 
             overwrite = false;
             [dstFile, ~] = ioProc.getImportFile(srcFile);
-            if WTIOUtils.fileExist(dstFile) && ~WTEEGLabUtils.eeglabYesNoDlg('Overwrite', ...
+
+            if WTIOUtils.fileExist(dstFile) 
+                if ~WTEEGLabUtils.eeglabYesNoDlg('Overwrite', ...
                     'It looks like file ''%s'' has been already imported. Overwrite?', srcFile)
-                wtLog.warn('File ''%s'' skipped by user as already imported', srcPath);
-                continue
-            else
-                wtLog.warn('User chose to overwrite file ''%s'', with the one from directory ''%s''', srcFile, srcPath);
-                overwrite = true;
+                    wtLog.warn('File ''%s'' skipped by user as already imported', srcPath);
+                    continue
+                else
+                    wtLog.warn('User chose to overwrite file ''%s'', with the one from directory ''%s''', srcFile, srcDir);
+                    overwrite = true;
+                end
             end
 
             subj = ioProc.getSubjectsFromImportFiles(system, srcFile);
