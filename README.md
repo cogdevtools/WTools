@@ -1,5 +1,7 @@
 # WTools
-A Matlab® based toolbox for time-frequency analysis
+A Matlab® based toolbox for time-frequency analysis. 
+
+**IMPORTANT**: This code is outdated and no more maintained: please check [WTools v2.0](https://github.com/cogdevtools/WTools/tree/v2.0)
 
 ## Structure
 * Folder "sh" contains all the functions to run the toolbox
