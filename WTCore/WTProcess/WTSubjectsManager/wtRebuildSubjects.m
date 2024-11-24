@@ -108,7 +108,7 @@ function success = wtRebuildSubjects()
         end
 
         if select
-            crntSubjs = cellfun(@(s)find(strcmp(subjects, s)), subjectsPrms.SubjectsList);
+            crntSubjs = cell2mat(cellfun(@(s)find(strcmp(subjects, s)), subjectsPrms.SubjectsList, 'UniformOutput', false));
             newSubjects = WTDialogUtils.stringsSelectDlg('Select subjects to\ninclude in the\ngrand analysis:', ...
                 subjects, false, true, 'InitialValue', crntSubjs);
             if ~isempty(newSubjects)
