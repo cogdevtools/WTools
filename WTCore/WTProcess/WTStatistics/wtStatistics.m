@@ -143,27 +143,33 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
         end
     end
 
-    function cursor = formatStats(perFreq, lines, cursor, subject, header, data, freqStrs)
+    function cursor = formatStats(perFreq, repeatHeader, lines, cursor, subject, header, data, freqStrs)
+        cursorStart = cursor;
+
+        if cursorStart >= 1 && repeatHeader 
+            lines.Value{cursor+1} = '';
+            cursor = cursor+1;
+        end
+        if cursorStart == 0 || repeatHeader 
+            lines.Value{cursor+1} = header;
+            cursor = cursor+1;
+        end
+
         if perFreq
             valueStrs = cellfun(@(x)cellfun(@(y)arrayfun(@(z)formatNum(z), y, 'UniformOutput', false), ...
                 x, 'UniformOutput',false), data, 'UniformOutput', false);
 
-            for i = 1:length(freqStrs)
-                lines.Value{cursor+1} = [ freqStrs{i} ' Hz'];    
-                lines.Value{cursor+2} = header;
+            for i = 1:length(freqStrs) 
                 formatCnds = cellfun(@(c)char(join(c{i},'\t')), valueStrs, 'UniformOutput', false);
-                lines.Value{cursor+3} = strcat('#', subject, '\t', char(join(formatCnds, '\t')));
-                lines.Value{cursor+4} = '';
-                cursor = cursor+4;
+                lines.Value{cursor+1} = [ subject, '\t' freqStrs{i} '\t' char(join(formatCnds, '\t')) ];
+                cursor = cursor+1;
             end
         else
             valueStrs = cellfun(@(x)arrayfun(@(y)formatNum(y), x, 'UniformOutput', false), ... 
                 data, 'UniformOutput',false);
-            lines.Value{cursor+1} = header;
             formatCnds = cellfun(@(c)char(join(c,'\t')), valueStrs, 'UniformOutput', false);
-            lines.Value{cursor+2} = strcat('#', subject, '\t', char(join(formatCnds, '\t')));
-            lines.Value{cursor+3} = '';
-            cursor = cursor+3;
+            lines.Value{cursor+1} = [subject '\t' char(join(formatCnds, '\t'))];
+            cursor = cursor+1;
         end
     end
 
@@ -185,11 +191,17 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
 
     try
         wtLog.pushStatus().contextOn().HeaderOn = false;
+        % repeatHeader is always false for now, as the option is not exposed to the user
+        repeatHeader = false; 
         perFreq = statsPrms.IndividualFreqs;
         joinedCondsChans = cellfun(@(c)strcat([c '_'], channelsList), conditionsList, 'UniformOutput', false);
         joinedCondsChans = cat(1, joinedCondsChans{:});
-        header = char(join({ 'subj' char(join(joinedCondsChans, '\t')) }, '\t'));
-        lines = WTHandle(cell(1, nSubjects * WTCodingUtils.ifThenElse(statsPrms.IndividualFreqs, length(freqIdxs)*4, 3)));
+        header = WTCodingUtils.ifThenElse(perFreq, ...
+            @()char(join({ 'Subj' 'Freq[Hz]' char(join(joinedCondsChans, '\t')) }, '\t')), ...
+            @()char(join({ 'Subj' char(join(joinedCondsChans, '\t')) }, '\t')));
+        lines = WTHandle(cell(1, 1 + nSubjects * ...
+            (WTCodingUtils.ifThenElse(repeatHeader, 1, 0) + ...
+             WTCodingUtils.ifThenElse(statsPrms.IndividualFreqs, length(freqIdxs), 1)) - 1));
         cursor = 0;
 
         for sbj = 1:nSubjects
@@ -210,7 +222,7 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
             end
 
             wtLog.contextOff();
-            cursor = formatStats(perFreq, lines, cursor, subject, header, statsData, freqStrs);
+            cursor = formatStats(perFreq, repeatHeader, lines, cursor, subject, header, statsData, freqStrs);
         end
 
         wtLog.contextOff().HeaderOn = true;
