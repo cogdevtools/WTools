@@ -312,15 +312,13 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
     wtLog = WTLog();
 
     % Calculate CWT at each frequency.
-    wtLog.info('Computing Morlet complex wavelets...');
+    wtLog.info('Computing Morlet complex wavelets with %d cycles, central frequency = %.1f Hz...', ...
+        waveletTransformParams.WaveletsCycles, Fs);
     wtLog.pushStatus().contextOn('Complex Wavelets').HeaderOn = false;
 
     for iFreq=1:(length(scales))
-        wtLog.dbg('Generating wavelet at frequency = %i Hz', scales(iFreq));
-        
         freq = double(scales(iFreq));
         sigmaT = double(waveletTransformParams.WaveletsCycles) / (2*freq*pi);
-        
         % Use complex wavelet (sin and cos components) in a form that gives
         % the RMS strength of the signal at each frequency.
         time = -4/freq : 1/Fs : 4/freq;
@@ -334,7 +332,42 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
         waveletIm = waveletScale.*sin(2*pi*freq*time);
         cwMatrix{iFreq,1} = waveletRe(1,:);
         cwMatrix{iFreq,2} = waveletIm(1,:);
+
+        [success, FWHMTime] = findMorletFWHM(time, waveletRe);
+        FWHMStr = WTCodingUtils.ifThenElse(success, @()sprintf(' FWHM-Time = %.3f secs', FWHMTime), '');
+        wtLog.info('Generated wavelet at frequency = %.1f Hz%s...', scales(iFreq), FWHMStr);
+        plot(time, waveletRe);
     end
 
     wtLog.popStatus().info('Wavelets saved in cell array matrix');
+end
+
+% findMorletFWHM() assumes fx to be a Morlet Wavelet real component and find the relative FWHM.
+% Credits: https://fr.mathworks.com/matlabcentral/fileexchange/16130-findfwhm
+function [success, FWHM] = findMorletFWHM(x, fx)
+    success = false;
+    FWHM = [];
+    nX = length(fx);
+    hMax = max(fx) / 2;
+    idxs = find(fx >= hMax);
+    idxLM = min(idxs);			
+    idxRM = max(idxs);
+   
+    if fx(idxLM) == hMax
+        xL = x(idxLM);
+    elseif idxLM > 1 && fx(idxLM-1) <= hMax % interpolate assuming decreasing values on decreasing x
+        xL = (x(idxLM)-x(idxLM-1))*(hMax-fx(idxLM-1))/(fx(idxLM)-fx(idxLM-1))+x(idxLM-1);
+    else
+        return
+    end
+    if fx(idxRM) == hMax
+        xR = x(idxRM);
+    elseif idxRM < nX  && fx(idxRM+1) <= hMax  % interpolate assuming decreasing values on increasing x
+        xR = (x(idxRM+1)-x(idxRM))*(fx(idxRM+1)-hMax)/(fx(idxRM+1)-fx(idxRM))+x(idxRM);
+    else
+        return
+    end
+
+    FWHM = abs(xR-xL);
+    success = true;
 end

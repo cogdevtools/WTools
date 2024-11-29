@@ -232,15 +232,15 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
                 WT = avWT/(size(X,3)-nFlatEpochs);
                 
                 if extraEdges/single(min(Fa)) >= 1
-                    extratime = extraEdges;
+                    extraTime = extraEdges;
                     timeRes = tim(2) - tim(1);
-                    extrapoints = floor(extratime/timeRes);
-                    extratime = extrapoints*timeRes;
+                    extraPoints = floor(extraTime/timeRes);
+                    extraTime = extraPoints*timeRes;
                     
-                    e1 = 1 + extrapoints;
-                    e2 = length(tim) - extrapoints;
-                    t1 = tim(1) + extratime;
-                    t2 = tim(end) - extratime;
+                    e1 = 1 + extraPoints;
+                    e2 = length(tim) - extraPoints;
+                    t1 = tim(1) + extraTime;
+                    t2 = tim(end) - extraTime;
                     tim = t1 : timeRes : t2;
                     WT = WT(:,:,e1:e2);
                 end
