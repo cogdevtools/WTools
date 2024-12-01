@@ -307,36 +307,36 @@ end
 function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
     waveletTransformParams = WTProject().Config.WaveletTransform;
     scales = (waveletTransformParams.FreqMin : waveletTransformParams.FreqRes : waveletTransformParams.FreqMax);
+    normalized = waveletTransformParams.NormalizedWavelets;
     Fs = double(samplingRate) / double(waveletTransformParams.TimeRes);
     cwMatrix = cell(length(scales),2);
     wtLog = WTLog();
 
     % Calculate CWT at each frequency.
-    wtLog.info('Computing Morlet complex wavelets with %d cycles, central frequency = %.1f Hz...', ...
-        waveletTransformParams.WaveletsCycles, Fs);
+    wtLog.info('Computing Morlet complex wavelets with %d cycles...', ...
+        waveletTransformParams.WaveletsCycles);
     wtLog.pushStatus().contextOn('Complex Wavelets').HeaderOn = false;
 
     for iFreq=1:(length(scales))
         freq = double(scales(iFreq));
         sigmaT = double(waveletTransformParams.WaveletsCycles) / (2*freq*pi);
-        % Use complex wavelet (sin and cos components) in a form that gives
-        % the RMS strength of the signal at each frequency.
-        time = -4/freq : 1/Fs : 4/freq;
-        if waveletTransformParams.NormalizedWavelets
-            % Generate wavelets with unit energy
-            waveletScale = (1/sqrt(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
-        else
-            waveletScale = (1/(Fs*sigmaT*sqrt(pi))).*exp(((time.^2)/(-2*(sigmaT^2))));
-        end
+        % The exponentialFactor is set depending on if we want to enerate wavelets with unit energy (normalized) or not
+        exponentialFact = WTCodingUtils.ifThenElse(normalized, ...
+            @()1/sqrt(Fs*sigmaT*sqrt(pi)), @()1/(Fs*sigmaT*sqrt(pi)));
+        % Calculate the time at which the wavelet certainly goes below the value 0.00001, to set its extension
+        timeToZero = sigmaT * sqrt(-2*log(0.00001/exponentialFact)); 
+        timeToZero = ceil(timeToZero * Fs) / Fs;
+        time = -timeToZero : 1/Fs : timeToZero;
+        waveletScale = exponentialFact.*exp(((time.^2)/(-2*(sigmaT^2))));
         waveletRe = waveletScale.*cos(2*pi*freq*time);
         waveletIm = waveletScale.*sin(2*pi*freq*time);
         cwMatrix{iFreq,1} = waveletRe(1,:);
         cwMatrix{iFreq,2} = waveletIm(1,:);
 
         [success, FWHMTime] = findMorletFWHM(time, waveletRe);
-        FWHMStr = WTCodingUtils.ifThenElse(success, @()sprintf(' FWHM-Time = %.3f secs', FWHMTime), '');
-        wtLog.info('Generated wavelet at frequency = %.1f Hz%s...', scales(iFreq), FWHMStr);
-        plot(time, waveletRe);
+        FWHMStr = WTCodingUtils.ifThenElse(success, @()sprintf(', FWHM-Time = %.3f secs', FWHMTime), '');
+        wtLog.info('Fc = %.2f Hz, #samples = %d, time range = [ -%.2f/Fc, +%.2f/Fc ] = [-%.3f, +%.3f] secs, %s...', ... 
+            freq, length(time), timeToZero * freq, timeToZero * freq, timeToZero, timeToZero, FWHMStr);
     end
 
     wtLog.popStatus().info('Wavelets saved in cell array matrix');
