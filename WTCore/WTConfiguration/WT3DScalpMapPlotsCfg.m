@@ -16,9 +16,14 @@
 classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mixin.Copyable & matlab.mixin.SetGet
 
     properties(Constant,Access=private)
-        FldDefaultAnswer = 'defaultanswer'
-        FldSplineFile    = 'SplineFile'
-        FldSplineLocal   = 'LocalSpline'
+        FldDefaultAnswer         = 'defaultanswer'
+        FldSplineFile            = 'SplineFile'
+        FldSplineLocal           = 'LocalSpline'
+        FldDecibel               = 'Decibel'
+        FldEvokedOscillations    = 'EvokedOscillations'
+        FldTransformPower        = 'TransformPower'
+        FldBaselineCorrection    = 'BaselineSubtraction'
+        FldBaselineNormalization = 'BaselineNormalization'
     end
 
     properties (Access = private)
@@ -28,7 +33,12 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
     properties
         Scale(1,:) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
         SplineFile char
-        SplineLocal int8 {WTValidations.mustBeZeroOrOne} = 0
+        SplineLocal(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        Decibel(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods
@@ -46,6 +56,11 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
             o.Scale = [];
             o.SplineFile = '';
             o.SplineLocal = 0;
+            o.Decibel = 0;
+            o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
             o.GuardedSet = true;
         end
 
@@ -62,15 +77,22 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
                 return
             end 
 
-            [splineSuccess, splineFile, splineLocal] = o.read(o.FldSplineFile, o.FldSplineLocal);
+            [ok, splineFile, splineLocal, decibel, evokedOscillations, power, bc, bn] = o.read(o.FldSplineFile, ...
+                o.FldSplineLocal, o.FldDecibel, o.FldEvokedOscillations, ...
+                o.FldTransformPower, o.FldBaselineCorrection, o.FldBaselineNormalization);
 
             try
-                if splineSuccess && length(cells) >= 3  
+                if ok && length(cells) == 3  
                     o.Time = cells{1};
                     o.Frequency = cells{2};
                     o.Scale = WTNumUtils.str2nums(cells{3});
                     o.SplineFile = splineFile;
                     o.SplineLocal = splineLocal;
+                    o.Decibel = decibel;
+                    o.EvokedOscillations = evokedOscillations;
+                    o.TransformPower = power;
+                    o.BaselineSubtraction = bc;
+                    o.BaselineNormalization = bn;
                     success = o.validate();
                 else 
                     o.default();
@@ -104,8 +126,13 @@ classdef WT3DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
                 WTConfigFormatter.FmtArrayStr, num2str(o.Scale));
             txt2 = WTConfigFormatter.genericCellsFieldArgs(o.FldSplineFile, WTConfigFormatter.FmtStr, o.SplineFile);
             txt3 = WTConfigFormatter.intField(o.FldSplineLocal, o.SplineLocal);
-            success = ~any(cellfun(@isempty,{txt1 txt2 txt3})) && ... 
-                      o.write(txt1,txt2,txt3);
+            txt4 = WTConfigFormatter.intField(o.FldDecibel, o.Decibel);
+            txt5 = WTConfigFormatter.intField(o.FldEvokedOscillations, o.EvokedOscillations);
+            txt6 = WTConfigFormatter.intField(o.FldTransformPower, o.TransformPower);
+            txt7 = WTConfigFormatter.intField(o.FldBaselineCorrection, o.BaselineSubtraction);
+            txt8 = WTConfigFormatter.intField(o.FldBaselineNormalization, o.BaselineNormalization);
+            success = ~any(cellfun(@isempty,{txt1, txt2, txt3, txt4, txt5, txt6, txt7, txt8})) && ... 
+                      o.write(txt1, txt2, txt3, txt4, txt5, txt6, txt7, txt8);
         end
     end
 end

@@ -20,9 +20,14 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
     end
 
     properties
-        Scale(1,2) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
+        Scale(1,:) single {WTValidations.mustBeLimitedLinearArray(Scale, 1, 2, 1)}
         Contours(1,1) int8 {WTValidations.mustBeZeroOrOne}
         AllChannels(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        Decibel(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods
@@ -34,8 +39,14 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
 
         function default(o) 
             default@WTTimeFreqCfg(o);
-            o.Scale = [-10.0 10.0];
-            o.Contours = 0;
+            o.Scale = [];
+            o.Contours = 1;
+            o.AllChannels = 1;
+            o.Decibel = 0;
+            o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
         end
 
         function success = load(o) 
@@ -44,13 +55,19 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
                 return
             end 
             try
-                if length(cells) >= 6
+                if length(cells) == 12
                     o.TimeMin = WTNumUtils.str2double(cells{1});
                     o.TimeMax = WTNumUtils.str2double(cells{2});
                     o.FreqMin = WTNumUtils.str2double(cells{3});
                     o.FreqMax = WTNumUtils.str2double(cells{4});
                     o.Scale = WTNumUtils.str2nums(cells{5});
                     o.Contours = cells{6};
+                    o.AllChannels = cells{7};
+                    o.Decibel = cells{8};
+                    o.EvokedOscillations = cells{9};
+                    o.TransformPower = cells{10};
+                    o.BaselineSubtraction = cells{11};
+                    o.BaselineNormalization = cells{12};
                     success = o.validate();
                 else
                     o.default();
@@ -85,7 +102,13 @@ classdef WTChansAvgPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Cop
                 WTConfigFormatter.FmtIntStr, o.FreqMin, ...
                 WTConfigFormatter.FmtIntStr, o.FreqMax, ...
                 WTConfigFormatter.FmtArrayStr, num2str(o.Scale), ...
-                WTConfigFormatter.FmtInt, o.Contours);
+                WTConfigFormatter.FmtInt, o.Contours, ...
+                WTConfigFormatter.FmtInt, o.AllChannels, ...
+                WTConfigFormatter.FmtInt, o.Decibel, ...
+                WTConfigFormatter.FmtInt, o.EvokedOscillations, ...
+                WTConfigFormatter.FmtInt, o.TransformPower, ...
+                WTConfigFormatter.FmtInt, o.BaselineSubtraction, ...
+                WTConfigFormatter.FmtInt, o.BaselineNormalization);
             success = ~isempty(txt) && o.write(txt);
         end
     end

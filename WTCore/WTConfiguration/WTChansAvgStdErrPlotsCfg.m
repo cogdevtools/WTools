@@ -19,6 +19,15 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mix
         FldDefaultAnswer = 'defaultanswer'
     end
 
+    properties
+        AllChannels(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        Decibel(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
+    end
+
     methods
         function o = WTChansAvgStdErrPlotsCfg(ioProc)
             o@WTConfigStorage(ioProc, 'chavrse_cfg.m');
@@ -28,6 +37,12 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mix
 
         function default(o) 
             default@WTTimeFreqCfg(o);
+            o.AllChannels = 1;
+            o.Decibel = 0;
+            o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
         end
 
         function success = load(o) 
@@ -36,11 +51,17 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mix
                 return
             end 
             try
-                if length(cells) >= 4
+                if length(cells) == 10
                     o.TimeMin = WTNumUtils.str2double(cells{1});
                     o.TimeMax = WTNumUtils.str2double(cells{2});
                     o.FreqMin = WTNumUtils.str2double(cells{3});
                     o.FreqMax = WTNumUtils.str2double(cells{4});
+                    o.AllChannels = cells{5};
+                    o.Decibel = cells{6};
+                    o.EvokedOscillations = cells{7};
+                    o.TransformPower = cells{8};
+                    o.BaselineSubtraction = cells{9};
+                    o.BaselineNormalization = cells{10};
                     success = o.validate();
                 else
                     o.default();
@@ -59,7 +80,13 @@ classdef WTChansAvgStdErrPlotsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mix
                 WTConfigFormatter.FmtIntStr, o.TimeMin, ...
                 WTConfigFormatter.FmtIntStr, o.TimeMax, ...
                 WTConfigFormatter.FmtIntStr, o.FreqMin, ...
-                WTConfigFormatter.FmtIntStr, o.FreqMax);
+                WTConfigFormatter.FmtIntStr, o.FreqMax, ...
+                WTConfigFormatter.FmtIntStr, o.AllChannels, ...
+                WTConfigFormatter.FmtIntStr, o.Decibel, ...
+                WTConfigFormatter.FmtIntStr, o.EvokedOscillations, ...
+                WTConfigFormatter.FmtIntStr, o.TransformPower, ...
+                WTConfigFormatter.FmtIntStr, o.BaselineSubtraction, ...
+                WTConfigFormatter.FmtIntStr, o.BaselineNormalization);
             success = ~isempty(txt) && o.write(txt);
         end
     end

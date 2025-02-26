@@ -136,6 +136,96 @@ classdef WTConfigUtils
 
     methods(Static)
 
+        function result = sigprocConfigPreset(wtConfig, inputStruct)
+            result = copy(inputStruct);
+            waveletTransformParams = wtConfig.WaveletTransform;
+            baselineChopParams = wtConfig.BaselineChop;
+            differenceParams = wtConfig.Difference;
+            averageParams = wtConfig.GrandAverage;
+            
+            if WTValidations.isa(inputStruct, ?WTWaveletTransformCfg)
+                group = 1;
+            elseif WTValidations.isa(inputStruct, ?WTBaselineChopCfg)
+                group = 2;
+            elseif WTValidations.isa(inputStruct, ?WTDifferenceCfg)
+                group = 3;
+            elseif WTValidations.isa(inputStruct, ?WTGrandAverageCfg)
+                group = 4;
+            elseif WTValidations.isa(inputStruct, ?WTStatisticsCfg)
+                group = 5;
+            elseif WTValidations.isa(inputStruct, ?WTAvgPlotsCfg) || ...
+                WTValidations.isa(inputStruct, ?WTAvgStdErrPlotsCfg) || ...
+                WTValidations.isa(inputStruct, ?WTChansAvgPlotsCfg) || ...
+                WTValidations.isa(inputStruct, ?WTChansAvgStdErrPlotsCfg)
+                group = 6;
+            elseif WTValidations.isa(inputStruct, ?WT2DScalpMapPlotsCfg)
+                group = 7;
+            elseif  WTValidations.isa(inputStruct, ?WT3DScalpMapPlotsCfg) 
+                group = 8;
+            else 
+                group = 0;
+            end
+
+            if group >= 2 && baselineChopParams.exist()
+                result = WTFieldUtils.setSameFieldOrPropertyFrom(result, baselineChopParams, ...
+                    'EvokedOscillations', 'TransformPower', 'BaselineSubtraction', 'BaselineNormalization');
+            elseif group >= 3 && differencePrms.exist()
+                result = WTFieldUtils.setSameFieldOrPropertyFrom(result, differenceParams, ...
+                    'EvokedOscillations', 'TransformPower', 'BaselineSubtraction', 'BaselineNormalization');
+            elseif group >= 4 && averageParams.exist()
+                result = WTFieldUtils.setSameFieldOrPropertyFrom(result, averageParams, ...
+                    'EvokedOscillations', 'TransformPower', 'BaselineSubtraction', 'BaselineNormalization');
+            end
+
+            if group >= 1 && waveletTransformParams.exist()
+                result =  WTFieldUtils.setSameFieldOrPropertyFrom(result, waveletTransformParams, ...
+                    'EvokedOscillations', 'TransformPower');
+            end
+
+            if  group < 5 
+                return
+            end
+
+            % controllare non  solo se esiste ma anche se i parametri sono diversi rispetto a result...
+            % Power, Oscillations, BaselineSubtraction, BaselineNormalization, ranges: i valori presenti in 
+            % inputStruct possono non avere piu' senso...
+            if ~inputStruct.exist() 
+                if waveletTransformParams.exist()
+                    if group == 5 || group == 6 
+                        result = WTFieldUtils.setSameFieldOrPropertyFrom(result, waveletTransformParams, ...
+                            'TimeMin', 'TimeMax', 'FreqMin', 'FreqMax');
+                    elseif group == 7
+                        result = WTFieldUtils.setFieldOrProperty(result, ...
+                            [waveletTransformParams.TimeMin waveletTransformParams.TimeMax], ...
+                            'Time');
+                        freqRes = (waveletTransformParams.FreqMax - waveletTransformParams.FreqMin) / 10;
+                        result = WTFieldUtils.setFieldOrProperty(result, ...
+                            [waveletTransformParams.FreqMin freqRes waveletTransformParams.FreqMax], ...
+                            'Frequency');
+                    elseif group == 8
+                        result = WTFieldUtils.setFieldOrProperty(result, ...
+                            [waveletTransformParams.TimeMin waveletTransformParams.TimeMax], ...
+                            'Time');
+                        result = WTFieldUtils.setFieldOrProperty(result, ...
+                            [waveletTransformParams.FreqMin waveletTransformParams.FreqMax], ...
+                            'Frequency');
+                    end
+                end
+                if baselineChopParams.exist()
+                    if group == 6
+                        result = WTFieldUtils.setFieldOrProperty(result, baselineChopParams.ChopTimeMin, ...
+                            'TimeMin');
+                        result = WTFieldUtils.setFieldOrProperty(result, baselineChopParams.ChopTimeMax, ...
+                            'TimeMax');
+                    elseif group == 7 || group == 8
+                        result = WTFieldUtils.setFieldOrProperty(result, ...
+                            [baselineChopParams.ChopTimeMin baselineChopParams.ChopTimeMax], ...
+                            'Time');
+                    end
+                end
+            end
+        end
+
         function [success] = adjustTimeFreqDomains(params, data)
             WTValidations.mustBe(params, ?WTTimeFreqCfg);
             params.validate(true);
@@ -189,9 +279,14 @@ classdef WTConfigUtils
 
         function [success] = adjustPacedTimeFreqDomains(params, data)
             WTValidations.mustBe(params, ?WTPacedTimeFreqCfg);
-            params.validate(true);
             objType = class(params);
-           
+            success = false;
+
+            if ~params.validate()
+                WTProject().notifyErr([], 'Failed to validate input params (%s)', objType);
+                return
+            end
+            
             paramsTime = struct( ...
                 'Domain', data.tim, ... 
                 'Dimension', 'ms', ...
@@ -254,7 +349,7 @@ classdef WTConfigUtils
             success = newParams.validate() && newParams.persist(); 
 
             if ~success
-                WTProject().notifyErr([], 'Failed to validate & save params (%s)', objType);
+                WTProject().notifyErr([], 'Failed to validate & save adjusted params (%s)', objType);
                 return
             end
         

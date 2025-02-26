@@ -20,10 +20,12 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
     end
 
     properties
-        UseAllSubjects(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
-        PerSubjectAverage(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
-        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
-        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        UseAllSubjects(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        PerSubjectAverage(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods
@@ -35,8 +37,10 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
         function default(o) 
             o.UseAllSubjects = 1;
             o.PerSubjectAverage = 1;
-            o.LogarithmicTransform = 0;
             o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
         end
 
         function success = load(o) 
@@ -45,11 +49,13 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
                 return
             end 
             try
-                if length(cells) >= 4
+                if length(cells) == 6
                     o.UseAllSubjects = cells{1};
                     o.PerSubjectAverage = cells{2};
-                    o.LogarithmicTransform = cells{3};
-                    o.EvokedOscillations = cells{4};
+                    o.EvokedOscillations = cells{3};
+                    o.TransformPower = cells{4};
+                    o.BaselineSubtraction = cells{5};
+                    o.BaselineNormalization = cells{6};
                 else 
                     o.default()
                     WTLog().warn(['The grand average parameters (%s) were set by an \n'...
@@ -62,7 +68,9 @@ classdef WTGrandAverageCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mi
         end
 
         function success = persist(o)
-            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.UseAllSubjects, o.PerSubjectAverage, o.LogarithmicTransform, o.EvokedOscillations);
+            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, ...
+                o.UseAllSubjects, o.PerSubjectAverage, o.EvokedOscillations, ...
+                o.TransformPower, o.BaselineSubtraction, o.BaselineNormalization);
             success = ~isempty(txt) && o.write(txt);
         end
     end

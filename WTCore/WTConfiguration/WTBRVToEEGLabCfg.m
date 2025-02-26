@@ -36,7 +36,7 @@ classdef WTBRVToEEGLabCfg < WTConfigStorage & WTEpochsAndFreqFiltersCfg & matlab
                 return
             end 
             try
-                if length(cells) >= 3 
+                if length(cells) == 3 
                     o.EpochLimits = WTNumUtils.str2nums(cells{1});
                     o.HighPassFilter = WTNumUtils.str2double(cells{2}, true);
                     o.LowPassFilter = WTNumUtils.str2double(cells{3}, true);

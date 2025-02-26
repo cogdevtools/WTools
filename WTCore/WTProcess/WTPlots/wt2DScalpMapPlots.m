@@ -13,7 +13,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
+function wt2DScalpMapPlots(subject, conditionsToPlot)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -25,37 +25,31 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     maxNumSubPlots = 100;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 3);
+        mustBeGreaterThanOrEqual(nargin, 2);
         WTValidations.mustBeStringOrChar(subject);
         WTValidations.mustBeLimitedLinearCellArrayOfChar(conditionsToPlot);
         subject = char(subject);
         conditionsToPlot = unique(conditionsToPlot);
     end
-    
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
-    evokFlag = waveletTransformPrms.EvokedOscillations;
 
     if interactive
-        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(evokFlag, false, false, -1);
+        if ~set2DScalpMapPlotsParams(maxNumSubPlots) 
+            return
+        end
+        plotsPrms = wtProject.Config.TwoDimensionalScalpMapPlots;
+        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(plotsPrms.EvokedOscillations, false, false, -1);
         if isempty(fileNames)
             return
         end
+    else
+        plotsPrms = wtProject.Config.TwoDimensionalScalpMapPlots;
+        measure = WTCodingUtils.ifThenElse(plotsPrms.EvokedOscillations, ...
+            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     grandAverage = isempty(subject);
     if grandAverage && ~wtProject.checkGrandAverageDone()
         return
-    end
-
-    if interactive
-        if ~set2DScalpMapPlotsParams(logFlag, maxNumSubPlots) 
-            return
-        end
-    else
-        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
-            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     basicPrms = wtProject.Config.Basic;
@@ -86,17 +80,10 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         return
     end
 
-    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
-    if ~diffConsistency || ~grandConsistency
-        return
-    end
-
     [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
-    if ~success || ~WTConfigUtils.adjustPacedTimeFreqDomains(wtProject.Config.TwoDimensionalScalpMapPlots, data) 
+    if ~success || ~WTConfigUtils.adjustPacedTimeFreqDomains(plotsPrms, data) 
         return
     end
-
-    plotsPrms = wtProject.Config.TwoDimensionalScalpMapPlots;
 
     if ~isempty(plotsPrms.TimeResolution)
         downsampleFactor = floor(plotsPrms.TimeResolution / (data.tim(2) - data.tim(1)));
@@ -126,6 +113,13 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin);
     end
 
+    plotLabel = WTPlotUtils.getPlotLabel( ...
+        plotsPrms.EvokedOscillations, ...
+        plotsPrms.TransformPower, ...
+        plotsPrms.BaselineSubtraction, ...
+        plotsPrms.BaselineNormalization, ... 
+        plotsPrms.Decibel);
+        
     peripheralElectrodes = WTCodingUtils.ifThenElse(plotsPrms.PeripheralElectrodes, 1, 0.5);
     contours = WTCodingUtils.ifThenElse(plotsPrms.Contours, 6, 0);
     labels = WTCodingUtils.ifThenElse(plotsPrms.ElectrodesLabel, 'labels', 'on');
@@ -140,17 +134,17 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         % The width / height ratio of the main figure
         [figureRelWidth, figureWHRatio] = getMainFigureRelativeSize(nSubPlots);
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, figureRelWidth, 0.1, true);
-        xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
         channelAnnotationHeight = 0.05;
         colorMap = WTPlotUtils.getPlotsColorMap(); 
-        serialPlots = ~isempty(plotsPrms.TimeResolution) || ~isempty(plotsPrms.FreqResolution);
+        plotsSerie = ~isempty(plotsPrms.TimeResolution) || ~isempty(plotsPrms.FreqResolution);
 
-        if serialPlots
+        if plotsSerie
             % Create struct to store all the useful params used here and by the callbacks
             prms = struct();
             prms.whSubPlotRatio = 1;
             prms.plotsPrms = copy(plotsPrms);
-            prms.xLabel = xLabel;
+            prms.xLabelParams = xLabelParams;
             prms.contours = contours;
             prms.labels = labels;
             prms.peripheralElectrodes = peripheralElectrodes;
@@ -173,42 +167,51 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 @()char(strcat(basicPrms.FilesPrefix, '.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
 
-            figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
-            
+            figureName = ['2D Scalp: ' figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
             hFigure = figure('NumberTitle', 'off', ...
                 'Name', figureName, 'ToolBar', 'none', 'Units', 'normalized', 'Position', figuresPosition{cnd});
 
             hMainPlots.Value{cnd} = hFigure;
 
-            % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            data.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
-            
+            if ~plotsSerie && plotsPrms.Decibel
+                [data.WT, dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, false, false, false);
+            end
             if isempty(plotsPrms.TimeResolution)
                 % Average along times
                 data.WT = mean(data.WT(:,:,timeIdxs), 3);
+            elseif plotsPrms.Decibel
+                [data.WT, dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, false, false, true);
             end
             if isempty(plotsPrms.FreqResolution)
                 % Average along frequencies
                 data.WT = mean(data.WT(:,freqIdxs,:), 2);
+            elseif plotsPrms.Decibel
+                [data.WT, dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, false, true, false);
             end
-           
-            if ~serialPlots
+
+            if plotsPrms.Decibel
+                data.WT = WTProcessUtils.ToDecibel(data.WT, plotsPrms.TransformPower);
+            end
+
+            if ~plotsSerie
+                figureTitle = WTCodingUtils.ifThenElse(~plotsPrms.Decibel || dc == 0, '', @()sprintf('DC shift: %g', dc));
                 WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
-                        data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', ...
-                        plotsPrms.Scale, 'intrad', peripheralElectrodes,'numcontour', contours);
+                        data.WT, data.chanlocs, 'electrodes', labels, 'maplimits', plotsPrms.Scale, ...
+                        'intrad', peripheralElectrodes, 'numcontour', contours);
+                title(figureTitle, 'FontSize', 14, 'FontWeight', 'bold');
                 colormap(colorMap);
                 pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
                 pace = pace(2) - pace(1);
                 colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
-                set(get(colorBar,'xlabel'), 'String', xLabel.String, 'FontSize', 12, ...
-                    'FontWeight', 'bold', 'Rotation', xLabel.Rotation, 'Position', [xLabel.Position 2 * pace]);
+                set(get(colorBar,'xlabel'), 'String', xLabelParams.String, 'FontSize', 12, ...
+                    'FontWeight', 'bold', 'Rotation', xLabelParams.Rotation, 'Position', [xLabelParams.Position 2 * pace]);
             else
                 prms.data = WTHandle(cell(1, nConditionsToPlot));
                 prms.subPlotsPrms = WTHandle(cell(1, nSubPlots));
 
                 % Set annotation for multi-plots case
-                hWhichSubPlotAnnotation = annotation('textbox',[0.9, 0.95 .09 channelAnnotationHeight]);
+                hWhichSubPlotAnnotation = annotation('textbox',[0.7, 0.95 .29 channelAnnotationHeight]);
                 hWhichSubPlotAnnotation.Color = [1 0 0];
                 hWhichSubPlotAnnotation.String = '';
                 hWhichSubPlotAnnotation.EdgeColor = 'none';
@@ -228,16 +231,20 @@ function wt2DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
 
                     % It's either one or the other condition
                     if ~isempty(plotsPrms.TimeResolution)
-                        timeLabel = num2str(data.tim(timeIdxs(i)));
-                        subPlotData.figureName = [figureNamePrefix '.[' timeLabel ' ms].[' plotsPrms.FreqString ' Hz]' ];
-                        subPlotData.title = [timeLabel ' ms'];
-                        subPlotData.data = data.WT(:,:,timeIdxs(i));
+                        timeIdx = timeIdxs(i);
+                        timeLabel = num2str(data.tim(timeIdx));
+                        dcShiftLabel = WTCodingUtils.ifThenElse(~plotsPrms.Decibel || dc(timeIdx) == 0, '', @()sprintf(', DC shift: %g', dc(timeIdx)));
+                        subPlotData.figureName = ['2D Scalp: ' figureNamePrefix '.[' timeLabel ' ms].[' plotsPrms.FreqString ' Hz]' ];
+                        subPlotData.title = [timeLabel ' ms' dcShiftLabel];
+                        subPlotData.data = data.WT(:,:,timeIdx);
                         wtLog.dbg('Plotting time %s ms', timeLabel);
                     elseif ~isempty(plotsPrms.FreqResolution)  % redundant check
-                        freqLabel = num2str(data.Fa(freqIdxs(i)));
-                        subPlotData.figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' freqLabel ' Hz]'];
-                        subPlotData.title = [freqLabel ' Hz'];
-                        subPlotData.data = data.WT(:,freqIdxs(i),:);
+                        freqIdx = freqIdxs(i);
+                        freqLabel = num2str(data.Fa(freqIdx));
+                        dcShiftLabel = WTCodingUtils.ifThenElse(~plotsPrms.Decibel || dc(freqIdx) == 0, '', @()sprintf(', DC shift: %g', dc(freqIdx)));
+                        subPlotData.figureName = ['2D Scalp: ' figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' freqLabel ' Hz]'];
+                        subPlotData.title = [freqLabel ' Hz' dcShiftLabel ];
+                        subPlotData.data = data.WT(:,freqIdx,:);
                         wtLog.dbg('Plotting frequency %s Hz', freqLabel);
                     end
 
@@ -384,7 +391,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         hFigure.UserData = subPlotPrms;
 
         scale = prms.plotsPrms.Scale;
-        xLabel = prms.xLabel;
+        xLabelParams = prms.xLabelParams;
 
         WTEEGLabUtils.eeglabRun(WTLog.LevelDbg, false, 'topoplot', ...
                 subPlotData.data, data.chanlocs, 'electrodes', prms.labels, 'maplimits', ...
@@ -395,9 +402,13 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         pace = pace(2) - pace(1);
         colorBar = colorbar('peer', gca, 'YTick', sort([0 scale]));
         
-        set(get(colorBar,'xlabel'), 'String', ...
-            xLabel.String, 'Rotation', xLabel.Rotation, 'FontSize', 12, ...
-            'FontWeight', 'bold', 'Position', [xLabel.Position 2 * pace]);
+        set(get(colorBar,'xlabel'), ...
+            'String', xLabelParams.String, ...
+            'Rotation', xLabelParams.Rotation, ...
+            'VerticalAlignment', 'cap', ...
+            'FontSize', 12, ...
+            'FontWeight', 'bold', ... 
+            'Position', [xLabelParams.Position 2 * pace]);
 
         set(colorBar, 'visible', 'on');
         title(subPlotData.title, 'FontSize', 12, 'FontWeight', 'bold');
@@ -408,25 +419,13 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
     end 
 end
 
-function success = set2DScalpMapPlotsParams(logFlag, maxNumSubPlots)
+function success = set2DScalpMapPlotsParams(maxNumSubPlots)
     success = false;
     wtProject = WTProject();
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    plotsPrms = copy(wtProject.Config.TwoDimensionalScalpMapPlots);
+    plotsPrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, ...
+        wtProject.Config.TwoDimensionalScalpMapPlots);
 
-    if ~plotsPrms.exist()
-        if waveletTransformPrms.exist()
-            plotsPrms.Time = [waveletTransformPrms.TimeMin waveletTransformPrms.TimeMax];
-            freqResolution = (waveletTransformPrms.FreqMax - waveletTransformPrms.FreqMin) / 10;
-            plotsPrms.Frequency = [waveletTransformPrms.FreqMin freqResolution waveletTransformPrms.FreqMax];
-        end
-        if baselineChopPrms.exist()
-            plotsPrms.Time = [baselineChopPrms.ChopTimeMin baselineChopPrms.ChopTimeMax];
-        end
-    end
-
-    if ~WTPlotsGUI.define2DScalpMapPlotsSettings(plotsPrms, logFlag, maxNumSubPlots)
+    if ~WTPlotsGUI.define2DScalpMapPlotsSettings(plotsPrms, maxNumSubPlots, true, true, true, true)
         return
     end
     

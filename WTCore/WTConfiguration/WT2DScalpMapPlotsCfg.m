@@ -24,6 +24,11 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
         Contours(1,1) int8 {WTValidations.mustBeZeroOrOne}
         PeripheralElectrodes(1,1) int8 {WTValidations.mustBeZeroOrOne}
         ElectrodesLabel(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        Decibel(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods
@@ -38,6 +43,14 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
         function default(o) 
             default@WTPacedTimeFreqCfg(o);
             o.Scale = [];
+            o.Contours = 1;
+            o.PeripheralElectrodes = 0;
+            o.ElectrodesLabel = 0;
+            o.Decibel = 0;
+            o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
         end
 
         function success = load(o) 
@@ -46,13 +59,18 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
                 return
             end 
             try
-                if length(cells) >= 6
+                if length(cells) == 11
                     o.Time = cells{1};
                     o.Frequency = cells{2};
                     o.Scale = WTNumUtils.str2nums(cells{3});
                     o.PeripheralElectrodes = cells{4};
                     o.Contours = cells{5};
                     o.ElectrodesLabel = cells{6};
+                    o.Decibel = cells{7};
+                    o.EvokedOscillations = cells{8};
+                    o.TransformPower = cells{9};
+                    o.BaselineSubtraction = cells{10};
+                    o.BaselineNormalization = cells{11};
                     success = o.validate();
                 else
                     o.default();
@@ -86,7 +104,12 @@ classdef WT2DScalpMapPlotsCfg < WTConfigStorage & WTPacedTimeFreqCfg & matlab.mi
                 WTConfigFormatter.FmtArrayStr, num2str(o.Scale), ...
                 WTConfigFormatter.FmtInt, o.PeripheralElectrodes, ...
                 WTConfigFormatter.FmtInt, o.Contours, ...
-                WTConfigFormatter.FmtInt, o.ElectrodesLabel);
+                WTConfigFormatter.FmtInt, o.ElectrodesLabel, ...
+                WTConfigFormatter.FmtInt, o.Decibel, ...
+                WTConfigFormatter.FmtInt, o.EvokedOscillations, ...
+                WTConfigFormatter.FmtInt, o.TransformPower, ...
+                WTConfigFormatter.FmtInt, o.BaselineSubtraction, ...
+                WTConfigFormatter.FmtInt, o.BaselineNormalization);
             success = ~isempty(txt) && o.write(txt);
         end
     end

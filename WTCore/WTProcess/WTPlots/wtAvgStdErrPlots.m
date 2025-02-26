@@ -13,7 +13,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
+function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -24,29 +24,26 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
     interactive = wtProject.Interactive;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 3);
+        mustBeGreaterThanOrEqual(nargin, 2);
         WTValidations.mustBeLimitedLinearCellArrayOfChar(conditionsToPlot);
         WTValidations.mustBeLinearCellArrayOfChar(channelsToPlot);
         conditionsToPlot = unique(conditionsToPlot);
         WTValidations.mustBeLTE(length(conditionsToPlot), 2); 
         channelsToPlot = unique(channelsToPlot);
     end
-    
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
-    evokFlag = waveletTransformPrms.EvokedOscillations;
 
     if interactive
-        [fileNames, ~, measure] = WTPlotsGUI.selectFilesToPlot(evokFlag, true, true, 2);
-        if isempty(fileNames)
-            return
-        end
         if ~setAvgStdErrPlotsParams() 
             return
         end
+        plotsPrms = wtProject.Config.AverageStdErrPlots;
+        [fileNames, ~, measure] = WTPlotsGUI.selectFilesToPlot(plotsPrms.EvokedOscillations, true, true, 2);
+        if isempty(fileNames)
+            return
+        end
     else
-        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
+        plotsPrms = wtProject.Config.AverageStdErrPlots;
+        measure = WTCodingUtils.ifThenElse(plotsPrms.EvokedOscillations, ...
             WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
@@ -80,17 +77,18 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         return
     end
 
-    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
-    if ~diffConsistency || ~grandConsistency
-        return
-    end
-
     [success, data] = WTProcessUtils.loadAnalyzedData(true, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.AverageStdErrPlots, data) 
         return
     end
 
-    plotsPrms = wtProject.Config.AverageStdErrPlots;
+    plotLabel = WTPlotUtils.getPlotLabel( ...
+        plotsPrms.EvokedOscillations, ...
+        plotsPrms.TransformPower, ...
+        plotsPrms.BaselineSubtraction, ...
+        plotsPrms.BaselineNormalization, ... 
+        plotsPrms.Decibel);
+        
     timeRes = WTCodingUtils.ifThenElse(length(data.tim) > 1, @()data.tim(2) - data.tim(1), 1); 
     timeIdxs = find(data.tim == plotsPrms.TimeMin) : find(data.tim == plotsPrms.TimeMax);
     timeIdxsReduced = timeIdxs(1) : 10 : timeIdxs(end);
@@ -143,7 +141,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         prms.plotsPrms = copy(plotsPrms);
         prms.subPlotRelWidth = 0.1;
         prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
-        prms.yLabel = WTPlotUtils.getYLabelParams(logFlag);
+        prms.yLabelParams = WTPlotUtils.getPlotYLabelParams(plotLabel);
         prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
 
         % Determine sub plots images size and position within the main figure
@@ -164,11 +162,11 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         xCenter = xBottomLeftCorner + (prms.subPlotRelWidth / 2);
         yCenter = yBottomLeftCorner + (prms.subPlotRelHeight / 2);
 
-        prms.data = cell(1, nConditionsToPlot);
+        prms.data = cell(nConditionsToPlot, nChannelsToPlot);
         hPrms = WTHandle(prms);
 
         % Create main plot figure
-        figureName = sprintf('%s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
+        figureName = sprintf('AvgStdErr: %s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
         hFigure = figure('Position', figuresPosition{1});
         mainPlots{1} = hFigure;  
         hFigure.Name = figureName;
@@ -199,6 +197,8 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
         hFigure.UserData.SubPlotAxesCenter = [xCenter' yCenter'];
         hFigure.UserData.onButtonDownCbPrms = hPrms;
 
+        colors = WTPlotUtils.generateHighContrastPalette(nConditionsToPlot);
+
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
 
@@ -208,19 +208,32 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
                 break
             end
 
-            prms.data{cnd} = data;     
-            hPrms.Value = prms;
-
             % Set the callback to display the subPlot label as cursor info
             for chn = 1:nChannelsToPlot
                 channelLabel = prms.channelsLocations(chn).labels;  
                 wtLog.contextOn().dbg('Channel %s', channelLabel);
                 channelIdx = channelsToPlotIdxs(chn);
+
                 % Compute average across frequencies
                 chnsAvg = squeeze(mean(data.WT(channelIdx, freqIdxs, timeIdxsReduced), 2));
                 % Compute standard error
                 chnsStdErr = squeeze(mean(std(data.SS(channelIdx, freqIdxs, timeIdxsReduced, :), 0, 4)./sqrt(size(data.SS, 4)), 2));
-        
+
+                if plotsPrms.Decibel 
+                    [chnsAvg, dcAvg] = WTProcessUtils.DCShiftAndConvertToDecibel(chnsAvg, plotsPrms.TransformPower);
+                    [chnsStdErr, dcStdErr] = WTProcessUtils.DCShiftAndConvertToDecibel(chnsStdErr, plotsPrms.TransformPower);
+                else 
+                    dcAvg = 0;
+                    dcStdErr = 0;
+                end
+
+                chnData = struct();
+                chnData.chnsAvg = chnsAvg;
+                chnData.dcAvg = dcAvg;
+                chnData.chnsStdErr = chnsStdErr;
+                chnData.dcStdErr = dcStdErr;
+                hPrms.Value.data{cnd,chn} = chnData;     
+
                 if cnd == 1
                     axesPosition = [xBottomLeftCorner(chn), yBottomLeftCorner(chn), prms.subPlotRelWidth, prms.subPlotRelHeight];
                     hSubPlotAxes = axes('Position', axesPosition, 'nextplot', 'add');
@@ -228,11 +241,11 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot, evokedOscillations)
                     hSubPlotAxes.UserData.ChannelLabel = channelLabel;
                     hFigure.UserData.SubPlotsAxes = [hFigure.UserData.SubPlotsAxes hSubPlotAxes];
                     hold('on');
-                    errorbar(hSubPlotAxes, chnsAvg, chnsStdErr, 'b');  % blue line
+                    errorbar(hSubPlotAxes, chnsAvg, chnsStdErr, colors(cnd)); 
                 else
                     hSubPlotAxes = hFigure.UserData.SubPlotsAxes(chn);
                     hold(hSubPlotAxes, 'on');
-                    errorbar(hSubPlotAxes, chnsAvg, chnsStdErr,'r'); % red line
+                    errorbar(hSubPlotAxes, chnsAvg, chnsStdErr, colors(cnd));
                 end 
 
                 if cnd == nConditionsToPlot
@@ -349,33 +362,42 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
             timePace = 200;
         end  
 
-        nConditionsToPlot = length(prms.data);
+        nConditionsToPlot = size(prms.data, 1);
+        legendTxt = cell(1, nConditionsToPlot);
+        colors = WTPlotUtils.generateHighContrastPalette(nConditionsToPlot);
 
         for cnd = 1:nConditionsToPlot
-            data = prms.data{cnd};
-            channelIdx = prms.channelsToPlotIdxs(subPlotIdx);
-            % Compute average across frequencies
-            chnsAvg = squeeze(mean(data.WT(channelIdx, prms.freqIdxs, prms.timeIdxs), 2));    
-            % Compute standard error
-            chnsStdErr = squeeze(mean(std(data.SS(channelIdx, prms.freqIdxs, prms.timeIdxs, :), 0, 4)./sqrt(size(data.SS, 4)), 2));
+            data = prms.data{cnd,subPlotIdx};
+           
+            dcShiftsTxt = {};
+            if data.dcAvg > 0
+                dcShiftsTxt(end+1) = {sprintf('Avg: %g', data.dcAvg)};
+            end 
+            if data.dcStdErr > 0
+                dcShiftsTxt(end+1) = {sprintf('SE: %g', data.dcStdErr)};
+            end
+            if isempty(dcShiftsTxt)
+                legendTxt{cnd} = prms.conditionsToPlot{cnd};
+            else
+                legendTxt{cnd} = sprintf('%s|DC shift %s', prms.conditionsToPlot{cnd}, char(join(dcShiftsTxt,',')));
+            end
+
+            errorbar(data.chnsAvg, data.chnsStdErr, colors(cnd));
 
             if cnd == 1
-                errorbar(chnsAvg, chnsStdErr, 'b');
                 hold('on');
-            else
-                errorbar(chnsAvg, chnsStdErr, 'r'); 
-                legend(prms.conditionsToPlot{1}, prms.conditionsToPlot{nConditionsToPlot});
             end
 
             if cnd == nConditionsToPlot
+                legend(legendTxt{:});
                 set(gca, 'XTick', 1 : timePace/prms.timeRes : length(prms.timeIdxs))
                 set(gca, 'XTickLabel', plotsPrms.TimeMin : timePace : plotsPrms.TimeMax);
                 set(gca, 'XMinorTick', 'on', 'xgrid', 'on', 'YMinorTick', 'on',...
                     'ygrid', 'on', 'gridlinestyle', ':', 'YDIR', 'normal');
                 axis('tight');
-                title(figureName, 'FontSize', 16, 'FontWeight','bold');
+                title(figureTag, 'FontSize', 15, 'FontWeight', 'bold');
                 xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
-                ylabel(prms.yLabel.String, 'FontSize', 12, 'FontWeight', 'bold');
+                ylabel(prms.yLabelParams.String, 'FontSize', 12, 'FontWeight', 'bold');
                 hold('off');
             end 
         end
@@ -392,24 +414,10 @@ end
 function success = setAvgStdErrPlotsParams()
     success = false;
     wtProject = WTProject();
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    plotsPrms = copy(wtProject.Config.AverageStdErrPlots);
+    plotsPrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, ...
+        wtProject.Config.AverageStdErrPlots);
 
-    if ~plotsPrms.exist() 
-        if waveletTransformPrms.exist()
-            plotsPrms.TimeMin = waveletTransformPrms.TimeMin;
-            plotsPrms.TimeMax = waveletTransformPrms.TimeMax;
-            plotsPrms.FreqMin = waveletTransformPrms.FreqMin;
-            plotsPrms.FreqMax = waveletTransformPrms.FreqMax;
-        end
-        if baselineChopPrms.exist()
-            plotsPrms.TimeMin = baselineChopPrms.ChopTimeMin;
-            plotsPrms.TimeMax = baselineChopPrms.ChopTimeMax;
-        end
-    end
-
-    if ~WTPlotsGUI.defineAvgStdErrPlotsSettings(plotsPrms)
+    if ~WTPlotsGUI.defineAvgStdErrPlotsSettings(plotsPrms, true, true, true, true)
         return
     end
     
@@ -421,3 +429,4 @@ function success = setAvgStdErrPlotsParams()
     wtProject.Config.AverageStdErrPlots = plotsPrms;
     success = true;
 end
+

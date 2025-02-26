@@ -23,12 +23,16 @@ classdef WTEEGLabUtils
         % eeglabVersionOk assumes that eeglab is accessible and return true only if its version 
         % is greater or equal to the minimum expected by WTools.
         function versionOk = eeglabVersionOk(showDialog)
+            if nargin < 1
+                showDialog = false;
+            end
             try
                 [~, versionMaj, ~] = WTEval.evalcLog(WTLog.LevelInf, 'EEGLAB', 'eeg_getversion');
                 versionOk = versionMaj >= WTEEGLabUtils.MinEEGLabMajorVersionNum;
             catch me
                 wtLog.except(me);
                 wtLog.err('Cannot check eeglab version: it might be definitively too old...')
+                versionOk = false;
             end
             if ~versionOk && showDialog
                 WTDialogUtils.msgBox('', 'EEGLAB version is too old. Minimum required: %d',  WTEEGLabUtils.MinEEGLabMajorVersionNum);
@@ -159,8 +163,8 @@ classdef WTEEGLabUtils
 
             for i = 1:length(prms)
                 prms{i} = {'style', 'text', 'string', prms{i}};
-                geom{i} = 1;
-            end
+                    geom{i} = 1;
+                end
             try
                 [varargout{:}] = WTEEGLabUtils.eeglabInputMask('geometry', geom, 'uilist', prms, 'title', title);
             catch
@@ -181,7 +185,7 @@ classdef WTEEGLabUtils
             end
             [~, ~, strHalt] = WTEEGLabUtils.eeglabMsgDlg(title, fmt, varargin{:});
             ok = strcmp(strHalt,'retuninginputui');
-        end     
+        end
 
         function yes = eeglabYesNoDlg(title, fmt, varargin)
             yes = WTEEGLabUtils.eeglabBinaryDlg(title, 'YES', 'NO', fmt, varargin{:});

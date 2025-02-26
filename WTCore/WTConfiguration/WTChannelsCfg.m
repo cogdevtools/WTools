@@ -38,8 +38,8 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.
     properties
         ChannelsLocationFile char
         ChannelsLocationFileType char
-        ChannelsLocationLocal int8 {WTValidations.mustBeZeroOrOne} = 0
-        ReReference int8 {WTValidations.mustBeInRange(ReReference,0,2,1,1)} = 0
+        ChannelsLocationLocal(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        ReReference(1,1) int8 {WTValidations.mustBeInRange(ReReference,0,2,1,1)} = 0
         NewChannelsReference cell {WTValidations.mustBeLinearCellArrayOfChar} = {}
         CutChannels cell {WTValidations.mustBeLinearCellArrayOfChar} = {}
     end
@@ -116,7 +116,7 @@ classdef WTChannelsCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixin.
             txt4 = WTConfigFormatter.genericCellsFieldArgs(o.FldReReference, WTConfigFormatter.FmtInt, o.ReReference);
             txt5 = WTConfigFormatter.stringCellsField(o.FldNewChannelsReference, o.NewChannelsReference);
             txt6 = WTConfigFormatter.stringCellsField(o.FldCutChannels, o.CutChannels);
-            success = ~any(cellfun(@isempty,{txt1 txt2 txt3 txt4 txt5 txt6})) && ... 
+            success = ~any(cellfun(@isempty,{txt1, txt2, txt3, txt4, txt5, txt6})) && ... 
                       o.write(txt1,txt2,txt3,txt4,txt5,txt6);
         end
     end

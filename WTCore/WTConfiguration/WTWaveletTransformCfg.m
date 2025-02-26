@@ -29,11 +29,12 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable & matla
         EdgePadding(1,1) int32 {WTValidations.mustBeGTE(EdgePadding,0,0,0)} 
         ChannelsList(1,:) int32 {WTValidations.mustBeGT(ChannelsList,0,0,0)} 
         EpochsList(1,:) int32 {WTValidations.mustBeGT(EpochsList,0,0,0)}
-        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
         EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
-        NormalizedWavelets(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        TransformComponents(1,1) int8 {WTValidations.mustBeZeroOrOne} = 1
         WaveletsCycles(1,1) int8 {WTValidations.mustBeInRange(WaveletsCycles,2,15,1,1)} = 7
     end
+
     methods
         function o = WTWaveletTransformCfg(ioProc)
             o@WTConfigStorage(ioProc, 'tf_cmor_cfg.m');
@@ -50,9 +51,9 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable & matla
             o.EdgePadding = 0;
             o.ChannelsList = [];
             o.EpochsList = [];
-            o.LogarithmicTransform = 0;
             o.EvokedOscillations = 0;
-            o.NormalizedWavelets = 1;
+            o.TransformPower = 0;
+            o.TransformComponents = 0;
             o.WaveletsCycles = 7;
         end
 
@@ -70,7 +71,7 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable & matla
                 return
             end 
             try
-                if length(cells) >= 13 
+                if length(cells) == 13 
                     o.TimeMin = WTNumUtils.str2double(cells{1});
                     o.TimeMax = WTNumUtils.str2double(cells{2});
                     o.TimeRes = WTNumUtils.str2double(cells{3});
@@ -80,9 +81,9 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable & matla
                     o.EdgePadding = WTNumUtils.str2double(cells{7});
                     o.ChannelsList = WTNumUtils.str2nums(cells{8});
                     o.EpochsList = WTNumUtils.str2nums(cells{9});
-                    o.LogarithmicTransform = cells{10};
-                    o.EvokedOscillations = cells{11};
-                    o.NormalizedWavelets = cells{12};
+                    o.EvokedOscillations = cells{10};
+                    o.TransformComponents = cells{11};
+                    o.TransformPower = cells{12};
                     o.WaveletsCycles = cells{13};
                 else
                     o.data.waveletTransform = o.default();
@@ -106,9 +107,9 @@ classdef WTWaveletTransformCfg < WTConfigStorage & matlab.mixin.Copyable & matla
                 WTConfigFormatter.FmtIntStr, o.EdgePadding, ...   
                 WTConfigFormatter.FmtArrayStr, num2str(o.ChannelsList), ...
                 WTConfigFormatter.FmtArrayStr, num2str(o.EpochsList), ...
-                WTConfigFormatter.FmtInt, o.LogarithmicTransform, ...
                 WTConfigFormatter.FmtInt, o.EvokedOscillations, ...
-                WTConfigFormatter.FmtInt, o.NormalizedWavelets, ...
+                WTConfigFormatter.FmtInt, o.TransformComponents, ...
+                WTConfigFormatter.FmtInt, o.TransformPower, ...
                 WTConfigFormatter.FmtInt, o.WaveletsCycles);
             success = ~isempty(txt) && o.write(txt);
         end

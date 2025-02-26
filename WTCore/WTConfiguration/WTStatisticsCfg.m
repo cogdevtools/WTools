@@ -21,8 +21,11 @@ classdef WTStatisticsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyab
 
     properties
         ChannelsList(1,:) int32 {WTValidations.mustBeGT(ChannelsList,0,0,0)}
-        IndividualFreqs(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
-        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne} = 0
+        IndividualFreqs(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods
@@ -37,6 +40,9 @@ classdef WTStatisticsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyab
             o.ChannelsList = [];
             o.IndividualFreqs = 0;
             o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
         end
 
         function success = load(o) 
@@ -45,7 +51,7 @@ classdef WTStatisticsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyab
                 return
             end 
             try
-                if length(cells) == 7
+                if length(cells) == 10
                     o.ChannelsList = WTNumUtils.str2nums(cells{1});
                     o.TimeMin = WTNumUtils.str2double(cells{2});
                     o.TimeMax = WTNumUtils.str2double(cells{3});
@@ -53,6 +59,9 @@ classdef WTStatisticsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyab
                     o.FreqMax = WTNumUtils.str2double(cells{5});
                     o.IndividualFreqs = cells{6};
                     o.EvokedOscillations = cells{7};
+                    o.TransformPower = cells{8};
+                    o.BaselineSubtraction = cells{9};
+                    o.BaselineNormalization = cells{10};
                     o.validate();
                 else 
                     o.default();
@@ -73,7 +82,10 @@ classdef WTStatisticsCfg < WTConfigStorage & WTTimeFreqCfg & matlab.mixin.Copyab
                 WTConfigFormatter.FmtIntStr, o.FreqMin, ...
                 WTConfigFormatter.FmtIntStr, o.FreqMax, ...    
                 WTConfigFormatter.FmtInt, o.IndividualFreqs, ...
-                WTConfigFormatter.FmtInt, o.EvokedOscillations);
+                WTConfigFormatter.FmtInt, o.EvokedOscillations, ...
+                WTConfigFormatter.FmtInt, o.TransformPower, ...
+                WTConfigFormatter.FmtInt, o.BaselineSubtraction, ...
+                WTConfigFormatter.FmtInt, o.BaselineNormalization);
             success = ~isempty(txt) && o.write(txt);
         end
     end

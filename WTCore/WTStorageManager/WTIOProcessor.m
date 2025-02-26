@@ -29,6 +29,7 @@ classdef WTIOProcessor < handle
 
     properties(Constant, Hidden)
         WaveletsAnalisys         = ''
+        WaveletsAnalisys_ReIm    = 'ReIm'
         WaveletsAnalisys_ITLC    = 'ITLC'
         WaveletsAnalisys_ITPC    = 'ITPC'
         WaveletsAnalisys_ERSP    = 'ERSP'
@@ -36,6 +37,8 @@ classdef WTIOProcessor < handle
         WaveletsAnalisys_avWT    = 'avWT'
         WaveletsAnalisys_WTav    = 'WTav'
         WaveletsAnalisys_Induced = 'Induced'
+
+
 
         SystemEGI    = 'EGI'
         SystemEEP    = 'EEP'
@@ -53,8 +56,8 @@ classdef WTIOProcessor < handle
         SubjIdRe = '^\d+$'
         SubjAnalysisSubDirRe  = sprintf('^(?<subject>\\d+)%s*$', WTCodingUtils.ifThenElse(ispc, '\\','/'));
         EGIConditionSegmentFldRe = '^(?<condition>.+)_Segment[^0-9]*(?<segment>\d+)$'
-        BaselineCorrectedFileNameRe = ['^((?<subject>\d+)_)?(?<condition>[^_]+)_bc-(?<measure>.+)(?:\' ...
-            WTIOProcessor.GrandAvgFileExt '|\' WTIOProcessor.PerSbjGrandAvgFileExt ')$'] 
+        BaselineCorrectedFileNameRe = ['^((?<subject>\d+)_)?(?<condition>[^_]+)_bc_(?<measure>.+)(?:\' ...
+            WTIOProcessor.GrandAvgFileExt '|\' WTIOProcessor.PerSbjGrandAvgFileExt ')$']
     end
 
     properties(Constant,Access=private,Hidden)
@@ -813,7 +816,7 @@ classdef WTIOProcessor < handle
                 WTLog().except(me);
             end 
         end
-
+        
         function [fullPath, filePath, fileName] = getBaselineCorrectionFile(o, subject, condition, wType)
             switch wType
                 case WTIOProcessor.WaveletsAnalisys_evWT
@@ -825,7 +828,7 @@ classdef WTIOProcessor < handle
                     WTLog().err('Unknown file type %s', wType);
                     return
             end
-            fileName = strcat(subject, '_', condition, '_bc-', wType, '.mat');
+            fileName = strcat(subject, '_', condition, '_bc_', wType, '.mat');
             filePath = fullfile(o.AnalysisDir, subject);
             fullPath = fullfile(filePath, fileName);
         end
@@ -871,7 +874,7 @@ classdef WTIOProcessor < handle
             end
             extension = WTCodingUtils.ifThenElse(perSubject, ...
                 WTIOProcessor.PerSbjGrandAvgFileExt,  WTIOProcessor.GrandAvgFileExt);
-            fileName = strcat(condition, '_bc-', wType, extension);
+            fileName = strcat(condition, '_bc_', wType, extension);
             filePath = o.GrandAvgDir;
             fullPath = fullfile(filePath, fileName);
         end
@@ -916,7 +919,7 @@ classdef WTIOProcessor < handle
                     WTLog().err('Unknown file type %s', wType);
                     return
             end
-            fileName = strcat(subject, '_', condA, '-', condB, '_bc-', wType, '.mat');
+            fileName = strcat(subject, '_', condA, '-', condB, '_bc_', wType, '.mat');
             filePath = fullfile(o.AnalysisDir, subject);
             fullPath = fullfile(filePath, fileName);
         end
@@ -961,6 +964,7 @@ classdef WTIOProcessor < handle
                 case WTIOProcessor.WaveletsAnalisys_ERSP
                 case WTIOProcessor.WaveletsAnalisys_evWT
                 case WTIOProcessor.WaveletsAnalisys_avWT
+                case WTIOProcessor.WaveletsAnalisys_ReIm
                 case WTIOProcessor.WaveletsAnalisys_WTav
                 case WTIOProcessor.WaveletsAnalisys_Induced
                 otherwise
@@ -1001,10 +1005,9 @@ classdef WTIOProcessor < handle
             end
         end
 
-        function [fullPath, filePath, fileName] = getStatisticsFile(o, filePrefix, logFlag, timeMin, timeMax, freqMin, freqMax, freqPace, wType)
+        function [fullPath, filePath, fileName] = getStatisticsFile(o, filePrefix, timeMin, timeMax, freqMin, freqMax, freqPace, wType)
             dt = datetime();
             dtStr = sprintf('%d%02d%02d.%02d%02d%02d', year(dt), month(dt), day(dt), hour(dt), minute(dt), ceil(second(dt)));
-            logStr = WTCodingUtils.ifThenElse(logFlag, '_[log10]_', '_');
             timeStr = WTCodingUtils.ifThenElse(timeMin ~= timeMax, ...
                 @()sprintf('[%s,%s]ms', num2str(timeMin), num2str(timeMax)), ...
                 @()sprintf('[%s]ms',  num2str(timeMin)));
@@ -1013,7 +1016,7 @@ classdef WTIOProcessor < handle
                     @()sprintf('[%s,+%s,%s]Hz', num2str(freqMin), num2str(freqPace), num2str(freqMax)), ...
                     @()sprintf('[%s,%s]Hz', num2str(freqMin), num2str(freqMax))), ...
                 @()sprintf('[%s]Hz',  num2str(freqMin)));
-            fileName =  [filePrefix logStr timeStr '_' freqStr '_bc_' wType '.' dtStr '.tsv'];
+            fileName =  [filePrefix '_' timeStr '_' freqStr '_bc_' wType '.' dtStr '.tsv'];
             filePath = o.StatisticsDir;
             fullPath = fullfile(filePath, fileName);
         end

@@ -23,8 +23,10 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
         Condition1(1,1) int8 {WTValidations.mustBeGT(Condition1,0,0,0)} = 1
         Condition2(1,1) int8 {WTValidations.mustBeGT(Condition2,0,0,0)} = 1
         ConditionsDiff(1,1) int8 {WTValidations.mustBeGT(ConditionsDiff,0,0,0)} = 1
-        LogarithmicTransform(1,1) int8 {WTValidations.mustBeZeroOrOne}
         EvokedOscillations(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        TransformPower(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineSubtraction(1,1) int8 {WTValidations.mustBeZeroOrOne}
+        BaselineNormalization(1,1) int8 {WTValidations.mustBeZeroOrOne}
     end
 
     methods
@@ -37,8 +39,10 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
             o.Condition1 = 1;
             o.Condition2 = 1;
             o.ConditionsDiff = 1;
-            o.LogarithmicTransform = 0;
             o.EvokedOscillations = 0;
+            o.TransformPower = 0;
+            o.BaselineSubtraction = 0;
+            o.BaselineNormalization = 0;
         end
 
         function success = load(o) 
@@ -47,12 +51,14 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
                 return
             end 
             try
-                if length(cells) >= 5
+                if length(cells) == 7
                     o.Condition1 = cells{1};
                     o.Condition2 = cells{2};
                     o.ConditionsDiff = cells{3};
-                    o.LogarithmicTransform = cells{4};
-                    o.EvokedOscillations = cells{5};
+                    o.EvokedOscillations = cells{4};
+                    o.TransformPower = cells{5};
+                    o.BaselineSubtraction = cells{6};
+                    o.BaselineNormalization = cells{7};
                 else 
                     o.default();
                     WTLog().warn(['The difference parameters (%s) were set by an \n'...
@@ -66,7 +72,9 @@ classdef WTDifferenceCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
         end
 
         function success = persist(o)
-            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, o.Condition1, o.Condition2, o.ConditionsDiff, o.LogarithmicTransform, o.EvokedOscillations);
+            txt = WTConfigFormatter.intCellsFieldArgs(o.FldDefaultAnswer, ...
+                o.Condition1, o.Condition2, o.ConditionsDiff, o.EvokedOscillations, ...
+                o.TransformPower, o.BaselineSubtraction, o.BaselineNormalization);
             success = ~isempty(txt) && o.write(txt);
         end
     end

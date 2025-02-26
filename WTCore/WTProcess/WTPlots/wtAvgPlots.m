@@ -18,7 +18,7 @@
 %     isempty(conditionsToPlot) => all conditions
 %     isempty(channelsToPlot) => all channels
 
-function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
+function wtAvgPlots(subject, conditionsToPlot, channelsToPlot)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -29,7 +29,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
     interactive = wtProject.Interactive;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 4);
+        mustBeGreaterThanOrEqual(nargin, 3);
         WTValidations.mustBeStringOrChar(subject);
         WTValidations.mustBeLinearCellArrayOfChar(conditionsToPlot);
         WTValidations.mustBeLinearCellArrayOfChar(channelsToPlot);
@@ -38,30 +38,24 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         channelsToPlot = unique(channelsToPlot);
     end
     
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
-    evokFlag = waveletTransformPrms.EvokedOscillations;
-
     if interactive
-        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(evokFlag, false, false, -1);
+        if ~setAvgPlotsParams() 
+            return
+        end
+        plotsPrms = wtProject.Config.AveragePlots;
+        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(plotsPrms.EvokedOscillations, false, false, -1);
         if isempty(fileNames)
             return
         end
+    else
+        plotsPrms = wtProject.Config.AveragePlots;
+        measure = WTCodingUtils.ifThenElse(plotsPrms.EvokedOscillations, ...
+            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     grandAverage = isempty(subject);
     if grandAverage && ~wtProject.checkGrandAverageDone()
         return
-    end
-
-    if interactive
-        if ~setAvgPlotsParams(logFlag) 
-            return
-        end
-    else
-        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
-            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     basicPrms = wtProject.Config.Basic;
@@ -92,17 +86,18 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         return
     end
 
-    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
-    if ~diffConsistency || ~grandConsistency
-        return
-    end
-
     [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.AveragePlots, data) 
         return
     end
 
-    plotsPrms = wtProject.Config.AveragePlots;
+    plotLabel = WTPlotUtils.getPlotLabel( ...
+        plotsPrms.EvokedOscillations, ...
+        plotsPrms.TransformPower, ...
+        plotsPrms.BaselineSubtraction, ...
+        plotsPrms.BaselineNormalization, ... 
+        plotsPrms.Decibel);
+        
     timeRes = data.tim(2) - data.tim(1); 
     freqRes = data.Fa(2) - data.Fa(1);
     downsampleFactor = WTCodingUtils.ifThenElse(timeRes <= 1, 4, @()WTCodingUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
@@ -157,7 +152,7 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
         prms.plotsPrms = copy(plotsPrms);
         prms.subPlotRelWidth = 0.1;
         prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
-        prms.xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        prms.xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
         prms.colorMap = WTPlotUtils.getPlotsColorMap();
 
         for cnd = 1: nConditionsToPlot
@@ -173,8 +168,16 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillation
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
-           % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            prms.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            figureName = ['Avg: ' figureName ];
+
+            if plotsPrms.Decibel
+                [prms.WT, prms.dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, true, false, false);
+                prms.WT = WTProcessUtils.ToDecibel(prms.WT,  plotsPrms.TransformPower);
+            else
+                prms.WT = data.WT;
+                prms.dc = [];
+            end
+
             prms.channelsLocations = data.chanlocs(channelsToPlotIdxs);
 
             [prms.x, prms.y] = WTPlotUtils.getChannelsXY(prms.channelsLocations);
@@ -373,20 +376,25 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         end
 
         yTick = plotsPrms.FreqMin : freqPace : plotsPrms.FreqMax;
+        figureTitle = figureTag;
+        if ~isempty(prms.dc) && prms.dc(prms.channelsToPlotIdxs(subPlotIdx)) ~= 0
+            figureTitle = sprintf('%s, DC shift: %g', figureTag, prms.dc(prms.channelsToPlotIdxs(subPlotIdx)));
+        end
         set(gca, 'xgrid', 'on', 'ygrid', 'on', 'gridlinestyle', '-', 'YDIR', 'normal', 'XTick', xTick, 'YTick', yTick);
         axis('tight');
-        title(figureTag, 'FontSize', 16, 'FontWeight', 'bold');
+        title(figureTitle, 'FontSize', 16, 'FontWeight', 'bold');
         xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
         pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
         pace = pace(2) - pace(1);
         colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
         set(get(colorBar, 'xlabel'), ...
-            'String', prms.xLabel.String, ...
-            'Rotation', prms.xLabel.Rotation, ...
-            'Position', [prms.xLabel.Position 2 * pace], ...
-            'FontSize', 12, 'FontWeight', 'bold'); 
-
+            'String', prms.xLabelParams.String, ...
+            'Rotation', prms.xLabelParams.Rotation, ...
+            'Position', [prms.xLabelParams.Position 2 * pace], ...
+            'VerticalAlignment', 'cap', ...
+            'FontSize', 12, ...
+            'FontWeight', 'bold'); 
         % Set the callback to manage grid style change
         hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
         hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressBringSingleObjectToFrontCb, 'm', 'MainPlot'};
@@ -395,27 +403,13 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
     end  
 end
 
- function success = setAvgPlotsParams(logFlag)
+ function success = setAvgPlotsParams()
     success = false;
     wtProject = WTProject();
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    plotsPrms = copy(wtProject.Config.AveragePlots);
+    plotsPrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, ...
+        wtProject.Config.AveragePlots);
 
-    if ~plotsPrms.exist() 
-        if waveletTransformPrms.exist()
-            plotsPrms.TimeMin = waveletTransformPrms.TimeMin;
-            plotsPrms.TimeMax = waveletTransformPrms.TimeMax;
-            plotsPrms.FreqMin = waveletTransformPrms.FreqMin;
-            plotsPrms.FreqMax = waveletTransformPrms.FreqMax;
-        end
-        if baselineChopPrms.exist()
-            plotsPrms.TimeMin = baselineChopPrms.ChopTimeMin;
-            plotsPrms.TimeMax = baselineChopPrms.ChopTimeMax;
-        end
-    end
-
-    if ~WTPlotsGUI.defineAvgPlotsSettings(plotsPrms, logFlag)
+    if ~WTPlotsGUI.defineAvgPlotsSettings(plotsPrms, true, true, true, true)
         return
     end
     

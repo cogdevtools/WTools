@@ -44,12 +44,12 @@ function success = wtConditionsDifference(subjects)
     end
 
     if wtProject.Interactive
+        if ~setDifferencePrms()
+            return
+        end
         subjects = WTDialogUtils.stringsSelectDlg('Select subjects\nfor difference:', subjects);
         if isempty(subjects)
             wtLog.warn('User selected no subjects to process');
-            return
-        end
-        if ~setDifferencePrms()
             return
         end
     end
@@ -222,22 +222,9 @@ function success = setDifferencePrms()
     wtProject = WTProject();
 
     condsGrandPrms = copy(wtProject.Config.ConditionsGrand);
-    differencePrms = copy(wtProject.Config.Difference);
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
+    differencePrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, wtProject.Config.Difference);
 
-    logFlag = differencePrms.LogarithmicTransform;
-    evokFlag = differencePrms.EvokedOscillations;
-
-    if waveletTransformPrms.exist()
-        logFlag = waveletTransformPrms.LogarithmicTransform;
-        evokFlag = waveletTransformPrms.EvokedOscillations;
-    end
-    if baselineChopPrms.exist()
-        logFlag = baselineChopPrms.LogarithmicTransform;
-    end
-
-    if ~WTDifferenceGUI.defineDifferenceParams(differencePrms, condsGrandPrms, logFlag, evokFlag)
+    if ~WTDifferenceGUI.defineDifferenceParams(differencePrms, condsGrandPrms, true, true, true, true)
         return
     end
 

@@ -13,7 +13,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscillations)
+function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -24,7 +24,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     interactive = wtProject.Interactive;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 4);
+        mustBeGreaterThanOrEqual(nargin, 3);
         WTValidations.mustBeStringOrChar(subject);
         WTValidations.mustBeLimitedLinearCellArrayOfChar(conditionsToPlot);
         WTValidations.mustBeLinearCellArrayOfChar(channelsToPlot);
@@ -32,31 +32,25 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         conditionsToPlot = unique(conditionsToPlot);
         channelsToPlot = unique(channelsToPlot);
     end
-    
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
-    evokFlag = waveletTransformPrms.EvokedOscillations;
 
     if interactive
-        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(evokFlag, false, false, -1);
+        if ~setChansAvgPlotsParams() 
+            return
+        end
+        plotsPrms = wtProject.Config.ChannelsAveragePlots;
+        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(plotsPrms.EvokedOscillations, false, false, -1);
         if isempty(fileNames)
             return
         end
+    else
+        plotsPrms = wtProject.Config.ChannelsAveragePlots;
+        measure = WTCodingUtils.ifThenElse(plotsPrms.EvokedOscillations, ...
+            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     grandAverage = isempty(subject);
     if grandAverage && ~wtProject.checkGrandAverageDone()
         return
-    end
-
-    if interactive
-        if ~setChansAvgPlotsParams(logFlag) 
-            return
-        end
-    else
-        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
-            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
     end
 
     basicPrms = wtProject.Config.Basic;
@@ -87,17 +81,18 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
         return
     end
 
-    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
-    if ~diffConsistency || ~grandConsistency
-        return
-    end
-
     [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
     if ~success || ~WTConfigUtils.adjustTimeFreqDomains(wtProject.Config.ChannelsAveragePlots, data) 
         return
     end
 
-    plotsPrms = wtProject.Config.ChannelsAveragePlots;
+    plotLabel = WTPlotUtils.getPlotLabel( ...
+        plotsPrms.EvokedOscillations, ...
+        plotsPrms.TransformPower, ...
+        plotsPrms.BaselineSubtraction, ...
+        plotsPrms.BaselineNormalization, ... 
+        plotsPrms.Decibel);
+
     timeRes = data.tim(2) - data.tim(1); 
     freqRes = data.Fa(2) - data.Fa(1);
     downsampleFactor = WTCodingUtils.ifThenElse(timeRes <= 1, 4, @()WTCodingUtils.ifThenElse(timeRes <= 2, 2, 1)); % apply downsampling to speed up plotting
@@ -105,7 +100,13 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     freqIdxs = find(data.Fa == plotsPrms.FreqMin) : find(data.Fa == plotsPrms.FreqMax);
     allChannelsLabels = {data.chanlocs.labels}';
 
-    if interactive 
+    if plotsPrms.AllChannels
+        if ~interactive && numel(channelsToPlot) > 0
+            wtLog.warn('All channels will be plotted: subset ignored: %s', char(join(channelsToPlot, ','))); 
+        end
+        channelsToPlot = allChannelsLabels;
+        channelsToPlotIdxs = 1:numel(allChannelsLabels);
+    elseif interactive 
         [channelsToPlot, channelsToPlotIdxs] = WTDialogUtils.stringsSelectDlg('Select channels\nto plot:', allChannelsLabels, false, true);
     elseif isempty(channelsToPlot)
         channelsToPlot = allChannelsLabels;
@@ -131,7 +132,7 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     try
         figureWHRatio = 4/3; 
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
-        xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
         colorMap = WTPlotUtils.getPlotsColorMap();
 
         for cnd = 1:nConditionsToPlot
@@ -147,12 +148,21 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
                 @()char(strcat(basicPrms.FilesPrefix,'.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
             
+            figureName = ['ChansAvg: ' figureName ];
             channelsLocations = data.chanlocs(channelsToPlotIdxs);
             figureTitle = WTStringUtils.chunkStrings('Channel: ', 'Avg of: ', {channelsLocations.labels}, 10);
 
-            % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
-            WTChansAvg = mean(WT(channelsToPlotIdxs,:,:), 1);
+            WT = data.WT(channelsToPlotIdxs,:,:);
+
+            if plotsPrms.Decibel
+                [WT, dc] = WTProcessUtils.CWTDCShift(WT, plotsPrms.TransformPower, false, false, false);
+                WT = WTProcessUtils.ToDecibel(WT,  plotsPrms.TransformPower);
+                if dc ~= 0
+                    figureTitle(end+1) = { sprintf('DC shift: %g', dc) };
+                end
+            end
+
+            WTChansAvg = mean(WT, 1);
 
             % Create the figure
             hFigure = figure('Position', figuresPosition{cnd});
@@ -206,11 +216,12 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
             pace = pace(2) - pace(1);
             colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
             set(get(colorBar, 'xlabel'), ...
-                'String', xLabel.String, ...
-                'Rotation', xLabel.Rotation, ...
-                'Position', [xLabel.Position 2 * pace], ...
-                'FontSize', 12, 'FontWeight', 'bold'); 
-
+                'String', xLabelParams.String, ...
+                'Rotation', xLabelParams.Rotation, ...
+                'Position', [xLabelParams.Position 2 * pace], ...
+                'VerticalAlignment', 'cap', ...
+                'FontSize', 12, ...
+                'FontWeight', 'bold'); 
             % Set the callback to manage grid style change
             hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
             % Set the callback to manage keys
@@ -229,27 +240,13 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot, evokedOscill
     wtLog.info('Plotting done.');
 end
 
-function success = setChansAvgPlotsParams(logFlag)
+function success = setChansAvgPlotsParams()
     success = false;
     wtProject = WTProject();
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    plotsPrms = copy(wtProject.Config.ChannelsAveragePlots);
+    plotsPrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, ...
+        wtProject.Config.ChannelsAveragePlots);
 
-    if ~plotsPrms.exist() 
-        if waveletTransformPrms.exist()
-            plotsPrms.TimeMin = waveletTransformPrms.TimeMin;
-            plotsPrms.TimeMax = waveletTransformPrms.TimeMax;
-            plotsPrms.FreqMin = waveletTransformPrms.FreqMin;
-            plotsPrms.FreqMax = waveletTransformPrms.FreqMax;
-        end
-        if baselineChopPrms.exist()
-            plotsPrms.TimeMin = baselineChopPrms.ChopTimeMin;
-            plotsPrms.TimeMax = baselineChopPrms.ChopTimeMax;
-        end
-    end
-
-    if ~WTPlotsGUI.defineChansAvgPlotsSettings(plotsPrms, logFlag)
+    if ~WTPlotsGUI.defineChansAvgPlotsSettings(plotsPrms, true, true, true, true)
         return
     end
     

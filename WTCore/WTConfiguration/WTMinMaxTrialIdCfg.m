@@ -55,7 +55,7 @@ classdef WTMinMaxTrialIdCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.m
                 return
             end
             try
-                if length(cells) >= 2
+                if length(cells) == 2
                     % For backward compatibility
                     o.MinTrialId = WTNumUtils.str2double(cells{1}, true);
                     o.MaxTrialId = WTNumUtils.str2double(cells{2}, true);
