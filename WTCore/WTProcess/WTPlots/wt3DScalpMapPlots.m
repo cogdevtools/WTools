@@ -13,7 +13,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
+function wt3DScalpMapPlots(subject, conditionsToPlot)
     wtProject = WTProject();
     wtLog = WTLog();
 
@@ -24,7 +24,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     interactive = wtProject.Interactive;
 
     if ~interactive 
-        mustBeGreaterThanOrEqual(nargin, 3);
+        mustBeGreaterThanOrEqual(nargin, 2);
         WTValidations.mustBeStringOrChar(subject);
         WTValidations.mustBeLimitedLinearCellArrayOfChar(conditionsToPlot);
         subject = char(subject);
@@ -32,69 +32,83 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     end
     
     ioProc = wtProject.Config.IOProc;
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    logFlag = waveletTransformPrms.LogarithmicTransform || baselineChopPrms.LogarithmicTransform;
-    evokFlag = waveletTransformPrms.EvokedOscillations;
 
-    if interactive
-        [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(evokFlag, false, false, -1);
-        if isempty(fileNames)
+    while true
+        if interactive
+            plotsPrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, ...
+                wtProject.Config.ThreeDimensionalScalpMapPlots);
+
+            if ~WTPlotsGUI.define3DScalpMapPlotsSettings(plotsPrms, true, true, true, true)
+                return
+            end
+
+            [fileNames, ~, measure, subject] = WTPlotsGUI.selectFilesToPlot(plotsPrms.EvokedOscillations, false, false, -1);
+            if isempty(fileNames)
+                return
+            end
+        else
+            plotsPrms = wtProject.Config.ThreeDimensionalScalpMapPlots;
+            measure = WTCodingUtils.ifThenElse(plotsPrms.EvokedOscillations, ...
+                WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
+        end
+
+        grandAverage = isempty(subject);
+        if grandAverage && ~wtProject.checkGrandAverageDone()
             return
         end
-    else
-        measure = WTCodingUtils.ifThenElse(evokedOscillations, ...
-            WTIOProcessor.WaveletsAnalisys_evWT,  WTIOProcessor.WaveletsAnalisys_avWT);
-    end
 
-    grandAverage = isempty(subject);
-    if grandAverage && ~wtProject.checkGrandAverageDone()
-        return
-    end
+        basicPrms = wtProject.Config.Basic;
+        conditionsGrandPrms = wtProject.Config.ConditionsGrand;
+        conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
 
-    basicPrms = wtProject.Config.Basic;
-    conditionsGrandPrms = wtProject.Config.ConditionsGrand;
-    conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
-
-    if interactive
-        [conditionsToPlot, emptyConditionFiles] = WTIOProcessor.getConditionsFromBaselineCorrectedFileNames(fileNames);
-        if ~isempty(emptyConditionFiles)
-            wtLog.warn('The following files to plots do not have the right name format and have been pruned: %s', ...
-                char(join(emptyConditionFiles, ',')));
+        if interactive
+            [conditionsToPlot, emptyConditionFiles] = WTIOProcessor.getConditionsFromBaselineCorrectedFileNames(fileNames);
+            if ~isempty(emptyConditionFiles)
+                wtLog.warn('The following files to plots do not have the right name format and have been pruned: %s', ...
+                    char(join(emptyConditionFiles, ',')));
+            end
+        elseif isempty(conditionsToPlot)
+            conditionsToPlot = conditions;
         end
-    elseif isempty(conditionsToPlot)
-        conditionsToPlot = conditions;
+
+        intersectConditionsToPlot = sort(intersect(conditionsToPlot, conditions));
+        if numel(intersectConditionsToPlot) ~= numel(conditionsToPlot)
+            wtLog.warn('The following conditions to plots are not part of the current analysis and have been pruned: %s', ...
+                char(join(setdiff(conditionsToPlot, intersectConditionsToPlot), ',')));
+        end
+
+        conditionsToPlot = intersectConditionsToPlot;
+        nConditionsToPlot = length(conditionsToPlot);
+
+        if nConditionsToPlot == 0
+            wtProject.notifyWrn([], 'Plotting aborted due to empty conditions selection');
+            return
+        end
+
+        [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
+        if ~success 
+            return
+        end
+
+        if ~checkUpdateSplineFile(plotsPrms, data)
+            if interactive
+                continue
+            end
+        end
+
+        if ~interactive
+            break
+        end
+
+        if ~plotsPrms.persist()
+            wtProject.notifyErr([], 'Failed to save 3D scalp map plots params');
+            return
+        end
+
+        wtProject.Config.ThreeDimensionalScalpMapPlots = plotsPrms;
+        break
     end
 
-    intersectConditionsToPlot = sort(intersect(conditionsToPlot, conditions));
-    if numel(intersectConditionsToPlot) ~= numel(conditionsToPlot)
-        wtLog.warn('The following conditions to plots are not part of the current analysis and have been pruned: %s', ...
-            char(join(setdiff(conditionsToPlot, intersectConditionsToPlot), ',')));
-    end
-
-    conditionsToPlot = intersectConditionsToPlot;
-    nConditionsToPlot = length(conditionsToPlot);
-
-    if nConditionsToPlot == 0
-        wtProject.notifyWrn([], 'Plotting aborted due to empty conditions selection');
-        return
-    end
-
-    [diffConsistency, grandConsistency] = WTProcessUtils.checkDiffAndGrandAvg(conditionsToPlot, grandAverage);
-    if ~diffConsistency || ~grandConsistency
-        return
-    end
-
-    [success, data] = WTProcessUtils.loadAnalyzedData(false, subject, conditionsToPlot{1}, measure);
-    if ~success 
-        return
-    end
-
-    if interactive && ~set3DScalpMapPlotsParams(logFlag, data) 
-        return
-    end
- 
-    plotsPrms = wtProject.Config.ThreeDimensionalScalpMapPlots;
     splineFile = ioProc.getSplineFile(plotsPrms.SplineFile, plotsPrms.SplineLocal);   
     splineFileDev = ioProc.getSplineFile(plotsPrms.SplineFile, 0);  
     
@@ -125,6 +139,13 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
         freqIdxs = find(data.Fa == plotsPrms.FreqMin);
     end
 
+    plotLabel = WTPlotUtils.getPlotLabel( ...
+        plotsPrms.EvokedOscillations, ...
+        plotsPrms.TransformPower, ...
+        plotsPrms.BaselineSubtraction, ...
+        plotsPrms.BaselineNormalization, ... 
+        plotsPrms.Decibel);
+        
     wtLog.info('Plotting %s...', WTCodingUtils.ifThenElse(grandAverage, 'grand average', @()sprintf('subject %s', subject)));
     wtLog.pushStatus().HeaderOn = false;
     hMainPlots = WTHandle(cell(1, nConditionsToPlot));
@@ -132,7 +153,7 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     try
         figureWHRatio = 4/3; 
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
-        xLabel = WTPlotUtils.getXLabelParams(logFlag);
+        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
         colorMap = WTPlotUtils.getPlotsColorMap();
 
         for cnd = 1:nConditionsToPlot
@@ -148,36 +169,48 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
                 @()char(strcat(basicPrms.FilesPrefix, '.[AVG].[', conditionsToPlot{cnd}, '].[', measure, ']')), ...
                 @()char(strcat(basicPrms.FilesPrefix, '.[SBJ:', subject, '].[', conditionsToPlot{cnd}, '].[', measure, ']')));
 
-            figureName = [figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
-            
+            figureName = ['3D Scalp: ' figureNamePrefix '.[' plotsPrms.TimeString ' ms].[' plotsPrms.FreqString ' Hz]'];
             
             hFigure = figure('NumberTitle', 'off', ...
                 'Name', figureName, 'ToolBar', 'none', 'Position', figuresPosition{cnd});
 
             hMainPlots.Value{cnd} = hFigure;
             hFigure.UserData.MainPlots = hMainPlots;
+            figureTitle = '';
 
-            % Convert the data back to non-log scale straight in percent change in case logFlag is set
-            data.WT = WTCodingUtils.ifThenElse(logFlag, @()100 * (10.^data.WT - 1), data.WT);
+            if plotsPrms.Decibel
+                [data.WT, dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, false, false, false);
+            else
+                dc = 0;
+            end
+
             % Average on time
             data.WT = mean(data.WT(:,:,timeIdxs), 3);
             % Average on frequence
             data.WT = mean(data.WT(:,freqIdxs,:), 2);
 
+            if plotsPrms.Decibel
+                data.WT = WTProcessUtils.ToDecibel(data.WT,  plotsPrms.TransformPower);
+            end
+            if dc ~= 0 
+                figureTitle = sprintf('DC shift: %g', dc);
+            end
+
             if isempty(meshFile)
                 [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false, ...
                     'headplot', data.WT, splineFile, 'electrodes', 'off', ...
-                    'maplimits', plotsPrms.Scale, 'cbar', 0);
+                    'maplimits', plotsPrms.Scale, 'cbar', 0, 'title', figureTitle);
             else
                 [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false,  ...
                     'headplot', data.WT, splineFile, 'meshfile', meshFile, ...
-                    'electrodes', 'off', 'maplimits', plotsPrms.Scale, 'cbar', 0);
+                    'electrodes', 'off', 'maplimits', plotsPrms.Scale, 'cbar', 0, ...
+                    'title', figureTitle);
             end
             
             colormap(colorMap);
 
             set(get(hColorbar,'xlabel'), 'String', ...
-                xLabel.String, 'Rotation', xLabel.Rotation, 'FontSize', 12, ...
+                xLabelParams.String, 'Rotation', xLabelParams.Rotation, 'FontSize', 12, ...
                 'FontWeight', 'bold', 'Position', [8 0.55]);
 
             % Disable listeners that block figure callbacks udpate
@@ -204,41 +237,6 @@ function wt3DScalpMapPlots(subject, conditionsToPlot, evokedOscillations)
     % Wait for all main plots to close
     WTPlotUtils.waitUIs(hMainPlots.Value);
     wtLog.info('Plotting done.');
-end
-
-function success = set3DScalpMapPlotsParams(logFlag, data)
-    success = false;
-    wtProject = WTProject();
-    waveletTransformPrms = wtProject.Config.WaveletTransform;
-    baselineChopPrms = wtProject.Config.BaselineChop;
-    plotsPrms = copy(wtProject.Config.ThreeDimensionalScalpMapPlots);
-
-    if ~plotsPrms.exist() 
-        if waveletTransformPrms.exist()
-            plotsPrms.Time = [waveletTransformPrms.TimeMin waveletTransformPrms.TimeMax];
-            plotsPrms.Frequency = [waveletTransformPrms.FreqMin waveletTransformPrms.FreqMax];
-        end
-        if baselineChopPrms.exist()
-            plotsPrms.Time = [baselineChopPrms.ChopTimeMin baselineChopPrms.ChopTimeMax];
-        end
-    end
-
-    while true
-        if ~WTPlotsGUI.define3DScalpMapPlotsSettings(plotsPrms, logFlag)
-            return
-        end
-        if checkUpdateSplineFile(plotsPrms, data)
-            break
-        end
-    end
-    
-    if ~plotsPrms.persist()
-        wtProject.notifyErr([], 'Failed to save 3D scalp map plots params');
-        return
-    end
-
-    wtProject.Config.ThreeDimensionalScalpMapPlots = plotsPrms;
-    success = true;
 end
 
 function success = checkUpdateSplineFile(plotsPrms, data)

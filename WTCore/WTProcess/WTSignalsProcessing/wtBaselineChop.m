@@ -33,91 +33,95 @@ function success = wtBaselineChop()
     subjects = subjectsGrandParams.SubjectsList;
     conditions = conditionsGrandParams.ConditionsList;
 
-    if interactive 
-        subjects = WTDialogUtils.stringsSelectDlg('Select subjects:', subjects);
-    end
+    if interactive
+        selectSubjectAndConditions = true;
 
-    if isempty(subjects)
-        wtLog.warn('User selected no subjects to process!'); 
-        return
-    end
+        while true
+            baselineChopParams = WTConfigUtils.sigprocConfigPreset(wtProject.Config, baselineChopParams);
 
-    if interactive 
-        conditions = WTDialogUtils.stringsSelectDlg('Select conditions:', conditions);
-    end
+            if waveletTransformParams.exist() && ~baselineChopParams.exist()
+                % Estimation of the segment to chop, based on Eugenio Parise suggestion
+                segmentToChop = 2000 / waveletTransformParams.FreqMin; 
+                maxSegmentToChop = (waveletTransformParams.TimeMax - waveletTransformParams.TimeMin) / 2;
 
-    if isempty(conditions)
-        wtLog.warn('User selected no conditions to process!'); 
-        return
-    end
+                if segmentToChop < maxSegmentToChop
+                    baselineChopParams.ChopTimeMin = waveletTransformParams.TimeMin + segmentToChop;
+                    baselineChopParams.ChopTimeMax = waveletTransformParams.TimeMax - segmentToChop;
+                else
+                    wtLog.warn('Chop segment estimation above data length: will be ignored!');
+                    baselineChopParams.ChopTimeMin = waveletTransformParams.TimeMin;
+                    baselineChopParams.ChopTimeMax = waveletTransformParams.TimeMax;
+                end
 
-    baselineChopParams = copy(baselineChopParams);
-    
-    while true
-        if interactive
-            logFlag = baselineChopParams.LogarithmicTransform;
-            evokFlag = baselineChopParams.EvokedOscillations;
+                baselineChopParams.BaselineTimeMin = waveletTransformParams.TimeMin;
+                baselineChopParams.BaselineTimeMax = baselineChopParams.ChopTimeMin;
+                sampleRatePrms = wtProject.Config.Sampling;
+                
+                    % Estimation of the baseline segment, based on Eugenio Parise suggestion (100 samples)
+                if sampleRatePrms.exist()
+                    baselineTimeMax = baselineChopParams.BaselineTimeMin + (100*1000) / sampleRatePrms.SamplingRate;
 
-            if waveletTransformParams.exist() 
-                logFlag = waveletTransformParams.LogarithmicTransform;
-                evokFlag = waveletTransformParams.EvokedOscillations;
-
-                if ~baselineChopParams.exist()
-                    % Estimation of the segment to chop, based on Eugenio Parise suggestion
-                    segmentToChop = 2000 / waveletTransformParams.FreqMin; 
-                    maxSegmentToChop = (waveletTransformParams.TimeMax - waveletTransformParams.TimeMin) / 2;
-
-                    if segmentToChop < maxSegmentToChop
-                        baselineChopParams.ChopTimeMin = waveletTransformParams.TimeMin + segmentToChop;
-                        baselineChopParams.ChopTimeMax = waveletTransformParams.TimeMax - segmentToChop;
-                    else
-                        wtLog.warn('Chop segment estimation above data length: will be ignored!');
-                        baselineChopParams.ChopTimeMin = waveletTransformParams.TimeMin;
-                        baselineChopParams.ChopTimeMax = waveletTransformParams.TimeMax;
-                    end
-
-                    baselineChopParams.BaselineTimeMin = baselineChopParams.ChopTimeMin;
-                    baselineChopParams.BaselineTimeMax = baselineChopParams.ChopTimeMin;
-                    sampleRatePrms = wtProject.Config.Sampling;
-                    
-                     % Estimation of the baseline segment, based on Eugenio Parise suggestion (100 samples)
-                    if sampleRatePrms.exist()
-                        baselineTimeMax = baselineChopParams.BaselineTimeMin + (100*1000) / sampleRatePrms.SamplingRate;
-
-                        if baselineTimeMax < baselineChopParams.ChopTimeMax
-                            if baselineChopParams.BaselineTimeMin < 0 && baselineTimeMax > 0
-                                baselineChopParams.BaselineTimeMax = 0; % set the time 0 as max extension
-                            end
-                            baselineChopParams.BaselineTimeMax = baselineTimeMax;
+                    if baselineTimeMax < baselineChopParams.ChopTimeMax
+                        if baselineChopParams.BaselineTimeMin < 0 && baselineTimeMax > 0
+                            baselineChopParams.BaselineTimeMax = 0; % set the time 0 as max extension
                         end
+                        baselineChopParams.BaselineTimeMax = baselineTimeMax;
                     end
                 end
             end
-
-            if ~WTBaselineChopGUI.defineBaselineChopParams(baselineChopParams, logFlag, evokFlag)
+    
+            if ~WTBaselineChopGUI.defineBaselineChopParams(baselineChopParams, true, true)
                 return
             end
-        elseif ~baselineChopParams.validate()
-            wtLog.err('Baseline chopping params are not valid');
+            
+            if selectSubjectAndConditions
+                selectSubjectAndConditions = false;
+
+                measure = WTCodingUtils.ifThenElse(baselineChopParams.EvokedOscillations, ...
+                            WTIOProcessor.WaveletsAnalisys_evWT, ...
+                            WTIOProcessor.WaveletsAnalisys_avWT);
+        
+                subjects = WTDialogUtils.stringsSelectDlg('Select subjects:', subjects);
+                if isempty(subjects)
+                    wtLog.warn('User selected no subjects to process!'); 
+                    return
+                end
+                
+                conditions = WTDialogUtils.stringsSelectDlg('Select conditions:', conditions);
+                if isempty(conditions)
+                    wtLog.warn('User selected no conditions to process!'); 
+                    return
+                end
+
+                % Load the first data set to get information like 'Fa' and 'tim'
+                [success, data] = ioProc.loadWaveletsAnalysis(subjects{1}, conditions{1}, measure);
+                if ~success 
+                    wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{1}, conditions{1});
+                    return
+                end
+            end
+
+            if checkAndAdjustBaselineChopParams(baselineChopParams, data)
+                break
+            end
+        end
+    else
+        if ~baselineChopParams.validate()
+            wtLog.err('Baseline and/or chopping params are not valid');
             return
         end
 
         measure = WTCodingUtils.ifThenElse(baselineChopParams.EvokedOscillations, ...
-                    WTIOProcessor.WaveletsAnalisys_evWT, ...
-                    WTIOProcessor.WaveletsAnalisys_avWT);
+                        WTIOProcessor.WaveletsAnalisys_evWT, ...
+                        WTIOProcessor.WaveletsAnalisys_avWT);
 
-        % Load the first data set to get information like 'Fa' and 'tim'
         [success, data] = ioProc.loadWaveletsAnalysis(subjects{1}, conditions{1}, measure);
         if ~success 
             wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{1}, conditions{1});
             return
         end
 
-        if checkAndAdjustBaselineChopParams(baselineChopParams, data)
-            break
-        end
-
-        if ~interactive 
+        if ~checkAndAdjustBaselineChopParams(baselineChopParams, data)
             return
         end
     end
@@ -135,13 +139,8 @@ function success = wtBaselineChop()
     frequencies = data.Fa;
     chopMinIdx = find(data.tim == baselineChopParams.ChopTimeMin);
     chopMaxIdx = find(data.tim == baselineChopParams.ChopTimeMax);
-    logarithmicTransform = baselineChopParams.LogarithmicTransform && ~waveletTransformParams.LogarithmicTransform;
 
-    if logarithmicTransform
-        wtLog.info('Data will be log-transformed before baseline correction');
-    end
-
-    if baselineChopParams.NoBaselineCorrection
+    if ~baselineChopParams.BaselineSubtraction && ~baselineChopParams.BaselineNormalization
         wtLog.info('No baseline correction will be performed');
     else
         baselineMinIdx = find(data.tim == baselineChopParams.BaselineTimeMin);
@@ -160,29 +159,54 @@ function success = wtBaselineChop()
                 wtLog.popStatus();
                 return
             end
-            
-            if ~logarithmicTransform
-                % Data must not be log10-ed or they have been already during Wavelet transform
-                awt = data.WT(:,1:length(data.Fa),:);            
-            else  
-                % Data must not be log10-ed as they have not been during Wavelet transform and 
-                % the user want so during chop & baseline correction         
-                awt = log10(data.WT(:,1:length(data.Fa),:));            
+
+            wt = data.WT(:,1:length(data.Fa),:); 
+            baseline = [];
+
+            if waveletTransformParams.TransformPower 
+                wt = wt .^ 2;
             end
-            
-            if baselineChopParams.NoBaselineCorrection           
-                subjMatrix = awt(:,:,chopMinIdx:chopMaxIdx);            
-            else            
-                bv = mean(awt(:,:,baselineMinIdx:baselineMaxIdx),3);            
-                base = repmat(bv,[1,1,length(chopMinIdx:chopMaxIdx)]);           
-                subjMatrix = awt(:,:,chopMinIdx:chopMaxIdx) - base;           
+
+            if ~baselineChopParams.BaselineSubtraction && ~baselineChopParams.BaselineNormalization
+                wtLog.info('Chopping data: keeping time interval [%f, %f]...', ...
+                    baselineChopParams.ChopTimeMin, baselineChopParams.ChopTimeMax);
+                wt = wt(:,:,chopMinIdx:chopMaxIdx);
+            else
+                wtLog.info('Calculating baseline by averaging on time interval [%f, %f]', ...
+                    baselineChopParams.BaselineTimeMin, baselineChopParams.BaselineTimeMax);
+
+                baseline = mean(wt(:,:,baselineMinIdx:baselineMaxIdx),3);
+
+                wtLog.info('Chopping data outside time interval [%f, %f] ...', ...
+                    baselineChopParams.ChopTimeMin, baselineChopParams.ChopTimeMax); 
+
+                if baselineChopParams.BaselineSubtraction
+                    wtLog.info('Subtracting baseline...');
+                    wt = wt(:,:,chopMinIdx:chopMaxIdx) - repmat(baseline,[1,1,length(chopMinIdx:chopMaxIdx)]);
+                end
+
+                if baselineChopParams.BaselineNormalization
+                    if all(baseline ~= 0)
+                        wtLog.info('Applying baseline based normalization...');
+                        wt = wt ./ abs(baseline);
+                    else
+                        wtProject.notifyErr([],'Some baseline value is 0: normalization is not possible: subject ''%s'', condition: ''%s''', ... 
+                            subjects{s}, conditions{c});
+                        wtLog.popStatus();
+                        return
+                    end
+                end
             end
-            
+
             % In agreement to ERPWAVELAB file structure:
-            data.WT = subjMatrix;
+            data.WT = wt;
             data.tim = latencies;
             data.Fa = frequencies;
-
+            % Additional information
+            data.Power = logical(waveletTransformParams.TransformPower);
+            data.Baseline = baseline;
+            data.Normalized = logical(baselineChopParams.BaselineNormalization);
+           
             [success, filePath] = ioProc.writeBaselineCorrection(subjects(s), conditions(c), measure, '-struct', 'data');
             if ~success 
                 wtProject.notifyErr([], 'Failed to save basaline corrected & edge chopped data to ''%s''', filePath);
@@ -240,7 +264,7 @@ function success = checkAndAdjustBaselineChopParams(baselineChopParams, data)
         chopMax = timeGTE(1);
     end
 
-    if ~baselineChopParams.NoBaselineCorrection
+    if baselineChopParams.BaselineSubtraction
         if baselineMin < timeMin || baselineMin >= timeMax
             errNotify(['Then minimum of the baseline window, %.2f ms, is out of boundaries! ' ...
                         'Choose a value in [%.2f, %.2f) ms'], baselineMin, timeMin, timeMax);

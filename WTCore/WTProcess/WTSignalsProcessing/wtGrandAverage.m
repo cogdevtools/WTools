@@ -52,21 +52,9 @@ function success = wtGrandAverage(subjects, conditions)
             conditions = [conditionsGrandPrms.ConditionsList(:)' conditionsGrandPrms.ConditionsDiff(:)'];
         end
     else
-        grandAveragePrms = copy(grandAveragePrms);
-        waveletTransformPrms = wtProject.Config.WaveletTransform;
-        baselineChopPrms =  wtProject.Config.BaselineChop;
-        logFlag = grandAveragePrms.LogarithmicTransform;
-        evokFlag = grandAveragePrms.EvokedOscillations;
-
-        if waveletTransformPrms.exist()
-            logFlag = waveletTransformPrms.LogarithmicTransform; 
-            evokFlag = waveletTransformPrms.EvokedOscillations;
-        end
-        if baselineChopPrms.exist() 
-            logFlag = baselineChopPrms.LogarithmicTransform; 
-        end
-
-        if ~WTGrandAverageGUI.defineGrandAverageParams(grandAveragePrms, logFlag, evokFlag)
+        grandAveragePrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, grandAveragePrms);
+    
+        if ~WTGrandAverageGUI.defineGrandAverageParams(grandAveragePrms, true, true, true, true)
             return
         end
 
@@ -80,7 +68,7 @@ function success = wtGrandAverage(subjects, conditions)
 
         if ~grandAveragePrms.UseAllSubjects 
             subjects = WTDialogUtils.stringsSelectDlg('Select subjects\nto average:', subjects, false, false);
-            if length(subjects) == 0
+            if isempty(subjects)
                 wtLog.warn('No subjects selected');
                 return
             end

@@ -34,6 +34,7 @@ classdef WTException < MException
         NotExistingPath     = 'NotExistingPath'
         EEGLabDependency    = 'EEGLabDependency'
         Unsupported         = 'Unsupported'
+        Unexpected          = 'Unexpected'
         GenericErr          = 'GenericErr'  
     end 
 
@@ -128,6 +129,10 @@ classdef WTException < MException
             e = WTException(WTException.Unsupported, msg, varargin{:});
         end
 
+        function e = unexpected(msg, varargin)
+            e = WTException(WTException.Unexpected, msg, varargin{:});
+        end
+        
         function e = genericErr(msg, varargin)
             e = WTException(WTException.GenericErr, msg, varargin{:});
         end

@@ -75,7 +75,7 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
         if numel(intersectConditionsList) ~= numel(conditionsList)
             wtLog.warn('The following conditions are not part of the current analysis and have been pruned: %s', ...
                 char(join(setdiff(conditionsList, intersectConditionsList), ',')));
-            conditionsList = conditionsList;
+            conditionsList = intersectConditionsList;
         end
     end
 
@@ -173,16 +173,13 @@ function success = wtStatistics(subjectsList, conditionsList, channelsList, evok
         end
     end
 
-    logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-        wtProject.Config.BaselineChop.LogarithmicTransform;
-
     timeIdxs = find(data.tim == statsPrms.TimeMin):find(data.tim == statsPrms.TimeMax);
     freqIdxs = find(data.Fa == statsPrms.FreqMin):find(data.Fa == statsPrms.FreqMax);
     freqPace = WTCodingUtils.ifThenElse(statsPrms.IndividualFreqs, data.Fa(2) - data.Fa(1), 0);
     freqStrs = arrayfun(@(x)num2str(x), data.Fa(freqIdxs), 'UniformOutput', false);
 
     [fullStatsFile, ~, statsFile] = ioProc.getStatisticsFile( ...
-        basicPrms.FilesPrefix, logFlag, ...
+        basicPrms.FilesPrefix, ...
         statsPrms.TimeMin, statsPrms.TimeMax, ...
         statsPrms.FreqMin, statsPrms.FreqMax, ...
         freqPace, measure);
@@ -245,18 +242,12 @@ end
 
 function [success, subjectsList, conditionsList] = setStatisticsParams()
     wtProject = WTProject();
-    statsPrms = copy(wtProject.Config.Statistics);
-    subjectsGrandPrms =  copy(wtProject.Config.SubjectsGrand);
-    conditionsGrandPrms = copy(wtProject.Config.ConditionsGrand);
-    waveletTransformParams = wtProject.Config.WaveletTransform;
-
-    evokFlag = statsPrms.EvokedOscillations;
-    if waveletTransformParams.exist()
-        evokFlag =  waveletTransformParams.EvokedOscillations;
-    end
+    statsPrms = WTConfigUtils.sigprocConfigPreset(wtProject.Config, wtProject.Config.Statistics);
+    subjectsGrandPrms =  wtProject.Config.SubjectsGrand;
+    conditionsGrandPrms = wtProject.Config.ConditionsGrand;
 
     [success, subjectsList, conditionsList] = WTStatisticsGUI.defineStatisticsSettings(statsPrms, ...
-        subjectsGrandPrms, conditionsGrandPrms, evokFlag);
+        subjectsGrandPrms.SubjectsList, conditionsGrandPrms.ConditionsList, true, true, true, true);
     if ~success
         return
     end

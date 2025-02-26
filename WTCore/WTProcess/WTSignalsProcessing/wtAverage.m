@@ -1,7 +1,10 @@
 % 2024 Eugenio Parise, Luca Filippin
-%
-% Credits: a modified version of the tfanalisys.m function from (ERPWAVELAB)
 % ---------------------------------------------------------------------------
+% Credits: in this file 
+%
+%  - wtAverage is a modified version of the tfanalisys.m from (ERPWAVELAB)
+%
+% Source code: https://www.erpwavelab.org/index_files/Page361.htm
 % Copyright (C) Morten Mørup and Technical University of Denmark, 
 % September 2006
 %                                          
@@ -18,14 +21,10 @@
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-%
-% Revision:
-% 6 November 2006    Change of t1 and t2 to be in time index instead of ms.
-% 17 November 2006   Normalization by 1/f removed to main ERPWAVELAB program.
-% 21 November 2006   Wrong output in Induced measure corrected.
+% ---------------------------------------------------------------------------
 
 function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, timeMin, timeMax, ... 
-        waveletType, chansToAnalyse, selection, normalization, epochsList, cwtMatrix)
+        chansToAnalyse, selection, normalization, epochsList, cwtMatrix, skipFlatEpochs)
 
     success = false;
     files = {};
@@ -43,254 +42,312 @@ function [success, files] = wtAverage(EEG, cwtParams, subject, condition, Fa, ti
 
     ioProc = wtProject.Config.IOProc;
     extraEdges = single(cwtParams.EdgePadding);
-    logTransform = cwtParams.LogarithmicTransform;
-    evokedOscillations = cwtParams.EvokedOscillations;
 
-    dt = double(cwtParams.TimeRes);
-    fb = double(cwtParams.WaveletsCycles)/2;
-    Fs = EEG.srate/dt;
+    waveType = sprintf('Morlet-%d-cycles', cwtParams.WaveletsCycles);
+    timeRes = double(cwtParams.TimeRes);
+    Fs = EEG.srate/timeRes;
+    minFa = single(min(Fa));
     X = double(EEG.data);
     chanlocs = EEG.chanlocs;
-    Fc = 1;
-    scales = Fc*Fs./double(Fa);
-    nEpochs = size(X,3);
-    nChans = length(chansToAnalyse);
     ITPC = 0;
     ITLC = 0;
     ITLCN = 0;
     ERSP = 0;
     avWT = 0;
+    evWT = 0;
     WTav = 0;
     avWTi = 0;
     WTavi = 0;
+    WTRe = 0;
+    WTIm = 0;
     t = 0;
-    timeIdxs = timeMin:dt:timeMax;
+    timeIdxs = timeMin:timeRes:timeMax;
     N = length(timeIdxs);
     nFlatEpochs = 0;
 
-    if isempty(selection)
-        WT = zeros([length(chansToAnalyse),length(Fa),N,size(X,3)]);
+    if isempty(epochsList)
+        nEpochs = size(X,3);
+        epochsToTransform = 1:nEpochs;
     else
-        WT = zeros([length(chansToAnalyse),length(Fa),N]);
+        nEpochs = size(epochsList,2);
+        epochsToTransform = epochsList;
     end
 
-    wtLog.info('Transforming & averaging (subject/condition ''%s/%s'')...', subject, condition);
+    if nEpochs == 0 
+        wtLog.err('No epochs found');
+        return
+    end
+
+    wtLog.info('Transforming & averaging. This may take a while, hold on...', subject, condition);
     wtLog.pushStatus().contextOn('Transform & Average').HeaderOn = false;
     
     selected = @(value)(any(cellfun(@(y)(strcmp(y,value)), selection)));
+    ReImSelected = selected(WTIOProcessor.WaveletsAnalisys_ReIm);
     ITPCSelected = selected(WTIOProcessor.WaveletsAnalisys_ITPC);
     ITLCSelected = selected(WTIOProcessor.WaveletsAnalisys_ITLC);
     ERSPSelected = selected(WTIOProcessor.WaveletsAnalisys_ERSP);
     avWTSelected = selected(WTIOProcessor.WaveletsAnalisys_avWT);
+    evWTSelected = selected(WTIOProcessor.WaveletsAnalisys_evWT);
     WTavSelected = selected(WTIOProcessor.WaveletsAnalisys_WTav);
     InducedSelected = selected(WTIOProcessor.WaveletsAnalisys_Induced);
 
-    emptySelection = ~any([ITPCSelected, ITLCSelected, ERSPSelected, avWTSelected, WTavSelected, InducedSelected]);
+    emptySelection = ~any([
+        ITPCSelected, ...
+        ITLCSelected, ...
+        ERSPSelected, ...
+        WTavSelected, ...
+        avWTSelected, ...
+        evWTSelected, ...
+        InducedSelected]);
     
-    if ~isempty(selection) && emptySelection
+    if ~isempty(selection) && emptySelection && ~ReImSelected
         wtLog.err('Not a valid selection: %s', string(join(selection, ',')));
         return
     end
 
+    if avWTSelected && evWTSelected 
+        wtLog.err('Not a valid selection: %s, %s are both selected', ...
+            WTIOProcessor.WaveletsAnalisys_avWT, WTIOProcessor.WaveletsAnalisys_evWT);
+        return
+    end 
+
+    wtLog.info('Processing selection: %s', string(join(selection, ',')));
+
     if emptySelection
-        k = 0;
-        for j = chansToAnalyse
-            k = k+1;
-            if k == 1
-                wtLog.dbg('Operating on channel nr: %d/%d', k, nChans);
-            else
-                wtLog.dbg('Operating on channel nr: %d/%d, estimated time remaining %.2f minutes', k, nChans, (nChans-k)*(cputime-t)/60);
-            end
-            t = cputime;
-            if strcmp(waveletType,'Gabor (stft)')
-                WT(k,:,:,:) = gabortf(squeeze(X(j,:,:)), Fa, Fs, fb, timeIdxs);
-            else
-                WT(k,:,:,:) = fastwavelet(squeeze(X(j,:,:)), scales, waveletType, fb, timeIdxs);
-            end
+        WT = zeros([length(chansToAnalyse), length(Fa), N, nEpochs]);
+
+        if ReImSelected
+            WTRe = zeros([length(chansToAnalyse), length(Fa), N, nEpochs]);
+            WTIm = zeros([length(chansToAnalyse), length(Fa), N, nEpochs]);
         end
-    else
-        % Introduced by Eugenio Parise to process individual epochs -- ON --
-        if isempty(epochsList)
-            epochsN = size(X,3);
-            epochsToTransform = 1:epochsN;
-            nChans = size(X,3);
+    end
+
+    for i = 1:nEpochs
+        actualEpoch = epochsToTransform(i);
+
+        if i == 1
+            wtLog.dbg('Operating on epoch %d/%d', i, nEpochs);
         else
-            epochsN = size(epochsList,2);
-            epochsToTransform = epochsList;
-            nChans = size(epochsList,2);
+            wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nEpochs, (nEpochs-i)*(cputime-t)/60);
         end
-        % Introduced by Eugenio Parise to process individual epochs -- OFF --
 
-        for i = 1:epochsN
-            actualEpoch = epochsToTransform(i);
-            if i == 1
-                wtLog.dbg('Operating on epoch %d/%d', i, nChans);
-            else
-                wtLog.dbg('Operating on epoch %d/%d, estimated time remaining %.2f minutes', i, nChans, (nChans-i)*(cputime-t)/60);
-            end
+        t = cputime;
+        
+        [WTMod, WTReal, WTImag] = wtCWT(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, timeIdxs, cwtMatrix);
 
-            t = cputime;
-            
-            if strcmp(waveletType,'Gabor (stft)')
-                WT = gabortf(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, Fs, fb, timeIdxs);
-            elseif strcmp(waveletType,'cmor')
-                WT = fastwavelet(squeeze(X(chansToAnalyse,:,actualEpoch))', scales, waveletType, fb, timeIdxs);
-            elseif strcmp(waveletType,'cwt')  %Introduced by Eugenio Parise
-                WT = wtCWT(squeeze(X(chansToAnalyse,:,actualEpoch))', Fa, timeIdxs, cwtMatrix);
-            else 
-                wtLog.err('Unknown wavelet type: ''%s''', waveletType);
-                return
-            end
+        % Permute (freq, time, channel) as (channel, freq, time)
+        WTMod = permute(WTMod, [3, 1, 2]);
+        WTReal = permute(WTReal, [3, 1, 2]);
+        WTImag = permute(WTImag, [3, 1, 2]);
 
-            WT = permute(WT,[3 1 2]);
+        if emptySelection
+            % Just collect the transformed data for each epoch, preserving all of them
+            WT(:,:,:,i) = WTMod;
             
-            if sum(sum(sum(WT))) == 0 % Prevent flat epochs to affect the final outcome
-                nFlatEpochs = nFlatEpochs+1;
-                flatEpoch = 1;
-            else
-                flatEpoch = 0;
+            if ReImSelected
+                WTRe(:,:,:,i) = WTReal;
+                WTIm(:,:,:,i) = WTImag;
             end
-            
-            if logTransform && ~flatEpoch % Log transform (10-based) the data before baseline correction 
-                WT = log10(WT); 
-            end
-            
-            if length(normalization) == 2
-                WT = WT./repmat(mean(abs(WT(:,:,normalization(1):normalization(2))),3),[1 1 size(WT,3)]);
-            end
-            if ITPCSelected
-                ITPC = ITPC+WT./abs(WT);
-            end
-            if ITLCSelected
-                ITLC = ITLC+WT;
-                ITLCN = ITLCN+abs(WT).^2;
-            end
-            if ERSPSelected
-                ERSP = ERSP+abs(WT).^2;
-            end
-            if avWTSelected
-                avWT = avWT+WT;
-            end
-            if WTavSelected
-                WTav = WTav+abs(WT);
-            end
-            if InducedSelected
-                avWTi = avWTi+WT;
-                WTavi = WTavi+abs(WT);
-            end
+            continue
+        end
+
+        WT = WTMod;
+        flatEpoch = sum(sum(sum(WT))) == 0;
+
+        if flatEpoch && skipFlatEpochs
+            % Prevent flat epochs to affect the final outcome
+            nFlatEpochs = nFlatEpochs + 1;
+            continue
+        end
+
+        if length(normalization) == 2
+            WT = WT./repmat(mean(abs(WT(:,:,normalization(1):normalization(2))),3),[1 1 nEpochs]);
+        end
+        if ReImSelected
+            WTRe = WTRe + WTReal;
+            WTIm = WTIm + WTImag;
+        end
+        if ITPCSelected
+            ITPC = ITPC+WT./abs(WT);
+        end
+        if ITLCSelected
+            ITLC = ITLC+WT;
+            ITLCN = ITLCN+abs(WT).^2;
+        end
+        if ERSPSelected
+            ERSP = ERSP+abs(WT).^2;
+        end
+        if avWTSelected
+            avWT = avWT+WT;
+        end
+        if evWTSelected
+            evWT = evWT+WT;
+        end
+        if WTavSelected
+            WTav = WTav+abs(WT);
+        end
+        if InducedSelected
+            avWTi = avWTi+WT;
+            WTavi = WTavi+abs(WT);
+        end
+    end
+
+    tim = EEG.times(timeIdxs);
+    chanlocs = chanlocs(chansToAnalyse);
+    nEpochs = nEpochs - nFlatEpochs;
+    
+    if nFlatEpochs > 0 && ~emptySelection
+        wtLog.warn('%i flat ephoch(s) detected (the average and final result won''t be affected).', nFlatEpochs);
+    end
+
+    saveData = @(WT, WTRe, WTIm, pType)saveAnalysis(ioProc, subject, condition, pType, ...
+        WT, WTRe, WTIm, chanlocs, Fs, Fa, waveType, tim, nEpochs, nFlatEpochs);
+
+    if emptySelection
+        WT  = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys);
+        if ~success
+            wtLog.popStatus(); 
+            return
+        end
+    end
+
+    if emptySelection && ReImSelected
+        [~, WTRe, WTIm, ~] = chopExtraTime([], WTRe, WTIm, minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData([], WTRe, WTIm, WTIOProcessor.WaveletsAnalisys_ReIm);
+        if ~success
+            wtLog.popStatus(); 
+            return
+        end
+    end
+
+    if ~emptySelection && ReImSelected 
+        WTIm = WTIm/nEpochs;
+        WTRe = WTRe/nEpochs;
+        [~, WTRe, WTIm, ~] = chopExtraTime([], WTRe, WTIm, minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData([], WTRe, WTIm, WTIOProcessor.WaveletsAnalisys_ReIm);
+        if ~success
+            wtLog.popStatus(); 
+            return
+        end
+    end
+
+    if ITPCSelected
+        WT = ITPC/nEpochs;
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_ITPC);
+        if ~success
+            wtLog.popStatus();
+            return
+        end
+    end
+
+    if ITLCSelected
+        WT = 1/sqrt(nEpochs)*ITLC./sqrt(ITLCN);
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_ITLC);
+        if ~success
+            wtLog.popStatus(); 
+            return
+        end
+    end
+
+    if ERSPSelected
+        WT = ERSP/nEpochs;
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_ERSP);
+        if ~success
+            wtLog.popStatus(); 
+            return
+        end
+    end
+    
+    if avWTSelected
+        WT = avWT/nEpochs;
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_avWT);
+        if ~success
+            wtLog.popStatus();
+            return
+        end
+    end
+    
+    if evWTSelected 
+        % The processing is the same as for avWTSelected, but the input is supposed to be different
+        WT = evWT/nEpochs;
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_evWT);
+        if ~success
+            wtLog.popStatus();
+            return
+        end
+    end
+
+    if WTavSelected
+        WT = WTav/nEpochs;
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_WTav);
+        if ~success
+            wtLog.popStatus();
+            return
+        end
+    end
+
+    if InducedSelected
+        WT = (WTavi-abs(avWTi))/nEpochs;
+        WT = chopExtraTime(WT, [], [], minFa, tim, extraEdges);
+        [success, files{end+1}] = saveData(WT, [], [], WTIOProcessor.WaveletsAnalisys_Induced);
+        if ~success
+            wtLog.popStatus();
+            return
         end
     end
 
     wtLog.popStatus();
-
-    if nFlatEpochs > 0
-        wtLog.warn('%i flat ephoch(s) detected (the average and final result won''t be affected).', nFlatEpochs);
-    end
-
-    wtLog.info('Saving time/frequency analisys: this might take a while...');
-    tim = EEG.times(timeIdxs);
-    waveType = [waveletType '-' num2str(fb)];
-    chanlocs = chanlocs(chansToAnalyse);
-
-    if emptySelection
-        [success, files{1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys, ...
-            WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-        if ~success 
-            return
-        end
-    else
-        if ITPCSelected
-            WT = ITPC/size(X,3);
-            [success, files{1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_ITPC, ...
-                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-            if ~success 
-                return
-            end
-        end
-
-        if ITLCSelected
-            WT = 1/sqrt(size(X,3))*ITLC./sqrt(ITLCN);
-            [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_ITLC, ...
-                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-            if ~success 
-                return
-            end
-        end
-
-        if ERSPSelected
-            WT = ERSP/size(X,3);
-            [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_ERSP, ...
-                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-            if ~success 
-                return
-            end
-        end
-        
-        if avWTSelected
-            if strcmp(waveType,'cwt-3.5')
-                % Modified by Eugenio Parise to cut the extra edges before saving -- ON --
-                WT = avWT/(size(X,3)-nFlatEpochs);
-                
-                if extraEdges/single(min(Fa)) >= 1
-                    extraTime = extraEdges;
-                    timeRes = tim(2) - tim(1);
-                    extraPoints = floor(extraTime/timeRes);
-                    extraTime = extraPoints*timeRes;
-                    
-                    e1 = 1 + extraPoints;
-                    e2 = length(tim) - extraPoints;
-                    t1 = tim(1) + extraTime;
-                    t2 = tim(end) - extraTime;
-                    tim = t1 : timeRes : t2;
-                    WT = WT(:,:,e1:e2);
-                end
-                
-                nEpochs = nEpochs-nFlatEpochs;
-                wType = WTCodingUtils.ifThenElse(evokedOscillations, ...
-                    WTIOProcessor.WaveletsAnalisys_evWT, WTIOProcessor.WaveletsAnalisys_avWT);
-
-                [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, wType, ...
-                    WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-                if ~success 
-                    return
-                end
-            % Modified by Eugenio Parise to cut the extra edges before saving -- OFF --
-            else % Original ERPWAVELAB saving
-                WT = avWT/size(X,3);
-                [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_avWT, ...
-                    WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-                if ~success 
-                    return
-                end
-            end
-        end
-
-        if WTavSelected
-            WT = WTav/size(X,3);
-            [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_WTav, ...
-                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-            if ~success 
-                return
-            end
-        end
-
-        if InducedSelected
-            WT = (WTavi-abs(avWTi))/size(X,3);
-            [success, files{end+1}] = saveAnalysis(ioProc, subject, condition, WTIOProcessor.WaveletsAnalisys_Induced, ...
-                WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-            if ~success 
-                return
-            end
-        end
-
-        wtLog.info('Time/Frequency analysis saved');
-    end
 end
 
-function [success, fullPath] = saveAnalysis(ioProc, subject, condition, wType, WT, chanlocs, Fs, Fa, waveType, tim, nEpochs) 
-    argsName = WTCodingUtils.argsName(WT, chanlocs, Fs, Fa, waveType, tim, nEpochs);
-    [success, fullPath] = ioProc.writeWaveletsAnalysis(subject, condition, wType, argsName{:});
+% chopExtraTime accept matrixes WT, WTRe, WTIm shaped either as (chan, freq, time) or (chan, freq, time, epoch)
+% and returns the same matrixes with the time dimension reduced as by the extraTime parameter. 
+function [WT, WTRe, WTIm, tim] = chopExtraTime(WT, WTRe, WTIm, freqMin, tim, extraTime) 
+    if extraTime/freqMin < 1
+        return
+    end
+
+    chop = @(m, rng)WTCodingUtils.ifThenElse(length(size(m)) == 3, @()m(:,:,rng), @()m(:,:,rng,:));
+    deltaTime = tim(2) - tim(1);
+    extraPoints = floor(extraTime / deltaTime);
+    e1 = 1 + extraPoints;
+    e2 = length(tim) - extraPoints;
+    rng = e1:e2;
+    tim = tim(e1:e2);
+
+    if ~isempty(WT)
+        WT = chop(WT, rng);
+    end
+    if ~isempty(WTRe)
+        WTRe = chop(WTRe, rng);
+    end
+    if ~isempty(WTIm)
+        WTIm = chop(WTIm, rng);
+    end   
+end
+
+function [success, fullPath] = saveAnalysis(ioProc, subject, condition, processingType, WT, WTRe, WTIm, chanlocs, ...
+        Fs, Fa, waveType, tim, nEpochs, nFlatEpochs) 
+    wtLog = WTLog();
+
+    if isempty(WT)
+        argsName = WTCodingUtils.argsName(WTRe, WTIm, nFlatEpochs);
+    else 
+        argsName = WTCodingUtils.argsName(WT, nFlatEpochs);
+    end
+
+    argsName = [argsName WTCodingUtils.argsName(chanlocs, Fs, Fa, waveType, tim, nEpochs)];
+
+    [success, fullPath] = ioProc.writeWaveletsAnalysis(subject, condition, processingType, argsName{:});
     if ~success
-        WTLog().err('Failed to save wavelet analisys (type ''%s'') for subject ''%s'' / condition ''%s''', wType, subject, condition);
-    end 
+        wtLog.err('Failed to save wavelet analisys (subject: %s, condition: %s, type: %s)', subject, condition, processingType);
+    else
+        wtLog.info('Saved wavelet analisys (subject: %s, condition: %s, type: %s) to file %s', subject, condition, processingType, fullPath);
+    end
 end

@@ -73,9 +73,9 @@ classdef WTConvertGUI
 
             while true
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Import segmented EEG');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Import segmented EEG');
 
-                if ~strcmp(strhalt,'retuninginputui')
+                if isempty(answer) % ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted import configuration dialog');
                     return;
                 end
@@ -112,9 +112,9 @@ classdef WTConvertGUI
             
             while ~success
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set sampling rate');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set sampling rate');
                 
-                if ~strcmp(strhalt,'retuninginputui')
+                if isempty(answer) % ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted sampling rate configuration dialog');
                     return
                 end
@@ -142,9 +142,9 @@ classdef WTConvertGUI
             
             while ~success
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set trigger');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set trigger');
 
-                if ~strcmp(strhalt,'retuninginputui')
+                if isempty(answer) % ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted trigger latency configuration dialog');
                     return
                 end
@@ -176,9 +176,9 @@ classdef WTConvertGUI
             
             while ~success
                 params = setParameters(answer);
-                [answer, ~, strhalt] = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set min/Max trial ID');
+                answer = WTEEGLabUtils.eeglabInputMask('geometry', geometry, 'uilist', params, 'title', 'Set min/Max trial ID');
                 
-                if ~strcmp(strhalt,'retuninginputui')
+                if isempty(answer) % ~strcmp(strhalt,'retuninginputui')
                     wtLog.dbg('User quitted set min/max trial ID configuration dialog');
                     return
                 end

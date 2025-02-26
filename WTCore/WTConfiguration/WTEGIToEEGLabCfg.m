@@ -52,7 +52,7 @@ classdef WTEGIToEEGLabCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mix
                 return
             end 
             try
-                if length(cells) >= 1 
+                if length(cells) == 1 
                     o.TriggerLatency = WTNumUtils.str2double(cells{1});
                 else
                     o.default();

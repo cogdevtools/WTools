@@ -14,6 +14,21 @@
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 classdef WTPlotUtils
+    properties(Constant)
+        ScaleRelative                = '%'
+        ScaleDecibel                 = 'dB'
+        ScaleEvokedOscillations      = 'EO'
+        ScalePower                   = 'Pw'
+        ScaleBaselineSubtraction     = 'BS'
+        ScaleBaselineNormalization   = 'BN'
+        ScaleBaselineSubtractionAndNormalization  = 'BSN'
+        
+        DimensionMicroVolt           = '\muV'
+        DimensionSquaredMicroVolt    = '\muV^{2}'
+
+        DimensionMicroVoltTxt        = 'uV'
+        DimensionSquaredMicroVoltTxt = 'uV^2'
+    end
 
     methods(Static)
         % waitUIs() wait for all UI objects to terminate
@@ -66,21 +81,90 @@ classdef WTPlotUtils
             end
         end
 
-        function params = getYLabelParams(logFlag) 
-            params = struct();
-            params.String = WTCodingUtils.ifThenElse(logFlag, '% change', '\muV');
+        % getScaleType() returns the scale type to use based on the flag passed on.
+        function scaleType = getScaleType(isEvokedOscillations, isPower, isBaselineSubtracted, isBaselineNormalized, isDecibel)
+            eO = WTCodingUtils.ifThenElse(isEvokedOscillations, WTPlotUtils.ScaleEvokedOscillations, '');
+            pw = WTCodingUtils.ifThenElse(isPower, WTPlotUtils.ScalePower, '');
+            bL = WTCodingUtils.ifThenElse(isBaselineSubtracted && isBaselineNormalized, WTPlotUtils.ScaleBaselineSubtractionAndNormalization, ...
+                @()WTCodingUtils.ifThenElse(isBaselineSubtracted, WTPlotUtils.ScaleBaselineSubtraction, ... 
+                @()WTCodingUtils.ifThenElse(isBaselineNormalized, WTPlotUtils.ScaleBaselineNormalization, '')));
+            dr = WTCodingUtils.ifThenElse(isDecibel, WTPlotUtils.ScaleDecibel, ...
+                @()WTCodingUtils.ifThenElse(isBaselineNormalized, WTPlotUtils.ScaleRelative, ''));
+            items = {eO pw bL dr};
+            scaleType = char(join(items(~cellfun('isempty', items)), '.'));
         end
 
-        function params = getXLabelParams(logFlag) 
-            params = struct();
-            if logFlag
-                params.String = '% change';
-                params.Rotation = 90;
-            else
-                params.String = '\muV';
-                params.Rotation = 0;
+        function rng = getSuggestedScaleRange(isPower, isBaselineSubtracted, isBaselineNormalized, isDecibel)
+            if isPower
+                if isBaselineSubtracted
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-3 3]);
+                    else 
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 20], [-5 5]);
+                    end
+                else
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 30], [0 3]);
+                    else
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 30], [10^-6 10^-3]);
+                    end
+                end
+            else 
+                if isBaselineSubtracted
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-3 3]);
+                    else 
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-5*10^-6 5*10^-6]);
+                    end
+                else
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [0 3])
+                    else
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [0 10^-4]); 
+                    end
+                end
             end
-            params.Position = WTCodingUtils.ifThenElse(verLessThan('matlab', '8.4'), 5, 2);
+        end
+
+        function label = getLabel(scaleType, dimension)
+            label = WTCodingUtils.ifThenElse(isempty(scaleType), dimension, @()sprintf('%s [%s]', scaleType, dimension));
+        end
+
+        function label = getPlotConfigLabel(isEvokedOscillations, isPower, isBaselineCorrection, isBaselineNormalization, isDecibel)
+            scaleType = WTPlotUtils.getScaleType(isEvokedOscillations, isPower, isBaselineCorrection, isBaselineNormalization, isDecibel);
+            dimension = WTCodingUtils.ifThenElse(isPower, WTPlotUtils.DimensionSquaredMicroVoltTxt, ...
+                WTPlotUtils.DimensionMicroVoltTxt);
+            label = sprintf('Scale %s', WTPlotUtils.getLabel(scaleType, dimension));
+        end
+
+        function label = getPlotLabel(isEvokedOscillations, isPower, isBaselineCorrection, isBaselineNormalization, isDecibel)
+            scaleType = WTPlotUtils.getScaleType(isEvokedOscillations, isPower, isBaselineCorrection, isBaselineNormalization, isDecibel);
+            dimension = WTCodingUtils.ifThenElse(isPower, WTPlotUtils.DimensionSquaredMicroVolt, ...
+                WTPlotUtils.DimensionMicroVolt);
+            label = sprintf('%s', WTPlotUtils.getLabel(scaleType, dimension));
+        end
+
+        function params = getPlotLabelParams(label, rotateFun, positionFun) 
+            params = struct();
+            params.String = label;
+            params.Rotation = 0;
+            params.Position = 0;
+            if nargin > 2 
+                params.Rotation = rotateFun(params);
+            end
+            if nargin > 3
+                params.Position = positionFun(params);
+            end
+        end
+
+        function params = getPlotYLabelParams(label) 
+            params = WTPlotUtils.getPlotLabelParams(label);
+        end
+
+        function params = getPlotXLabelParams(label, rotateLen) 
+            rotate = @(p) WTCodingUtils.ifThenElse(length(p.String) >  rotateLen, 90, 0);
+            position = @(p) WTCodingUtils.ifThenElse(verLessThan('matlab', '8.4'), 5, 2);
+            params = WTPlotUtils.getPlotLabelParams(label, rotate, position);
         end
 
         function plotsColorMap = getPlotsColorMap()
@@ -120,6 +204,16 @@ classdef WTPlotUtils
                 x(i) = sin(chanLoc.theta / 360 * 2 * pi) * chanLoc.radius;
                 y(i) = cos(chanLoc.theta / 360 * 2 * pi) * chanLoc.radius;
             end
+        end
+
+        function palette = generateHighContrastPalette(N)
+            basic_colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k'];
+            if N < length(basic_colors)
+                palette = basic_colors(1:N);
+                return
+            end
+            colors = hsv(N);
+            palette = hsv2rgb(colors);
         end
 
         function is = isPointInCurrentAxes(point)
@@ -182,7 +276,7 @@ classdef WTPlotUtils
         end
 
         function bringChildrenObjectsToFrontCb(hObject, event, childrenObjField)
-            subFigures = WTStructUtils.xGetField(hObject.UserData, childrenObjField);
+            subFigures = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, childrenObjField);
             bringObjectsToFront(subFigures)
         end
 
@@ -199,9 +293,9 @@ classdef WTPlotUtils
                 end
             end
             try
-                hChildrenObjects = WTStructUtils.xGetField(hObject.UserData, childrenObjField);
+                hChildrenObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, childrenObjField);
                 arrayfun(@closeChild, hChildrenObjects); 
-                WTStructUtils.xSetField('hObject.UserData', '[]', childrenObjField); 
+                hObject.UserData = WTFieldUtils.mustSetFieldOrProperty(hObject.UserData, '[]', childrenObjField); 
             catch me
                 WTLog().except(me);
             end
@@ -219,14 +313,12 @@ classdef WTPlotUtils
         % To be used in pair with parentObjectCloseRequestCb.
         function childObjectCloseRequestCb(hObject, ~, parentObjectField, childrenObjField)
             try
-                hParentObject = WTStructUtils.xGetField(hObject.UserData, parentObjectField);
+                hParentObject = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, parentObjectField);
                 if isvalid(hParentObject)
-                    hChildrenObjects = WTStructUtils.xGetField(hParentObject.UserData, childrenObjField);
+                    hChildrenObjects = WTFieldUtils.mustGetFieldOrProperty(hParentObject.UserData, childrenObjField);
                     hChildObjIdx = arrayfun(@(hObj)hObj == hObject, hChildrenObjects);
                     hChildrenObjects(hChildObjIdx) = [];
-
-                    hParentObject.UserData.(childrenObjField) = hChildrenObjects;
-                    WTStructUtils.xSetField('hParentObject.UserData', 'hChildrenObjects', childrenObjField);
+                    hParentObject.UserData = WTFieldUtils.mustSetFieldOrProperty(hParentObject.UserData, hChildrenObjects, childrenObjField);
                 end
             catch me
                 WTLog().except(me);
@@ -243,7 +335,7 @@ classdef WTPlotUtils
             for i = 1 : length(hObjects)
                 hObject = hObjects(i);
                 position = hObject.Position;
-                origPosition = WTStructUtils.xGetField(hObject.UserData, originalPositionField);
+                origPosition = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, originalPositionField);
                 origWidth = origPosition(3);
                 origHeight = origPosition(4);
                 tickWidth = origWidth / 20;
@@ -278,13 +370,13 @@ classdef WTPlotUtils
         %       for each object in hControlledObjects
         function onKeyPressResizeObjectsCb(hObject, event, KeyMinus, keyPlus, controlledObjectsField, originalPositionField)
             try
-                hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
+                hControlledObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, controlledObjectsField);
                 key = lower(event.Character);
                 switch key
                     case keyPlus  
-                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, character)
+                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, key)
                     case KeyMinus
-                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, character)
+                        WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, key)
                     otherwise
                         return
                 end
@@ -303,10 +395,10 @@ classdef WTPlotUtils
             try
                 switch lower(event.Character)
                     case keyReset % rearrange controlled objects into the original opening position
-                        hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
+                        hControlledObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, controlledObjectsField);
                         for i = 1:length(hControlledObjects)
                             hControlledObjects(i).Visible = 'on';
-                            hControlledObjects(i).Position = WTStructUtils.xGetField(hControlledObjects(i).UserData, originalPositionField);
+                            hControlledObjects(i).Position = WTFieldUtils.mustGetFieldOrProperty(hControlledObjects(i).UserData, originalPositionField);
                         end
                 end
             catch me
@@ -318,7 +410,7 @@ classdef WTPlotUtils
             try
                 switch lower(event.Character)
                     case keyFront 
-                        hTargetObject = WTStructUtils.xGetField(hObject.UserData, targetObjectField);
+                        hTargetObject = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, targetObjectField);
                         if isvalid(hTargetObject)
                             hTargetObject.Visible = 'on';
                             figure(hTargetObject);
@@ -333,7 +425,7 @@ classdef WTPlotUtils
             try
                 switch lower(event.Character)
                     case keyFront 
-                        targetObjects = WTStructUtils.xGetField(hObject.UserData, targetObjectsField);
+                        targetObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, targetObjectsField);
                         for i = 1:length(targetObjects)
                             if isvalid(targetObjects{i})
                                 targetObjects{i}.Visible = 'on';
@@ -350,7 +442,7 @@ classdef WTPlotUtils
             try
                 switch lower(event.Character)
                     case keyClose 
-                        targetObjects = WTStructUtils.xGetField(hObject.UserData, targetObjectsField);
+                        targetObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, targetObjectsField);
                         for i = 1:length(targetObjects)
                             if isvalid(targetObjects{i})
                                 close(targetObjects{i});
@@ -386,10 +478,10 @@ classdef WTPlotUtils
                 if isempty(targetObjectField)
                     hTargetObject = hObject;
                 else
-                    hTargetObject = WTStructUtils.xGetField(hObject.UserData, targetObjectField);
+                    hTargetObject = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, targetObjectField);
                 end
                 if ~isempty(poolObjectsField)
-                    hPoolObjects = WTStructUtils.xGetField(hObject.UserData, poolObjectsField);
+                    hPoolObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, poolObjectsField);
                     visibleObjects = cellfun(@(hObj)isvalid(hObj) && strcmp(hObj.Visible, 'on'), hPoolObjects);
                     hPoolObjects = hPoolObjects(visibleObjects);
                     if (length(hPoolObjects) == 1 && hPoolObjects{1} == hTargetObject && strcmp(visible, 'off'))
@@ -399,7 +491,7 @@ classdef WTPlotUtils
                 if isvalid(hTargetObject)
                     hTargetObject.Visible = visible;
                 end
-                hChildrenObjects = WTStructUtils.xGetField(hObject.UserData, targetChildrenField);
+                hChildrenObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, targetChildrenField);
                 for i = 1:length(hChildrenObjects)
                     if isvalid(hChildrenObjects(i))
                         hChildrenObjects(i).Visible = visible;
@@ -418,7 +510,7 @@ classdef WTPlotUtils
         %       for each object in hControlledObjects
         function onMouseScrollResizeObjectsCb(hObject, event, controlledObjectsField, originalPositionField) 
             try
-                hControlledObjects = WTStructUtils.xGetField(hObject.UserData, controlledObjectsField);
+                hControlledObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, controlledObjectsField);
                 if event.VerticalScrollCount >= 1
                     WTPlotUtils.resizeGraphicObjects(hControlledObjects, originalPositionField, '+')
                 elseif event.VerticalScrollCount <= -1
@@ -454,10 +546,10 @@ classdef WTPlotUtils
         % User callback: doCb(hObject, []|hSubObject, subObjIdx, varargin{:})
         function onMouseOverSubObjectsDoCb(hObject, event, pointsField, subObjectsField, doCb, varargin) 
             try
-                points = WTStructUtils.xGetField(hObject.UserData, pointsField); 
+                points = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, pointsField); 
                 [subObjectIdx, clickPosRelToSubObject] = WTPlotUtils.getClickedSubObjectIndex(hObject, points);
                 
-                hSubObjects = WTStructUtils.xGetField(hObject.UserData, subObjectsField);
+                hSubObjects = WTFieldUtils.mustGetFieldOrProperty(hObject.UserData, subObjectsField);
                 hSubObject = hSubObjects(subObjectIdx);
                 subObjectPosition = hSubObject.Position;
                 clickPosRelToSubObject = abs(clickPosRelToSubObject);

@@ -15,6 +15,12 @@
 
 classdef WTProcessUtils
 
+    properties(Constant, Access = private)
+        DCShiftMinimumFactor    = 0.01;
+        DCShiftEpsilonAmplitude = 10^-6;
+        DCShiftEpsilonPower     = 10^-12;
+    end
+
     methods(Static)
         function success = sanitizeSubjectsLists()
             success = false;
@@ -81,36 +87,6 @@ classdef WTProcessUtils
             wtLog.contextOff();
         end
 
-        % checkDiffAndGrandAvg() checks whether the data are up to date and ready for the grand average  
-        function [diffConsistency, grandAvgConsistency] = checkDiffAndGrandAvg(conditions, chkGrandAvg)
-            chkGrandAvg = nargin < 2 || chkGrandAvg;
-            diffConsistency = 1;
-            grandAvgConsistency = 1;
-            
-            wtProject = WTProject();
-            conditionsGrandPrms = wtProject.Config.ConditionsGrand;
-            logFlag = wtProject.Config.WaveletTransform.LogarithmicTransform || ...
-                wtProject.Config.BaselineChop.LogarithmicTransform;
-           
-            if any(ismember(conditions, conditionsGrandPrms.ConditionsDiff))
-                differencePrms = wtProject.Config.Difference;
-                if logical(differencePrms.LogarithmicTransform) ~= logFlag
-                    wtProject.notifyWrn([], ['The [Difference] paramaters are not up to date.\n' ...
-                        'Run [Difference] again before plotting.'])
-                    diffConsistency = 0;
-                end        
-            end
-        
-            if chkGrandAvg
-                grandAveragePrms = wtProject.Config.GrandAverage;
-                if logical(grandAveragePrms.LogarithmicTransform) ~= logFlag
-                    wtProject.notifyWrn([], ['The [Grand Average] paramaters are not up to date.\n' ...
-                        'Run [Grand Average] again before plotting.'])
-                    grandAvgConsistency = 0;
-                end
-            end
-        end
-
         % subject empty => load grand average
         function [success, data] = loadAnalyzedData(perSubject, subject, condition, measure) 
             wtProject = WTProject();
@@ -126,5 +102,61 @@ classdef WTProcessUtils
                 wtProject.notifyErr([], 'Failed to load data for condition ''%s''', condition);
             end
         end
+
+        % Users should pay attention to edge effects when applying wavelet analysis. Wavelet coefficients are computed 
+        % by convolving the wavelet kernel with the time series. Similarly to any convolution of signals, there is zero 
+        % or other kind of padding at the edges of the time series and therefore the wavelet coefficients are weaker at 
+        % the beginning and end of the time series.
+        % More precisely, if f is your frequency of interest, you can expect the edge effects to span over FWHM_t secs:
+        %
+        % FWHM_t = (FWHM_tc * Fc / f) / 2. 
+        %
+        % WTools generates a set of Morlet wavelets such that Fc = f for each frequence of interest, so FWHM_t equals
+        % FWHM_tc / 2. FWHM_tc is the temporal resolution of the wavelet, that is the Full Width Half Maximum of the 
+        % Gaussian kernel of the wavelet. The function below returns exatcly that value.
+        %
+        % References: 
+        % - https://neuroimage.usc.edu/brainstorm/Tutorials/TimeFrequency
+        % - https://www.sciencedirect.com/science/article/abs/pii/S1053811919304409
+        function FWHM = morletKernelFWHM(signalSamplingRate, timeResolution, normalizedWavelet, waveletFreq, waveletCycles)
+            Fs = double(signalSamplingRate) / double(timeResolution);
+
+            function FWHMf = FWHMAtFreq(wvFreq)
+                sigmaT = double(waveletCycles) / (2*double(wvFreq)*pi);
+                expFact = 1/(Fs*sigmaT*sqrt(pi));
+                if normalizedWavelet 
+                    expFact = sqrt(expFact);
+                end
+                y = expFact/2; % expFact is the max amplitude (occurring at time 0)
+                FWHMf = 2*sqrt(-2*(sigmaT^2)*log(1/expFact * y));
+            end
+
+            if isscalar(waveletFreq) 
+                FWHM = FWHMAtFreq(waveletFreq);
+            else
+                FWHM = arrayfun(@FWHMAtFreq, waveletFreq);
+            end
+        end
+
+
+        % CWTDCShift takes a CWT matrix of size (channels, frequencies, time) and applies a DC shift to ensure that the 
+        % resulting signal has values > 0.
+        function [WT, dc] = CWTDCShift(WT, isPower, perChannel, perFrequency, perTime)
+            epsilon = WTCodingUtils.ifThenElse(isPower, WTProcessUtils.DCShiftEpsilonPower, WTProcessUtils.DCShiftEpsilonAmplitude);
+            [WT, dc] = wtDCShift(WT, WTProcessUtils.DCShiftMinimumFactor,  epsilon, perChannel, perFrequency, perTime);
+        end
+
+        % ToDecibel takes a matrix convert it in Decibel value. The matrix must contain only positive values. If the 
+        % values represent power, then the isPower parameter must be set to true.
+        function data = ToDecibel(data, isPower)
+            data = WTCodingUtils.ifThenElse(isPower, @()10*log(data), @()20*log(data));
+        end
+
+        function [data, dc] = DCShiftAndConvertToDecibel(data, isPower)
+            minVal = min(data);
+            epsilon = WTCodingUtils.ifThenElse(isPower, WTProcessUtils.DCShiftEpsilonPower, WTProcessUtils.DCShiftEpsilonAmplitude); 
+            dc = WTCodingUtils.ifThenElse(minVal <= 0, @()-minVal + max(WTProcessUtils.DCShiftMinimumFactor * abs(minVal), epsilon), 0);
+            data = WTProcessUtils.ToDecibel(data + dc, isPower);
+        end        
     end
 end

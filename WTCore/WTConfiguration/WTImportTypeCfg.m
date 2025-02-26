@@ -73,7 +73,7 @@ classdef WTImportTypeCfg < WTConfigStorage & matlab.mixin.Copyable & matlab.mixi
                 return
             end 
             try
-                if length(cells) >= 4
+                if length(cells) == 4
                     o.EEPFlag = cells{1};
                     o.EGIFlag = cells{2};
                     o.BRVFlag = cells{3};

@@ -14,13 +14,15 @@
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 % Complex Morlet wavelet transform     
-function coeffs = wtCWT(signal, scales, points, cwMatrix)
-    % Define parameters and matrices
+function [coeffsMod, coeffsRe, coeffsIm] = wtCWT(signal, scales, points, cwMatrix)
+    % signal: matrix of size (nChans, nSamples)
     signal = signal';
     signal = signal(:,points);
-    nSamples = (length (points));
+    nSamples = length(points);
     nChans = size(signal,1);
-    coeffs = zeros(length(scales),nChans,nSamples);
+    coeffsMod = zeros(length(scales),nChans,nSamples);
+    coeffsRe = zeros(length(scales),nChans,nSamples);
+    coeffsIm = zeros(length(scales),nChans,nSamples);
     
     % Remove DC component from signal.
     for ch = 1:nChans
@@ -36,8 +38,11 @@ function coeffs = wtCWT(signal, scales, points, cwMatrix)
                 waveletRe = (cwMatrix{iFreq,1});
                 waveletIm = (cwMatrix{iFreq,2}); 
                 % New optimized algorithm by Luca Filippin, using MATLAB function conv();  
-                coeffs(iFreq,ch,:) = sqrt(conv2(signal(ch,:), ...
-                    waveletRe, 'same').^2 + conv2(signal(ch,:), waveletIm, 'same').^2);
+                re = conv2(signal(ch,:), waveletRe, 'same');
+                im = conv2(signal(ch,:), waveletIm, 'same');
+                coeffsRe(iFreq,ch,:) = re;
+                coeffsIm(iFreq,ch,:) = im;
+                coeffsMod(iFreq,ch,:) = sqrt(re.^2 + im.^2);
             end
         end
     else 
@@ -45,16 +50,21 @@ function coeffs = wtCWT(signal, scales, points, cwMatrix)
             for ch = 1:nChans     
                 waveletRe = (cwMatrix{iFreq,1});
                 waveletIm = (cwMatrix{iFreq,2});
-                re = (conv(signal(ch,:), waveletRe).^2);
+                re = conv(signal(ch,:), waveletRe);
+                im = conv(signal(ch,:), waveletIm);
                 ptDiff = floor((length(re)-size(signal,2))/2);
                 re = re(ptDiff+1:ptDiff+size(signal,2));
-                im = (conv(signal(ch,:), waveletIm).^2);
                 im = im(ptDiff+1:ptDiff+size(signal,2));
-                coeffs(iFreq,ch,:) = sqrt(re + im);
+                coeffsRe(iFreq,ch,:) = re;
+                coeffsIm(iFreq,ch,:) = im;
+                coeffsMod(iFreq,ch,:) = sqrt(re.^2 + im.^2);
             end
         end
     end
-    coeffs = permute(coeffs,[1 3 2]); 
+    % Permute (freq, channel, time) as (freq, time, channel)
+    coeffsRe = permute(coeffsRe,[1 3 2]); 
+    coeffsIm = permute(coeffsIm,[1 3 2]); 
+    coeffsMod = permute(coeffsMod,[1 3 2]);
 end
 
 function oldConv2 = isOldConv2Function() 

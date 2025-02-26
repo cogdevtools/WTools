@@ -26,17 +26,17 @@ function success = wtPerformCWT()
     interactive = wtProject.Interactive;
 
     if interactive || isempty(wtProject.Config.WaveletTransform.ChannelsList)
-        [success, timeRange, maxFreq, maxChans] = getTransformDomain(); 
+        [success, samplingRate, timeRange, maxFreq, maxChans] = getTransformDomain(); 
         if ~success 
             return
         end
     end
 
     if interactive
-        if ~selectUpdateSubjectsGrand() || ~selectUpdateConditionsGrand()
+        if ~setTransformPrms(samplingRate, timeRange, maxFreq, maxChans)
             return
         end
-        if ~setTransformPrms(timeRange, maxFreq, maxChans)
+        if ~selectUpdateSubjectsGrand() || ~selectUpdateConditionsGrand()
             return
         end
     end
@@ -58,8 +58,19 @@ function success = wtPerformCWT()
     subjectsCount = length(subjects);
     conditionsCount = length(conditions);
 
-    wtLog.info('Performing time/frequency analysis...');
 
+    if waveletTransformParams.EvokedOscillations 
+        processingType = {WTIOProcessor.WaveletsAnalisys_evWT};
+    else
+        processingType = {WTIOProcessor.WaveletsAnalisys_avWT};
+    end
+
+    if waveletTransformParams.TransformComponents 
+        processingType(end+1) = {WTIOProcessor.WaveletsAnalisys_ReIm};
+    end
+
+    wtLog.info('Performing time/frequency analysis...');
+    
     for i = 1:subjectsCount
         for j = 1:conditionsCount
             wtLog.info('Processing subject/condition: %d/%d', i, j);
@@ -148,14 +159,10 @@ function success = wtPerformCWT()
                 timeMinIdx = find(EEG.times == timeMin);
                 timeMaxIdx = find(EEG.times == timeMax);  
                 [cwMatrix, Fa] = generateMorletWavelets(EEG.srate);   
-                
-                if waveletTransformParams.LogarithmicTransform 
-                    wtLog.warn('Epochs will be log-transformed after wavelet transformation!');
-                end
             end
-            
-            [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMinIdx, timeMaxIdx, 'cwt', ...
-                channelsList, {WTIOProcessor.WaveletsAnalisys_avWT}, 0, adjEpochsList, cwMatrix);
+
+            [success, ~] = wtAverage(EEG, waveletTransformParams, subjects{i}, conditions{j}, Fa, timeMinIdx, timeMaxIdx, ...
+                channelsList, processingType, 0, adjEpochsList, cwMatrix, 1);
 
             if ~success
                 wtLog.popStatus(); 
@@ -241,7 +248,7 @@ function success = selectUpdateConditionsGrand()
     success = true;
 end
 
-function [success, timeRange, maxFreq, maxChans] = getTransformDomain() 
+function [success, samplingRate, timeRange, maxFreq, maxChans] = getTransformDomain() 
     success = false;
     timeRange = [];
     maxFreq = 0;
@@ -269,29 +276,18 @@ function [success, timeRange, maxFreq, maxChans] = getTransformDomain()
         return 
     end
 
+    samplingRate = EEG.srate;
     timeRange = int64([EEG.xmin*1000 EEG.xmax*1000]);
     maxFreq = EEG.srate/2;
     maxChans = size(EEG.data, 1);
 end
 
-function success = setTransformPrms(timeRange, maxFreq, maxChans) 
+function success = setTransformPrms(samlingRate, timeRange, maxFreq, maxChans) 
     success = false;
     wtProject = WTProject();
-
     waveletTransformParams = copy(wtProject.Config.WaveletTransform);
-    baselineChopParams = wtProject.Config.BaselineChop;
 
-    if waveletTransformParams.exist()
-        if baselineChopParams.exist() && ... 
-            waveletTransformParams.LogarithmicTransform && ...
-            ~baselineChopParams.LogarithmicTransform
-            wtProject.notifyErr([], 'Inconsistent Log10 flag in %s & %s configuration files', ...
-                waveletTransformParams.getFileName(), baselineChopParams.getFileName());
-            return
-        end
-    end
-
-    if ~WTTransformGUI.defineCWTParams(waveletTransformParams, timeRange, maxFreq, maxChans)
+    if ~WTTransformGUI.defineCWTParams(waveletTransformParams, samlingRate, timeRange, maxFreq, maxChans)
         return
     end
 
@@ -307,7 +303,6 @@ end
 function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
     waveletTransformParams = WTProject().Config.WaveletTransform;
     scales = (waveletTransformParams.FreqMin : waveletTransformParams.FreqRes : waveletTransformParams.FreqMax);
-    normalized = waveletTransformParams.NormalizedWavelets;
     Fs = double(samplingRate) / double(waveletTransformParams.TimeRes);
     cwMatrix = cell(length(scales),2);
     wtLog = WTLog();
@@ -320,8 +315,10 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
     for iFreq=1:(length(scales))
         freq = double(scales(iFreq));
         sigmaT = double(waveletTransformParams.WaveletsCycles) / (2*freq*pi);
-        % The exponentialFactor is set depending on if we want to enerate wavelets with unit energy (normalized) or not
-        exponentialFact = WTCodingUtils.ifThenElse(normalized, ...
+        % The exponentialFactor is set depending on if we want to generate wavelets with unit energy or not.
+        % That depends on if we want to work with transform power and or amplitude. In any case, the transform
+        % is normalized through the exponentialFactor.
+        exponentialFact = WTCodingUtils.ifThenElse(waveletTransformParams.TransformPower, ...
             @()1/sqrt(Fs*sigmaT*sqrt(pi)), @()1/(Fs*sigmaT*sqrt(pi)));
         % Calculate the time at which the wavelet certainly goes below the value 0.00001, to set its extension
         timeToZero = sigmaT * sqrt(-2*log(0.00001/exponentialFact)); 
@@ -332,42 +329,14 @@ function [cwMatrix, scales] = generateMorletWavelets(samplingRate)
         waveletIm = waveletScale.*sin(2*pi*freq*time);
         cwMatrix{iFreq,1} = waveletRe(1,:);
         cwMatrix{iFreq,2} = waveletIm(1,:);
-
-        [success, FWHMTime] = findMorletFWHM(time, waveletRe);
-        FWHMStr = WTCodingUtils.ifThenElse(success, @()sprintf(', FWHM-Time = %.3f secs', FWHMTime), '');
-        wtLog.info('Fc = %.2f Hz, #samples = %d, time range = [ -%.2f/Fc, +%.2f/Fc ] = [-%.3f, +%.3f] secs, %s...', ... 
-            freq, length(time), timeToZero * freq, timeToZero * freq, timeToZero, timeToZero, FWHMStr);
+        gFWHM = WTProcessUtils.morletKernelFWHM(samplingRate, ...
+            waveletTransformParams.TimeRes, ...
+            waveletTransformParams.TransformPower, ...
+            freq, ...
+            waveletTransformParams.WaveletsCycles);
+        wtLog.info('Fc = %.2f Hz, #samples = %d, time range = [ -%.2f/Fc, +%.2f/Fc ] = [-%.4f, +%.4f] secs, FWHM_tc %.4f secs (FWHM_t  = %.4f secs)...', ... 
+            freq, length(time), timeToZero * freq, timeToZero * freq, timeToZero, timeToZero, gFWHM, gFWHM/2);
     end
 
     wtLog.popStatus().info('Wavelets saved in cell array matrix');
-end
-
-% findMorletFWHM() assumes fx to be a Morlet Wavelet real component and find the relative FWHM.
-% Credits: https://fr.mathworks.com/matlabcentral/fileexchange/16130-findfwhm
-function [success, FWHM] = findMorletFWHM(x, fx)
-    success = false;
-    FWHM = [];
-    nX = length(fx);
-    hMax = max(fx) / 2;
-    idxs = find(fx >= hMax);
-    idxLM = min(idxs);			
-    idxRM = max(idxs);
-   
-    if fx(idxLM) == hMax
-        xL = x(idxLM);
-    elseif idxLM > 1 && fx(idxLM-1) <= hMax % interpolate assuming decreasing values on decreasing x
-        xL = (x(idxLM)-x(idxLM-1))*(hMax-fx(idxLM-1))/(fx(idxLM)-fx(idxLM-1))+x(idxLM-1);
-    else
-        return
-    end
-    if fx(idxRM) == hMax
-        xR = x(idxRM);
-    elseif idxRM < nX  && fx(idxRM+1) <= hMax  % interpolate assuming decreasing values on increasing x
-        xR = (x(idxRM+1)-x(idxRM))*(fx(idxRM+1)-hMax)/(fx(idxRM+1)-fx(idxRM))+x(idxRM);
-    else
-        return
-    end
-
-    FWHM = abs(xR-xL);
-    success = true;
 end
