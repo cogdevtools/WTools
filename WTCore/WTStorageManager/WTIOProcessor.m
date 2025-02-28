@@ -722,7 +722,7 @@ classdef WTIOProcessor < handle
                         wtLog.err('Unknown system: %s', WTCodingUtils.ifThenElse(ischar(system), system, '?'));
                 end
             catch me
-                wtLog.excpet(me);
+                wtLog.except(me);
                 success = false;
             end
         end
