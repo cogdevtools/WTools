@@ -179,10 +179,11 @@ function success = wtBaselineChop()
 
                 wtLog.info('Chopping data outside time interval [%f, %f] ...', ...
                     baselineChopParams.ChopTimeMin, baselineChopParams.ChopTimeMax); 
+                wt = wt(:,:,chopMinIdx:chopMaxIdx);
 
                 if baselineChopParams.BaselineSubtraction
-                    wtLog.info('Subtracting baseline...');
-                    wt = wt(:,:,chopMinIdx:chopMaxIdx) - repmat(baseline,[1,1,length(chopMinIdx:chopMaxIdx)]);
+                    wtLog.info('Subtracting baseline  ...'); 
+                    wt = wt - repmat(baseline,[1,1,length(chopMinIdx:chopMaxIdx)]);
                 end
 
                 if baselineChopParams.BaselineNormalization

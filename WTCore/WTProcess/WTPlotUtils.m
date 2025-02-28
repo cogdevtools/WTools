@@ -15,7 +15,7 @@
 
 classdef WTPlotUtils
     properties(Constant)
-        ScaleRelative                = '%'
+        ScaleRelative                = '(Ratio)'
         ScaleDecibel                 = 'dB'
         ScaleEvokedOscillations      = 'EO'
         ScalePower                   = 'Pw'
@@ -94,13 +94,17 @@ classdef WTPlotUtils
             scaleType = char(join(items(~cellfun('isempty', items)), '.'));
         end
 
+        % getSuggestedScaleRange() returns the suggested scale range based on the flags passed on. For 
+        % power data the value are expressed in microVolt^2, for non-power data the values are expressed
+        % in microVolt. The range is expressed in decibel if isDecibel is true. For non-power data the 
+        % range is expressed in relative units respect to the baseline.
         function rng = getSuggestedScaleRange(isPower, isBaselineSubtracted, isBaselineNormalized, isDecibel)
             if isPower
                 if isBaselineSubtracted
                     if isBaselineNormalized
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-3 3]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-5 5]);
                     else 
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 20], [-5 5]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 20], [-5*10^-6 5*10^-6]);
                     end
                 else
                     if isBaselineNormalized
@@ -118,14 +122,14 @@ classdef WTPlotUtils
                     end
                 else
                     if isBaselineNormalized
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [0 3])
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-3 3]);
                     else
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [0 10^-4]); 
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-50 50]); 
                     end
                 end
             end
         end
-
+        
         function label = getLabel(scaleType, dimension)
             label = WTCodingUtils.ifThenElse(isempty(scaleType), dimension, @()sprintf('%s [%s]', scaleType, dimension));
         end
