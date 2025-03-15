@@ -153,8 +153,8 @@ function wt3DScalpMapPlots(subject, conditionsToPlot)
     try
         figureWHRatio = 4/3; 
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
-        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
-        colorMap = WTPlotUtils.getPlotsColorMap();
+        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 2);
+        colorMap = WTAppConfig().PlotsColorMap;
 
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -178,40 +178,32 @@ function wt3DScalpMapPlots(subject, conditionsToPlot)
             hFigure.UserData.MainPlots = hMainPlots;
             figureTitle = '';
 
-            if plotsPrms.Decibel
-                [data.WT, dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, false, false, false);
-            else
-                dc = 0;
-            end
-
             % Average on time
             data.WT = mean(data.WT(:,:,timeIdxs), 3);
             % Average on frequence
             data.WT = mean(data.WT(:,freqIdxs,:), 2);
 
             if plotsPrms.Decibel
+                [data.WT, dc] = WTProcessUtils.CWTDCShift(data.WT, plotsPrms.TransformPower, false, false, false);
                 data.WT = WTProcessUtils.ToDecibel(data.WT,  plotsPrms.TransformPower);
+                if dc ~= 0 
+                    figureTitle = sprintf('DC shift: %g', dc);
+                end
             end
-            if dc ~= 0 
-                figureTitle = sprintf('DC shift: %g', dc);
-            end
+
+            setappdata(hFigure, 'WTHeadplot_PostPlotFun', @(hFig, hAx, hCB)postPlot(hFig, hAx, hCB, xLabelParams));
 
             if isempty(meshFile)
-                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false, ...
+                WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false, ...
                     'headplot', data.WT, splineFile, 'electrodes', 'off', ...
-                    'maplimits', plotsPrms.Scale, 'cbar', 0, 'title', figureTitle);
+                    'maplimits', plotsPrms.Scale, 'cbar', 0, ...
+                    'colormap', colormap(colorMap), 'title', figureTitle);
             else
-                [~, hColorbar] = WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false,  ...
+                WTEEGLabUtils.eeglabRun(WTLog.LevelInf, false,  ...
                     'headplot', data.WT, splineFile, 'meshfile', meshFile, ...
                     'electrodes', 'off', 'maplimits', plotsPrms.Scale, 'cbar', 0, ...
-                    'title', figureTitle);
+                    'colormap', colormap(colorMap), 'title', figureTitle);
             end
-            
-            colormap(colorMap);
-
-            set(get(hColorbar,'xlabel'), 'String', ...
-                xLabelParams.String, 'Rotation', xLabelParams.Rotation, 'FontSize', 12, ...
-                'FontWeight', 'bold', 'Position', [8 0.55]);
 
             % Disable listeners that block figure callbacks udpate
             hManager = uigetmodemanager(hFigure);
@@ -227,6 +219,13 @@ function wt3DScalpMapPlots(subject, conditionsToPlot)
             % Enable listeners
             arrayfun(@(h)setfield(h, 'Enabled', 1), hManager.WindowListenerHandles);
 
+            scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
+                plotsPrms.BaselineSubtraction, ...
+                plotsPrms.BaselineNormalization, ... 
+                plotsPrms.Decibel);
+
+            dataRange = [min(data.WT, [], 'all') max(data.WT, [], 'all')];
+            WTPlotUtils.addColorBarScaleControls(hFigure, 'left', scaleRange, dataRange);
             wtLog.contextOff();
         end
     catch me
@@ -237,6 +236,19 @@ function wt3DScalpMapPlots(subject, conditionsToPlot)
     % Wait for all main plots to close
     WTPlotUtils.waitUIs(hMainPlots.Value);
     wtLog.info('Plotting done.');
+end
+
+function postPlot(hFigure, hAxes, hColorbar, xLabelParams)
+    labelPosX = (hColorbar.XLim(1) + hColorbar.XLim(2))/2;
+    labelPosY = (hColorbar.YLim(1) + hColorbar.YLim(2))/2;
+    set(get(hColorbar,'xlabel'), ...
+        'String', xLabelParams.String, ...
+        'Rotation', xLabelParams.Rotation, ...
+        'FontSize', 12, ...
+        'VerticalAlignment', 'middle', ...
+        'FontWeight','bold', ...
+        'Position', [labelPosX labelPosY], ...
+        'Interaction', []);
 end
 
 function success = checkUpdateSplineFile(plotsPrms, data)

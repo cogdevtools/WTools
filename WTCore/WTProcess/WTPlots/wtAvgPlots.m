@@ -152,8 +152,8 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot)
         prms.plotsPrms = copy(plotsPrms);
         prms.subPlotRelWidth = 0.1;
         prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
-        prms.xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
-        prms.colorMap = WTPlotUtils.getPlotsColorMap();
+        prms.xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 2);
+        prms.colorMap = WTAppConfig().PlotsColorMap;
 
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -302,6 +302,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         clickPosRelToAxes = abs(clickPosRelToAxes);
         if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || ...
             clickPosRelToAxes(2) > subPlotAxesPos(4)/2
+            figure(hMainPlot);
             return
         end
 
@@ -344,15 +345,16 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         hFigure.UserData = subPlotPrms;
 
         colormap(prms.colorMap);
+        WT = prms.WT(prms.channelsToPlotIdxs(subPlotIdx), prms.freqIdxs, prms.timeIdxs);
         imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
-            interp2(squeeze(prms.WT(prms.channelsToPlotIdxs(subPlotIdx), prms.freqIdxs, prms.timeIdxs)), 4, 'spline'));
+            interp2(squeeze(WT), 4, 'spline'));
         hold('on');
         
         if plotsPrms.Contours
             timePace = prms.downsampleFactor * prms.timeRes;
             contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
                     plotsPrms.FreqMin:prms.freqRes:plotsPrms.FreqMax, ...
-                    squeeze(prms.WT(subPlotIdx, prms.freqIdxs, prms.timeIdxs)), 'k');
+                    squeeze(WT), 'k');
         end
 
         caxis(plotsPrms.Scale);
@@ -385,19 +387,25 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         title(figureTitle, 'FontSize', 16, 'FontWeight', 'bold');
         xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
-        pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
-        pace = pace(2) - pace(1);
         colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
         set(get(colorBar, 'xlabel'), ...
             'String', prms.xLabelParams.String, ...
             'Rotation', prms.xLabelParams.Rotation, ...
-            'Position', [prms.xLabelParams.Position 2 * pace], ...
+            'Position', [prms.xLabelParams.Position mean(plotsPrms.Scale)], ...
             'VerticalAlignment', 'cap', ...
             'FontSize', 12, ...
             'FontWeight', 'bold'); 
         % Set the callback to manage grid style change
         hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
         hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressBringSingleObjectToFrontCb, 'm', 'MainPlot'};
+
+        scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
+                plotsPrms.BaselineSubtraction, ...
+                plotsPrms.BaselineNormalization, ... 
+                plotsPrms.Decibel);
+
+        dataRange = [min(WT, [], 'all'), max(WT, [], 'all')];
+        WTPlotUtils.addColorBarScaleControls(hFigure, 'right', scaleRange, dataRange);
     catch me
         WTLog().except(me);
     end  

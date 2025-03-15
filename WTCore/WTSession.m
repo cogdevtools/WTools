@@ -62,6 +62,9 @@ classdef WTSession < WTClass
             wtLog = WTLog();
             wtLog.LogName = o.Name;
             wtAppConfig = WTAppConfig().load();
+            colorMap = wtAppConfig.PlotsColorMap;
+            wtICADefs = WTICADefs();
+            wtICADefs.pushVariable('DEFAULT_COLORMAP', colorMap, true);
             wtLog.ColorizeMessages = wtAppConfig.ColorizedLog;
             wtLog.UsrLogLevel = wtAppConfig.ProjectLogLevel;
             wtLog.StdLogLevel = wtAppConfig.DefaultStdLogLevel;

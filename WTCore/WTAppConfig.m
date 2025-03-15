@@ -72,7 +72,8 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable & matlab.mixin.SetGet
         end
 
         function [colorMap, valid] = validColorMap(colorMap, throwExcpt)
-            if ~WTGraphicUtils.isValidColorMap(colorMap)
+            valid = WTGraphicUtils.isValidColorMap(colorMap);
+            if ~valid
                 excp = WTException.badValue('Not a valid colormap: ''%s''', colorMap);
                 WTCodingUtils.throwOrLog(excp, ~throwExcpt);
             end
@@ -143,7 +144,7 @@ classdef WTAppConfig < WTClass & matlab.mixin.Copyable & matlab.mixin.SetGet
         end
 
         function [o, success] = load(o, throwExcpt)
-            throwExcpt = nargin > 1 && throwExcpt;
+            throwExcpt = nargin < 2 || throwExcpt;
             success = true;
             try
                 [jsonText, success] = WTIOUtils.readTxtFile([], o.ConfigFile, 'UTF-8');

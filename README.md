@@ -21,7 +21,7 @@ Typing 'wtools help' will display the following information:
 >        no-splash : do not display splash screen on start
 >                    (when the relative configuration option is enabled)
 >        configure : configure the application
->        close     : force close the application
+>        close     : force to close the application
 >        help      : display this help
 
 ## Documentation
@@ -37,6 +37,7 @@ Unfortunately, it was not possible to ensure backward compatibility with the pre
 ## Project Structure
 + WTCore: core wtools modules
   + WTConfiguration: project configuration management
+  + WTEEGLab: special EEGLab management
   + WTGraphicUI: GUI management (dialogs)
   + WTProcess: data processing
     + WTImport: data import
@@ -48,8 +49,11 @@ Unfortunately, it was not possible to ensure backward compatibility with the pre
   + WTStorageManager: global storage manager
   + WTBasicUtilities: general utilities
 + WTExternal: external (3rd party) code
-  + WTModified: code that have been improved
+  + WTModified: code that have been improved with new features
+     + EEGLab
+     + SplashScreen
   + WTOriginal: non modified code
+     + CPrintf
 + WTResources: general project resources
   + WTDevices: data specific to the various measurement devices
     + WTChannelsLayouts: channels layout definition files

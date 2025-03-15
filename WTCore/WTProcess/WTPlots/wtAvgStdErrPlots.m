@@ -309,6 +309,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         clickPosRelToAxes = abs(clickPosRelToAxes);
         if clickPosRelToAxes(1) > subPlotAxesPos(3)/2 || ...
             clickPosRelToAxes(2) > subPlotAxesPos(4)/2
+            figure(hMainPlot);
             return
         end
 
@@ -379,7 +380,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
             if isempty(dcShiftsTxt)
                 legendTxt{cnd} = prms.conditionsToPlot{cnd};
             else
-                legendTxt{cnd} = sprintf('%s|DC shift %s', prms.conditionsToPlot{cnd}, char(join(dcShiftsTxt,',')));
+                legendTxt{cnd} = sprintf('%s / DC shift %s', prms.conditionsToPlot{cnd}, char(join(dcShiftsTxt,',')));
             end
 
             errorbar(data.chnsAvg, data.chnsStdErr, colors(cnd));

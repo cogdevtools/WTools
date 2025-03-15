@@ -132,8 +132,8 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot)
     try
         figureWHRatio = 4/3; 
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
-        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 5);
-        colorMap = WTPlotUtils.getPlotsColorMap();
+        xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 2);
+        colorMap = WTAppConfig().PlotsColorMap;
 
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -153,16 +153,18 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot)
             figureTitle = WTStringUtils.chunkStrings('Channel: ', 'Avg of: ', {channelsLocations.labels}, 10);
 
             WT = data.WT(channelsToPlotIdxs,:,:);
+            WTChansAvg = mean(WT, 1);
+            WTChansAvg = WTChansAvg(1, freqIdxs, timeIdxs);
 
             if plotsPrms.Decibel
-                [WT, dc] = WTProcessUtils.CWTDCShift(WT, plotsPrms.TransformPower, false, false, false);
-                WT = WTProcessUtils.ToDecibel(WT,  plotsPrms.TransformPower);
+                [WTChansAvg, dc] = WTProcessUtils.CWTDCShift(WTChansAvg, plotsPrms.TransformPower, false, false, false);
+                WTChansAvg = WTProcessUtils.ToDecibel(WTChansAvg,  plotsPrms.TransformPower);
                 if dc ~= 0
                     figureTitle(end+1) = { sprintf('DC shift: %g', dc) };
                 end
             end
 
-            WTChansAvg = mean(WT, 1);
+            WTChansAvg = squeeze(WTChansAvg);
 
             % Create the figure
             hFigure = figure('Position', figuresPosition{cnd});
@@ -174,14 +176,14 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot)
             hFigure.UserData.MainPlots = hMainPlots;
             
             imagesc([plotsPrms.TimeMin plotsPrms.TimeMax], [plotsPrms.FreqMin plotsPrms.FreqMax], ...
-                interp2(squeeze(WTChansAvg(1, freqIdxs, timeIdxs)), 4, 'spline'));
+                interp2(WTChansAvg, 4, 'spline'));
 
             hold('on');
             if plotsPrms.Contours
                 timePace = downsampleFactor * timeRes;
                 contour(plotsPrms.TimeMin:timePace:plotsPrms.TimeMax, ... 
                         plotsPrms.FreqMin:freqRes:plotsPrms.FreqMax, ...
-                        squeeze(WTChansAvg(1, freqIdxs, timeIdxs)), 'k');
+                        WTChansAvg, 'k');
             end
 
             caxis(plotsPrms.Scale);
@@ -212,13 +214,11 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot)
             title(figureTitle, 'FontSize', 16, 'FontWeight', 'bold');
             xlabel('ms', 'FontSize', 12, 'FontWeight', 'bold');
             ylabel('Hz', 'FontSize', 12, 'FontWeight', 'bold');
-            pace = linspace(min(plotsPrms.Scale), max(plotsPrms.Scale), 64);
-            pace = pace(2) - pace(1);
             colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
             set(get(colorBar, 'xlabel'), ...
                 'String', xLabelParams.String, ...
                 'Rotation', xLabelParams.Rotation, ...
-                'Position', [xLabelParams.Position 2 * pace], ...
+                'Position', [xLabelParams.Position mean(plotsPrms.Scale)], ...
                 'VerticalAlignment', 'cap', ...
                 'FontSize', 12, ...
                 'FontWeight', 'bold'); 
@@ -228,6 +228,14 @@ function wtChansAvgPlots(subject, conditionsToPlot, channelsToPlot)
             hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
                 {@WTPlotUtils.onKeyPressBringObjectsToFrontCb, 'a', 'MainPlots.Value'}, ...
                 {@WTPlotUtils.onKeyPressCloseObjectsCb, 'q', 'MainPlots.Value'});
+
+            scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
+                plotsPrms.BaselineSubtraction, ...
+                plotsPrms.BaselineNormalization, ... 
+                plotsPrms.Decibel);
+
+            dataRange = [min(WTChansAvg, [], 'all') max(WTChansAvg, [], 'all')];
+            WTPlotUtils.addColorBarScaleControls(hFigure, 'right', scaleRange, dataRange);
             wtLog.contextOff(); 
         end
     catch me

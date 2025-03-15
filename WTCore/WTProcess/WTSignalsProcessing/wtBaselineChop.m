@@ -147,12 +147,17 @@ function success = wtBaselineChop()
         baselineMaxIdx = find(data.tim == baselineChopParams.BaselineTimeMax);
     end
 
-    wtLog.pushStatus().contextOn().HeaderOn = false;
+    wtLog.pushStatus().contextOn();
 
     for s = 1:length(subjects)
+        wtLog.HeaderOn = true;
+        wtLog.info('Processing subject %s',  subjects{s});
+        wtLog.contextOn().HeaderOn = false;
+
         for c = 1:length(conditions)
-            wtLog.info('Processing subject %s, condition %s, measure %s', subjects{s}, conditions{c}, measure);
-            
+            wtLog.info('Condition %s, measure %s', conditions{c}, measure);
+            wtLog.contextOn();
+
             [success, data] = ioProc.loadWaveletsAnalysis(subjects{s}, conditions{c}, measure);
             if ~success 
                 wtProject.notifyErr([],'Failed to load dataset for subject ''%s'', condition: ''%s''', subjects{s}, conditions{c});
@@ -214,7 +219,11 @@ function success = wtBaselineChop()
                 wtLog.popStatus();
                 return
             end
-        end 
+
+            wtLog.contextOff();
+        end
+
+        wtLog.contextOff();
     end
 
     wtLog.popStatus();
