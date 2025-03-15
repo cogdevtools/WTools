@@ -39,7 +39,7 @@ function [dataShifted, dc] = wtDCShift(data, minFactor, epsilon, perChannel, per
     WTValidations.mustBeInRange(epsilon, 0, 0.1, false, true);
     WTValidations.mustBeInRange(minFactor, 0, 0.1, false, true);
     if perFrequency && perTime
-        WTException.incompatibleValues('perFrequncy and perTime cannot be both true').throw();
+        WTException.incompatibleValues('perFrequency and perTime cannot be both true').throw();
     end
 
     dataShifted = data;  % Initialize shifted data matrix

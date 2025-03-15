@@ -22,7 +22,7 @@ function [success, pathsContext] = wtInit
     try
         wtoolsRootDir = fileparts(mfilename('fullpath'));
         pathsContext = path();
-        addpath(genpath(wtoolsRootDir));
+        addpath(genpath(wtoolsRootDir), '-begin');
         rehash();
     catch me
         try

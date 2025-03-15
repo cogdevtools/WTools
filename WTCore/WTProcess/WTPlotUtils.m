@@ -14,6 +14,7 @@
 % along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 classdef WTPlotUtils
+
     properties(Constant)
         ScaleRelative                = '(Ratio)'
         ScaleDecibel                 = 'dB'
@@ -102,34 +103,67 @@ classdef WTPlotUtils
             if isPower
                 if isBaselineSubtracted
                     if isBaselineNormalized
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-5 5]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-1 5]);
                     else 
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 20], [-5*10^-6 5*10^-6]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-5 25]);
                     end
                 else
                     if isBaselineNormalized
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 30], [0 3]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 30], [0 9]);
                     else
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 30], [10^-6 10^-3]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 30], [0 25]);
                     end
                 end
             else 
                 if isBaselineSubtracted
                     if isBaselineNormalized
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-3 3]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-40 40], [-1 4]);
                     else 
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-5*10^-6 5*10^-6]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-2 7]);
                     end
                 else
                     if isBaselineNormalized
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-3 3]);
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [0 3]);
                     else
-                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [-50 50]); 
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-60 40], [0 5]); 
                     end
                 end
             end
         end
         
+        % getMaxScaleRange() similar to getSuggestedScaleRange() but returns the maximum range to use.
+        function rng = getMaxScaleRange(isPower, isBaselineSubtracted, isBaselineNormalized, isDecibel)
+            if isPower
+                if isBaselineSubtracted
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [-20000 160000]);
+                    else 
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [-20000 40000]);
+                    end
+                else
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [0 80000]);
+                    else
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [0 40000]);
+                    end
+                end
+            else 
+                if isBaselineSubtracted
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [-100 400]);
+                    else 
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [-100 200]);
+                    end
+                else
+                    if isBaselineNormalized
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [0 400]);
+                    else
+                        rng = WTCodingUtils.ifThenElse(isDecibel, [-100 100], [0 200]); 
+                    end
+                end
+            end
+        end
+
         function label = getLabel(scaleType, dimension)
             label = WTCodingUtils.ifThenElse(isempty(scaleType), dimension, @()sprintf('%s [%s]', scaleType, dimension));
         end
@@ -152,11 +186,10 @@ classdef WTPlotUtils
             params = struct();
             params.String = label;
             params.Rotation = 0;
-            params.Position = 0;
-            if nargin > 2 
+            if nargin > 1 
                 params.Rotation = rotateFun(params);
             end
-            if nargin > 3
+            if nargin > 2
                 params.Position = positionFun(params);
             end
         end
@@ -167,35 +200,275 @@ classdef WTPlotUtils
 
         function params = getPlotXLabelParams(label, rotateLen) 
             rotate = @(p) WTCodingUtils.ifThenElse(length(p.String) >  rotateLen, 90, 0);
-            position = @(p) WTCodingUtils.ifThenElse(verLessThan('matlab', '8.4'), 5, 2);
+            position = @(p) WTCodingUtils.ifThenElse(verLessThan('matlab', '8.4'), 0.5, 0.2);
             params = WTPlotUtils.getPlotLabelParams(label, rotate, position);
         end
 
-        function plotsColorMap = getPlotsColorMap()
-            persistent colorMap
+        function palette = generateHighContrastPalette(N)
+            basic_colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k'];
+            if N < length(basic_colors)
+                palette = basic_colors(1:N);
+                return
+            end
+            colors = hsv(N);
+            palette = hsv2rgb(colors);
+        end
 
-            if ~isempty(colorMap)
-                plotsColorMap = colorMap;
+        function icon = createLetterIcon(letter, color)
+            hF = figure('Visible', 'off');
+            axes('Position', [0 0 1 1], 'Units', 'normalized', 'Visible', 'off');
+            text(0.5, 0.5, letter, 'FontSize', 500, 'FontWeight', 'bold', ...
+                'Color', color, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+            rectangle('Position', [0, 0, 1, 1], 'EdgeColor', 'black', 'LineWidth', 40);
+            frame = getframe(gcf);
+            icon = frame2im(frame);
+            icon = imresize(icon, [16, 16], 'nearest');
+            icon = uint8(icon);
+            close(hF);
+        end
+
+        % addColorBarScaleControls
+        % 
+        % This function adds controls for scaling the color bar in a plot. 
+        % It is typically used in conjunction with plotting functions to 
+        % provide users with the ability to adjust the color bar scale 
+        % dynamically. This can be useful for visualizing data with varying 
+        % ranges and improving the interpretability of the plot.
+        %
+        % Usage:
+        %   addColorBarScaleControls(hFigure, position, vSetRange, vDataRange)
+        %
+        % Parameters:
+        %   hFigure    - figure to which add the colorbar range controls
+        %   position   - either 'right' or 'left'
+        %   vSetRange  - 1x2 array defining the custom user range
+        %   vDataRange - 1x2 array definint the data range: (min, max)
+        %
+        % Note:
+        %   If the figure must be either an plot with a generic colorbar or a
+        %   WTools headplot.
+        function addColorBarScaleControls(hFigure, position, vSetRange, vDataRange)
+            WTValidations.mustBe(hFigure, ?matlab.ui.Figure)
+            if ~isvalid(hFigure)
                 return
             end
 
-            wtAppConfig = WTAppConfig();
+            hAxes = findobj(hFigure, 'Type', 'axes', 'Tag', '');
 
-            if ~isempty(wtAppConfig.PlotsColorMap)
-                colorMap = wtAppConfig.PlotsColorMap;
-            else
-                colorMap = 'parula'; 
-                try
-                    % call eeglab icadefs to set the same colormap if defined there...
-                    icadefs;
-                    if exist('DEFAULT_COLORMAP', 'var')
-                        colorMap = DEFAULT_COLORMAP;
-                    end
-                catch
+            if isempty(hAxes)
+                WTException.badArg('cannot find any axes').throw();
+            end
+
+            vInitialRange = getappdata(hFigure, 'WTHeadplot_MapLimits');
+
+            if isempty(vInitialRange)
+                plotFun = [];
+                vInitialRange = clim(hAxes);
+                hColorBar = hAxes.Colorbar;
+
+                if isempty(hColorBar)
+                    WTException.badArg('cannot find any colorbar').throw();
+                end
+            else 
+                plotFun = getappdata(hFigure, 'WTHeadplot_PlotFun');
+                if isempty(plotFun)
+                     WTException.badArg('cannot find WTHeadplot_PlotFun').throw();
                 end
             end
 
-            plotsColorMap = colorMap;
+            WTValidations.mustBe(position, ?char);
+
+            switch position
+                case 'right'
+                    position = [0.95 hAxes.Position(2) 0.05 hAxes.Position(4)];
+                case 'left'
+                    position = [0.05 hAxes.Position(2) 0.05 hAxes.Position(4)];
+                otherwise
+                    WTException.badArg('position must be either ''right'', ''left''').throw();
+            end
+
+            if nargin > 4 && ~isempty(vDataRange) 
+                WTValidations.mustBeLimitedLinearArray(vDataRange, 2, 2, 0);
+                if vDataRange(1) >= vDataRange(2)
+                    WTException.badArg('vDataRange(1) >= vDataRange(2)').throw();
+                end
+                if isempty(vSetRange)
+                    vSetRange = vDataRange;
+                    vDataRange = [];
+                end
+            end
+
+            WTValidations.mustBeLimitedLinearArray(vSetRange, 2, 2, 0);
+        
+            if vSetRange(1) >= vSetRange(2)
+                WTException.badArg('vSetRange(1) >= vSetRange(2)').throw();
+            end
+
+            % vInitialRange = clim(hAxes);
+            vMin = vInitialRange(1);
+            vMax = vInitialRange(2);
+            
+            persistent iconI;
+            persistent iconW;
+            persistent iconD;
+
+            if isempty(iconI)
+                iconI = WTPlotUtils.createLetterIcon('I', [1, 0, 0]);
+                iconW = WTPlotUtils.createLetterIcon('W', [0, 0, 1]);
+                iconD = WTPlotUtils.createLetterIcon('D', [0, 1, 0]);
+            end
+
+            toolbar = uitoolbar(hFigure);
+
+            hToRangeInitialBtn = uipushtool(toolbar, ...
+                'CData', iconI, ...
+                'TooltipString', 'Set Color Scale range to initial', ...
+                'ClickedCallback', @resetColorScaleCb, ...
+                'UserData', vInitialRange);
+
+            hToRangeSetBtn = uipushtool(toolbar, ...
+                'CData', iconW, ...
+                'TooltipString', 'Set Color Scale range to WTools', ...
+                'ClickedCallback', @resetColorScaleCb, ...
+                'UserData', vSetRange);
+
+            if ~isempty(vDataRange)
+                hToRangeDataBtn = uipushtool(toolbar, ...
+                    'CData', iconD, ...
+                    'TooltipString', 'Set Color Scale range to data', ...
+                    'ClickedCallback', @resetColorScaleCb, ...
+                    'UserData', vDataRange);
+            end
+
+            sliderPanel = uipanel('Parent', hFigure, 'Position', position, 'Title', 'Scale', 'FontSize', 7);
+            figSizeChangedFcn = hFigure.SizeChangedFcn;
+            hFigure.SizeChangedFcn = @(hFig,hAxs)resizeSliderPanelCb(hFig, hAxs, figSizeChangedFcn);
+            sliderStep = getSliderStep(vInitialRange);
+
+            hMinSlider = uicontrol('Style', 'slider', 'Parent', sliderPanel, 'Units', 'normalized', 'Position', [0.05 0 0.8 0.3], ...
+                'Min', vMin, 'Max', vMax, 'Value', vMin, 'Callback', @updateColorScaleMinCb, 'HorizontalAlignment', 'center', ...
+                'SliderStep', sliderStep);
+            
+            hMinText = uicontrol('Style', 'text', 'Parent', sliderPanel, 'Units', 'normalized', 'Position', [0.05 0.35 0.95 0.05], ...
+                'String', num2str(hMinSlider.Value), 'FontSize', 9, 'HorizontalAlignment', 'center');
+            
+            hMaxSlider = uicontrol('Style', 'slider', 'Parent', sliderPanel, 'Units', 'normalized', 'Position', [0.05 0.7 0.8 0.3], ...
+                'Min', vMin, 'Max', vMax, 'Value', vMax, 'Callback', @updateColorScaleMaxCb, 'HorizontalAlignment', 'center', ...
+                'SliderStep', sliderStep);
+            
+            hMaxText = uicontrol('Style', 'text', 'Parent', sliderPanel, 'Units', 'normalized', 'Position', [0.05 0.6 0.95 0.05], ...
+                'String', num2str(hMaxSlider.Value), 'FontSize', 9, 'HorizontalAlignment', 'center');
+            
+            resetColorScaleCb(hToRangeSetBtn, []);
+
+            function adjustAxis(scaleMin, scaleMax)
+                if ~isempty(plotFun)
+                    plotFun(hFigure, [scaleMin, scaleMax]);
+                else
+                    clim(hAxes, [scaleMin scaleMax]);
+                    scaleMid = (scaleMax+scaleMin)/2;
+                    nYTicks = length(hColorBar.YTick);
+                    hColorBar.YTick = linspace(scaleMin, scaleMax, nYTicks);
+                    label = hColorBar.XLabel;
+                    label.Position = [label.Position(1) scaleMid];
+                end
+            end
+
+            function step = getSliderStep(rng)
+                width = abs(rng(2) - rng(1));
+                if width <= 100
+                    step = [0.001 0.01];
+                elseif width > 100 && width <= 10000
+                    step = [0.0001 0.001];
+                else 
+                    step = [0.00001 0.0001];
+                end
+             end
+
+            function setSliderValue(slider, field, value)
+                saveCallback = slider.Callback; 
+                slider.Callback = @WTCodingUtils.nop;
+                set(slider, field, value);
+                slider.Callback = saveCallback;
+            end
+
+            function resizeSliderPanelCb(hFig, hEvt, resizeFigureCb)
+                if ~isempty(resizeFigureCb)
+                    resizeFigureCb(hFig, hEvt)
+                end
+                hAxs = findobj(hFigure, 'Type', 'axes', 'Tag', '');
+                sliderPanel.Position = [ ...
+                    sliderPanel.Position(1), ...
+                    hAxs.Position(2), ...
+                    sliderPanel.Position(3), ...
+                    hAxs.Position(4)];
+            end
+            
+            function resetColorScaleCb(hButton, ~)
+                rMin = hButton.UserData(1);
+                rMax = hButton.UserData(2);
+                
+                sliderStep = getSliderStep([rMin rMax]);
+                setSliderValue(hMinSlider, 'Min', rMin);
+                setSliderValue(hMinSlider, 'Max', rMax);
+                setSliderValue(hMinSlider, 'SliderStep', sliderStep);
+                setSliderValue(hMaxSlider, 'Min', rMin);
+                setSliderValue(hMaxSlider, 'Max', rMax);
+                setSliderValue(hMaxSlider, 'SliderStep', sliderStep);
+
+                sMin = hMinSlider.Value;
+                sMax = hMaxSlider.Value;
+
+                if sMin < rMin
+                    sMin = rMin;
+                end
+                if sMax > rMax
+                    sMax = rMax;
+                end
+                if sMin >= sMax
+                    if sMin ~= rMin
+                        sMin = sMax - abs(rMax - rMin)*sliderStep(1);
+                    else
+                        sMax = sMin + abs(rMax - rMin)*sliderStep(1);
+                    end
+                end
+                setSliderValue(hMinSlider, 'Value', sMin);
+                setSliderValue(hMaxSlider, 'Value', sMax);
+                hMinText.String = num2str(sMin);
+                hMaxText.String = num2str(sMax);
+                adjustAxis(hMinSlider.Value, hMaxSlider.Value);
+                drawnow;
+            end
+            
+            function updateColorScaleMinCb(~, ~)
+                newMin = hMinSlider.Value;
+                valMax = hMaxSlider.Value;
+
+                if newMin >= valMax
+                    rng = hMinSlider.Max - hMinSlider.Min;
+                    newMin = valMax - abs(rng)*sliderStep(1);
+                end
+
+                setSliderValue(hMinSlider, 'Value', newMin);
+                adjustAxis(newMin, valMax);
+                hMinText.String = num2str(newMin);
+                drawnow;
+            end
+            
+            function updateColorScaleMaxCb(~, ~)
+                valMin = hMinSlider.Value;
+                newMax = hMaxSlider.Value;
+                
+                if newMax <= valMin
+                    rng = hMaxSlider.Max - hMaxSlider.Min;
+                    newMax = valMin + abs(rng)*sliderStep(1);
+                end
+                
+                setSliderValue(hMaxSlider, 'Value', newMax);
+                adjustAxis(valMin, newMax);
+                hMaxText.String = num2str(newMax);
+                drawnow;
+            end
         end
 
         function [x, y] = getChannelsXY(channelsLocations)
@@ -209,17 +482,7 @@ classdef WTPlotUtils
                 y(i) = cos(chanLoc.theta / 360 * 2 * pi) * chanLoc.radius;
             end
         end
-
-        function palette = generateHighContrastPalette(N)
-            basic_colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k'];
-            if N < length(basic_colors)
-                palette = basic_colors(1:N);
-                return
-            end
-            colors = hsv(N);
-            palette = hsv2rgb(colors);
-        end
-
+        
         function is = isPointInCurrentAxes(point)
             hCurrentAxes = gca;
             pos = hCurrentAxes.Position;

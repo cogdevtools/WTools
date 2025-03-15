@@ -20,7 +20,6 @@ classdef WTAppConfigGUI
             updateCurrent = nargin > 0 && updateCurrent;
             persist = nargin > 1 && persist;
             warnReload =  nargin > 2 && warnReload;
-            wtLog = WTLog();
             wtAppConfig = [];
 
             if updateCurrent
