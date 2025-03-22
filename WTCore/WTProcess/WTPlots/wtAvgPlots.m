@@ -154,6 +154,10 @@ function wtAvgPlots(subject, conditionsToPlot, channelsToPlot)
         prms.subPlotRelHeight = prms.subPlotRelWidth * 3/4;
         prms.xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 2);
         prms.colorMap = WTAppConfig().PlotsColorMap;
+        prms.scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
+            plotsPrms.BaselineSubtraction, ...
+            plotsPrms.BaselineNormalization, ... 
+            plotsPrms.Decibel);
 
         for cnd = 1: nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -398,14 +402,8 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         % Set the callback to manage grid style change
         hFigure.WindowButtonDownFcn = @WTPlotUtils.setAxesGridStyleCb;
         hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressBringSingleObjectToFrontCb, 'm', 'MainPlot'};
-
-        scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
-                plotsPrms.BaselineSubtraction, ...
-                plotsPrms.BaselineNormalization, ... 
-                plotsPrms.Decibel);
-
         dataRange = [min(WT, [], 'all'), max(WT, [], 'all')];
-        WTPlotUtils.addColorBarScaleControls(hFigure, 'right', scaleRange, dataRange);
+        WTPlotUtils.addColorBarScaleControls(hFigure, 'right', prms.scaleRange, dataRange);
     catch me
         WTLog().except(me);
     end  
