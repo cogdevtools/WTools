@@ -155,6 +155,10 @@ function wt3DScalpMapPlots(subject, conditionsToPlot)
         figuresPosition = WTPlotUtils.getFiguresPositions(nConditionsToPlot, figureWHRatio, 0.3, 0.1);
         xLabelParams = WTPlotUtils.getPlotXLabelParams(plotLabel, 2);
         colorMap = WTAppConfig().PlotsColorMap;
+        scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
+            plotsPrms.BaselineSubtraction, ...
+            plotsPrms.BaselineNormalization, ... 
+            plotsPrms.Decibel);
 
         for cnd = 1:nConditionsToPlot
             wtLog.contextOn().info('Condition %s', conditionsToPlot{cnd});
@@ -218,11 +222,6 @@ function wt3DScalpMapPlots(subject, conditionsToPlot)
             hFigure.KeyReleaseFcn = [];
             % Enable listeners
             arrayfun(@(h)setfield(h, 'Enabled', 1), hManager.WindowListenerHandles);
-
-            scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
-                plotsPrms.BaselineSubtraction, ...
-                plotsPrms.BaselineNormalization, ... 
-                plotsPrms.Decibel);
 
             dataRange = [min(data.WT, [], 'all') max(data.WT, [], 'all')];
             WTPlotUtils.addColorBarScaleControls(hFigure, 'left', scaleRange, dataRange);

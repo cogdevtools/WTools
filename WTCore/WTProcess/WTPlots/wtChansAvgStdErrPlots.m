@@ -139,18 +139,6 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot)
         hFigure.Name = figureName;
         hFigure.ToolBar = 'none';
 
-        % Set time pace
-        timeChunk = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 100;
-        if timeChunk < 1
-            timePace = 10;
-        elseif timeChunk < 2
-            timePace = 20;
-        elseif timeChunk < 8
-            timePace = 100;
-        else
-            timePace = 200;
-        end  
-
         legendTxt = cell(1, nConditionsToPlot);
         colors = WTPlotUtils.generateHighContrastPalette(nConditionsToPlot);
 
@@ -163,12 +151,9 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot)
                 break
             end
 
-            chnsAvg = mean(data.WT(channelsToPlotIdxs, :, :), 1);
-            chnsAvg = chnsAvg(1, freqIdxs, timeIdxs);
-            chnsAvg = mean(chnsAvg, 2);
-            chnsAvg = squeeze(chnsAvg(1, :, :)); % Squeeze fr but not channel
-            chnsAvg = chnsAvg';
-            chnsStdErr = squeeze(mean(std(mean(data.SS(channelsToPlotIdxs, freqIdxs, timeIdxs, :), 1), 0, 4)./sqrt(size(data.SS, 4)), 2));
+            [chnsStdDev, chnsAvg] = std(mean(mean(data.SS(channelsToPlotIdxs, freqIdxs, timeIdxs, :), 1), 2), 0, 4);
+            chnsStdErr = squeeze(chnsStdDev./sqrt(size(data.SS, 4)));
+            chnsAvg = squeeze(chnsAvg);
 
             legendTxt{cnd} = conditionsToPlot{cnd};
 
@@ -188,7 +173,7 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot)
                 end
             end
 
-            errorbar(chnsAvg, chnsStdErr, colors(cnd));
+            errorbar(data.tim(timeIdxs), chnsAvg, chnsStdErr, 'color', colors(cnd));
 
             if cnd == 1
                 hold('on');
@@ -197,8 +182,6 @@ function wtChansAvgStdErrPlots(conditionsToPlot, channelsToPlot)
             if cnd == nConditionsToPlot
                 legend(legendTxt{:});
                 title(figureTitle, 'FontSize', 16, 'FontWeight','bold');
-                set(gca, 'XTick', 1 : timePace/timeRes : length(timeIdxs))
-                set(gca, 'XTickLabel', plotsPrms.TimeMin : timePace : plotsPrms.TimeMax);
                 set(gca, 'XMinorTick', 'on', 'xgrid', 'on', 'YMinorTick','on',...
                     'ygrid', 'on', 'gridlinestyle', ':', 'YDIR', 'normal');
                 axis('tight');

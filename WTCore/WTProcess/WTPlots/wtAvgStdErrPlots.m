@@ -123,7 +123,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
     nChannelsToPlot = numel(channelsToPlot);
     wtLog.info('Plotting grand average & standard error...');
     wtLog.pushStatus().HeaderOn = false;
-    mainPlots = cell(1, 1);    
+    hMainPlots = WTHandle(cell(1, 1)); 
         
     try
         % The annotation text's height which will appear on the top left corner
@@ -168,7 +168,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
         % Create main plot figure
         figureName = sprintf('AvgStdErr: %s.[%s].[%d-%d Hz]', basicPrms.FilesPrefix, measure, plotsPrms.FreqMin, plotsPrms.FreqMax); 
         hFigure = figure('Position', figuresPosition{1});
-        mainPlots{1} = hFigure;  
+        hMainPlots.Value{1} = hFigure;
         hFigure.Name = figureName;
         hFigure.NumberTitle = 'off';
         hFigure.ToolBar = 'none';
@@ -191,6 +191,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
         hWhichSubPlotAnnotation.FontWeight = 'bold';
 
         % User data
+        hFigure.UserData.MainPlots = hMainPlots;
         hFigure.UserData.OpenSubPlots = [];
         hFigure.UserData.SubPlotsAxes = [];
         hFigure.UserData.SubPlotAnnotation = hWhichSubPlotAnnotation;
@@ -214,10 +215,9 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
                 wtLog.contextOn().dbg('Channel %s', channelLabel);
                 channelIdx = channelsToPlotIdxs(chn);
 
-                % Compute average across frequencies
-                chnsAvg = squeeze(mean(data.WT(channelIdx, freqIdxs, timeIdxsReduced), 2));
-                % Compute standard error
-                chnsStdErr = squeeze(mean(std(data.SS(channelIdx, freqIdxs, timeIdxsReduced, :), 0, 4)./sqrt(size(data.SS, 4)), 2));
+                [chnsStdDev, chnsAvg] = std(mean(data.SS(channelIdx, freqIdxs, timeIdxsReduced, :), 2), 0, 4);
+                chnsStdErr = squeeze(chnsStdDev./sqrt(size(data.SS, 4)));
+                chnsAvg = squeeze(chnsAvg);
 
                 if plotsPrms.Decibel 
                     [chnsAvg, dcAvg] = WTProcessUtils.DCShiftAndConvertToDecibel(chnsAvg, plotsPrms.TransformPower);
@@ -228,6 +228,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
                 end
 
                 chnData = struct();
+                chnData.tim = data.tim(timeIdxsReduced);
                 chnData.chnsAvg = chnsAvg;
                 chnData.dcAvg = dcAvg;
                 chnData.chnsStdErr = chnsStdErr;
@@ -268,7 +269,8 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
             % Set the callback to resize/rearrange subplots 
             hFigure.WindowKeyPressFcn = WTPlotUtils.composeGraphicCallbacks(...
                 {@WTPlotUtils.onKeyPressResizeObjectsCb, '-', '+', 'SubPlotsAxes', 'OriginalPosition'}, ...
-                {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'r', 'OpenSubPlots',  'OriginalPosition'});
+                {@WTPlotUtils.onKeyPressResetObjectsPositionCb, 'r', 'OpenSubPlots',  'OriginalPosition'}, ...
+                {@WTPlotUtils.onKeyPressCloseObjectsCb, 'q', 'MainPlots.Value'});
             hFigure.WindowScrollWheelFcn = {@WTPlotUtils.onMouseScrollResizeObjectsCb, ...
                 'SubPlotsAxes', 'OriginalPosition'};
             % Set the callback to display sub plot lable when mouse hover on it
@@ -283,7 +285,7 @@ function wtAvgStdErrPlots(conditionsToPlot, channelsToPlot)
     end
 
     % Wait for all main plots to close
-    WTPlotUtils.waitUIs(mainPlots);
+    WTPlotUtils.waitUIs(hMainPlots.Value);
     wtLog.info('Plotting done.');
 end
 
@@ -351,18 +353,6 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
         subPlotPrms.OriginalPosition = position;
         hFigure.UserData = subPlotPrms;
 
-        % Set time pace
-        timeChunk = (plotsPrms.TimeMax - plotsPrms.TimeMin) / 100;
-        if timeChunk < 1
-            timePace = 10;
-        elseif timeChunk < 2
-            timePace = 20;
-        elseif timeChunk < 8
-            timePace = 100;
-        else
-            timePace = 200;
-        end  
-
         nConditionsToPlot = size(prms.data, 1);
         legendTxt = cell(1, nConditionsToPlot);
         colors = WTPlotUtils.generateHighContrastPalette(nConditionsToPlot);
@@ -383,7 +373,7 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
                 legendTxt{cnd} = sprintf('%s / DC shift %s', prms.conditionsToPlot{cnd}, char(join(dcShiftsTxt,',')));
             end
 
-            errorbar(data.chnsAvg, data.chnsStdErr, colors(cnd));
+            errorbar(data.tim, data.chnsAvg, data.chnsStdErr, 'color', colors(cnd));
 
             if cnd == 1
                 hold('on');
@@ -391,8 +381,6 @@ function mainPlotOnButtonDownCb(hMainPlot, event)
 
             if cnd == nConditionsToPlot
                 legend(legendTxt{:});
-                set(gca, 'XTick', 1 : timePace/prms.timeRes : length(prms.timeIdxs))
-                set(gca, 'XTickLabel', plotsPrms.TimeMin : timePace : plotsPrms.TimeMax);
                 set(gca, 'XMinorTick', 'on', 'xgrid', 'on', 'YMinorTick', 'on',...
                     'ygrid', 'on', 'gridlinestyle', ':', 'YDIR', 'normal');
                 axis('tight');

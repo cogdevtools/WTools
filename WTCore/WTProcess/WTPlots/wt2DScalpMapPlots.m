@@ -139,10 +139,15 @@ function wt2DScalpMapPlots(subject, conditionsToPlot)
         colorMap = WTAppConfig().PlotsColorMap; 
         timeSeries = ~isempty(plotsPrms.TimeResolution);
         freqSeries = ~isempty(plotsPrms.FreqResolution);
+        scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
+            plotsPrms.BaselineSubtraction, ...
+            plotsPrms.BaselineNormalization, ... 
+            plotsPrms.Decibel);
 
         if timeSeries || freqSeries
             % Create struct to store all the useful params used here and by the callbacks
             prms = struct();
+            prms.scaleRange = scaleRange;
             prms.whSubPlotRatio = 1;
             prms.plotsPrms = copy(plotsPrms);
             prms.xLabelParams = xLabelParams;
@@ -201,8 +206,15 @@ function wt2DScalpMapPlots(subject, conditionsToPlot)
                 title(figureTitle, 'FontSize', 14, 'FontWeight', 'bold');
                 colormap(colorMap);
                 colorBar = colorbar('peer', gca, 'YTick', sort([0 plotsPrms.Scale]));
-                set(get(colorBar,'xlabel'), 'String', xLabelParams.String, 'FontSize', 12, ...
-                    'FontWeight', 'bold', 'Rotation', xLabelParams.Rotation, 'Position', [xLabelParams.Position mean(plotsPrms.Scale)]);
+                set(get(colorBar,'xlabel'), ...
+                    'String', xLabelParams.String, ... 
+                    'FontSize', 12, ...
+                    'FontWeight', 'bold', ...
+                    'Rotation', xLabelParams.Rotation, ...
+                    'VerticalAlignment', 'cap', ...
+                    'Position', [xLabelParams.Position mean(plotsPrms.Scale)]);
+                dataRange = [min(data.WT, [], 'all') max(data.WT, [], 'all')];
+                WTPlotUtils.addColorBarScaleControls(hFigure, 'right', scaleRange, dataRange);
             else
                 prms.data = WTHandle(cell(1, nConditionsToPlot));
                 prms.subPlotsPrms = WTHandle(cell(1, nSubPlots));
@@ -413,11 +425,7 @@ function mainPlotOnButtonDownCb(hMainPlot, ~, prms)
         title(subPlotData.title, 'FontSize', 12, 'FontWeight', 'bold');
         hFigure.CloseRequestFcn = {@WTPlotUtils.childObjectCloseRequestCb, 'MainPlot', 'OpenSubPlots'};
         hFigure.WindowKeyPressFcn = {@WTPlotUtils.onKeyPressBringSingleObjectToFrontCb, 'm', 'MainPlot'};
-        scaleRange = WTPlotUtils.getMaxScaleRange(plotsPrms.TransformPower, ...
-            plotsPrms.BaselineSubtraction, ...
-            plotsPrms.BaselineNormalization, ... 
-            plotsPrms.Decibel);
-        WTPlotUtils.addColorBarScaleControls(hFigure, 'right', scaleRange, subPlotData.dataRange);
+        WTPlotUtils.addColorBarScaleControls(hFigure, 'right', prms.scaleRange, subPlotData.dataRange);
     catch me
         WTLog().except(me);
     end 
