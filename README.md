@@ -12,4 +12,4 @@ A Matlab® based toolbox for time-frequency analysis.
 ## Reference
 Please cite the reference paper when you have used WTools in your study.
 
-Ferrari A, Filippin L, Buiatti M, Parise E. (2024) **WTools: a MATLAB-based toolbox for time-frequency analysis**. *bioRxiv*.
+Ferrari A., Filippin L., Buiatti M., Parise E. (2025) **WTools: a MATLAB-based toolbox for time-frequency analysis of infant data**. *PLoS One, 20*(5), e0323179. [DOI: 10.1371/journal.pone.0323179](https://doi.org/10.1371/journal.pone.0323179)
